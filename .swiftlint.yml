@@ -1,0 +1,15 @@
+included:
+  - PromptCam
+  - PromptCamTests
+  - PromptCamUITests
+
+disabled_rules:
+  - todo
+
+line_length:
+  warning: 140
+  error: 180
+
+type_body_length:
+  warning: 300
+  error: 450
