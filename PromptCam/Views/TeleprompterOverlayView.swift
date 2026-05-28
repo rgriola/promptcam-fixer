@@ -27,7 +27,7 @@ struct TeleprompterOverlayView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .offset(y: offset)
                 .background(Color.black.opacity(0.15))
-                .onChange(of: isScrolling) { _, newValue in
+                .onChange(of: isScrolling) { newValue in
                     if newValue {
                         startTime = Date()
                     }
@@ -37,3 +37,4 @@ struct TeleprompterOverlayView: View {
         }
     }
 }
+
