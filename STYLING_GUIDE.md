@@ -62,13 +62,13 @@ static let fontFamily: FontFamily = .custom("Inter")
 
 Every text element maps to one of **5 even point sizes**. No exceptions.
 
-| Tier   | Size | Use Cases                                                         |
-| ------ | ---- | ----------------------------------------------------------------- |
-| **xs** | 10pt | Timestamps, helper text, status dots                              |
-| **sm** | 12pt | Captions, metadata labels, badges, error text                     |
-| **md** | 16pt | Body text, buttons, nav titles, input fields                      |
-| **lg** | 20pt | Section titles, screen headers                                    |
-| **xl** | 28pt | Hero/login headings, large initials                               |
+| Tier   | Size | Use Cases                                     |
+| ------ | ---- | --------------------------------------------- |
+| **xs** | 10pt | Timestamps, helper text, status dots          |
+| **sm** | 12pt | Captions, metadata labels, badges, error text |
+| **md** | 16pt | Body text, buttons, nav titles, input fields  |
+| **lg** | 20pt | Section titles, screen headers                |
+| **xl** | 28pt | Hero/login headings, large initials           |
 
 ### Naming Convention
 
