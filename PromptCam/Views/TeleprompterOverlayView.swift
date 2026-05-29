@@ -1,3 +1,4 @@
+// May 29, 2026 - 12:57pm - GitHub Copilot
 import SwiftUI
 
 struct TeleprompterOverlayView: View {
@@ -16,18 +17,18 @@ struct TeleprompterOverlayView: View {
 
                 ScrollView(showsIndicators: false) {
                     Text(text)
-                        .font(.system(size: fontSize, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(Theme.fontFamily.rounded(size: fontSize, weight: .semibold))
+                        .foregroundStyle(Theme.primaryText)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, Theme.space24)
+                        .padding(.vertical, Theme.space16)
                         .frame(maxWidth: .infinity)
                 }
                 .allowsHitTesting(false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .offset(y: offset)
-                .background(Color.black.opacity(0.15))
-                .onChange(of: isScrolling) { _, newValue in
+                .background(Theme.overlayScrim.opacity(0.15))
+                .onChange(of: isScrolling) { newValue in
                     if newValue {
                         startTime = Date()
                     }
@@ -37,3 +38,4 @@ struct TeleprompterOverlayView: View {
         }
     }
 }
+

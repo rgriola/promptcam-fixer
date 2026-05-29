@@ -1,3 +1,4 @@
+// May 29, 2026 - 12:57pm - GitHub Copilot
 import Foundation
 
 struct TeleprompterConfig: Equatable {
@@ -12,10 +13,14 @@ struct TeleprompterConfig: Equatable {
     )
 
     var clamped: TeleprompterConfig {
-        TeleprompterConfig(
+        let clampedSpeed = min(max(speedPointsPerSecond, 5), 150)
+        let clampedFont = min(max(fontSize, 16), 72)
+        let evenFont = round(clampedFont / 2) * 2
+
+        return TeleprompterConfig(
             text: text,
-            speedPointsPerSecond: min(max(speedPointsPerSecond, 5), 150),
-            fontSize: min(max(fontSize, 16), 72)
+            speedPointsPerSecond: clampedSpeed,
+            fontSize: evenFont
         )
     }
 }

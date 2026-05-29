@@ -1,0 +1,565 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		135F477ECF06843A6EA1B4A1 /* TeleprompterConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */; };
+		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
+		7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */; };
+		7903D6611F488BA869F2A267 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */; };
+		8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E807D783DFBBE234865C83 /* PromptCamApp.swift */; };
+		A23F1AAB79BEC4162246E355 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */; };
+		A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */; };
+		C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */; };
+		D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749694F8D9812A53CBCC6CC /* CameraView.swift */; };
+		EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C5486901965005D700AC21 /* CameraService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2F4C4B68643F5DC7D9C54128 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D2CFBD01319F2F6CBF622CCF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 73663280BECEDBD0C61E30D7;
+			remoteInfo = PromptCam;
+		};
+		3C9CDEAADD76FFE7A85A2D3A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D2CFBD01319F2F6CBF622CCF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 73663280BECEDBD0C61E30D7;
+			remoteInfo = PromptCam;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterConfigTests.swift; sourceTree = "<group>"; };
+		14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterConfig.swift; sourceTree = "<group>"; };
+		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
+		55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
+		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
+		B1E807D783DFBBE234865C83 /* PromptCamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamApp.swift; sourceTree = "<group>"; };
+		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
+		C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		E749694F8D9812A53CBCC6CC /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0D8D623EFAD52403360EEEA7 /* PromptCamTests */ = {
+			isa = PBXGroup;
+			children = (
+				0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */,
+			);
+			path = PromptCamTests;
+			sourceTree = "<group>";
+		};
+		335E4FEB3F7D44A7E431CB26 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B8C5486901965005D700AC21 /* CameraService.swift */,
+				55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3B4BD104ECFD2942830E596F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B860643BC28289FBEEAD4BEB /* PromptCam.app */,
+				B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */,
+				14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		46670FAA51A038C48CD673E6 = {
+			isa = PBXGroup;
+			children = (
+				6E2D4041F7F45773EE14D3EC /* PromptCam */,
+				0D8D623EFAD52403360EEEA7 /* PromptCamTests */,
+				C9D361E474202E90CC567831 /* PromptCamUITests */,
+				3B4BD104ECFD2942830E596F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6E2D4041F7F45773EE14D3EC /* PromptCam */ = {
+			isa = PBXGroup;
+			children = (
+				E2D2E1B89B90C7107C787B84 /* App */,
+				A37EE752DAE42251664E344F /* Models */,
+				335E4FEB3F7D44A7E431CB26 /* Services */,
+				959EA3D47CF576057E3AB9E0 /* ViewModels */,
+				95805BE9560DBDD612842BBB /* Views */,
+			);
+			path = PromptCam;
+			sourceTree = "<group>";
+		};
+		95805BE9560DBDD612842BBB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */,
+				E749694F8D9812A53CBCC6CC /* CameraView.swift */,
+				34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		959EA3D47CF576057E3AB9E0 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A37EE752DAE42251664E344F /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C9D361E474202E90CC567831 /* PromptCamUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */,
+			);
+			path = PromptCamUITests;
+			sourceTree = "<group>";
+		};
+		E2D2E1B89B90C7107C787B84 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B1E807D783DFBBE234865C83 /* PromptCamApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		73663280BECEDBD0C61E30D7 /* PromptCam */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 72ADE166D321D2AF0AECC55E /* Build configuration list for PBXNativeTarget "PromptCam" */;
+			buildPhases = (
+				522FA85F8775078B52BB6766 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PromptCam;
+			packageProductDependencies = (
+			);
+			productName = PromptCam;
+			productReference = B860643BC28289FBEEAD4BEB /* PromptCam.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1AA9E1B934EFFD8EF5C84F1 /* PromptCamTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 52002EC79685C9B46AE107A1 /* Build configuration list for PBXNativeTarget "PromptCamTests" */;
+			buildPhases = (
+				FB3580842ABA90D4EF1F10A1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8C14754B3224D8C1DA56D276 /* PBXTargetDependency */,
+			);
+			name = PromptCamTests;
+			packageProductDependencies = (
+			);
+			productName = PromptCamTests;
+			productReference = B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F4ED852A21A2103C1DD05A95 /* PromptCamUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53018625C7D3479E0412F198 /* Build configuration list for PBXNativeTarget "PromptCamUITests" */;
+			buildPhases = (
+				B9A846631032535B26871809 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				588AFCE987247FAA4211833B /* PBXTargetDependency */,
+			);
+			name = PromptCamUITests;
+			packageProductDependencies = (
+			);
+			productName = PromptCamUITests;
+			productReference = 14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D2CFBD01319F2F6CBF622CCF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					F4ED852A21A2103C1DD05A95 = {
+						TestTargetID = 73663280BECEDBD0C61E30D7;
+					};
+				};
+			};
+			buildConfigurationList = 163E3AFE8AD2135CCECDEBEB /* Build configuration list for PBXProject "PromptCam" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 46670FAA51A038C48CD673E6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3B4BD104ECFD2942830E596F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				73663280BECEDBD0C61E30D7 /* PromptCam */,
+				A1AA9E1B934EFFD8EF5C84F1 /* PromptCamTests */,
+				F4ED852A21A2103C1DD05A95 /* PromptCamUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		522FA85F8775078B52BB6766 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7903D6611F488BA869F2A267 /* CameraPreviewView.swift in Sources */,
+				EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */,
+				D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */,
+				A23F1AAB79BEC4162246E355 /* CameraViewModel.swift in Sources */,
+				A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */,
+				8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */,
+				135F477ECF06843A6EA1B4A1 /* TeleprompterConfig.swift in Sources */,
+				C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B9A846631032535B26871809 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FB3580842ABA90D4EF1F10A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		588AFCE987247FAA4211833B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 73663280BECEDBD0C61E30D7 /* PromptCam */;
+			targetProxy = 2F4C4B68643F5DC7D9C54128 /* PBXContainerItemProxy */;
+		};
+		8C14754B3224D8C1DA56D276 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 73663280BECEDBD0C61E30D7 /* PromptCam */;
+			targetProxy = 3C9CDEAADD76FFE7A85A2D3A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1FE7FEBEBEE341B8A664B32D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = LW5P4PVL96;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PromptCam needs photo library access to save recordings.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		887B3805572C019D6955045E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		959F341E4E2373FF2053F415 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.PromptCamTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PromptCam.app/PromptCam";
+			};
+			name = Release;
+		};
+		A95E86E3BA5F41D2EA2C8CE8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B029F8713C66AEC26C9F82AF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.PromptCamUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PromptCam;
+			};
+			name = Debug;
+		};
+		D3D5CF8924C071FD3A3D5D53 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = LW5P4PVL96;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "PromptCam needs photo library access to save recordings.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E9AED8F4C4B132F834AE4D5B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.PromptCamUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PromptCam;
+			};
+			name = Release;
+		};
+		F3E3347D22F5D4701378E598 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.PromptCamTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PromptCam.app/PromptCam";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		163E3AFE8AD2135CCECDEBEB /* Build configuration list for PBXProject "PromptCam" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A95E86E3BA5F41D2EA2C8CE8 /* Debug */,
+				887B3805572C019D6955045E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		52002EC79685C9B46AE107A1 /* Build configuration list for PBXNativeTarget "PromptCamTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F3E3347D22F5D4701378E598 /* Debug */,
+				959F341E4E2373FF2053F415 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		53018625C7D3479E0412F198 /* Build configuration list for PBXNativeTarget "PromptCamUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B029F8713C66AEC26C9F82AF /* Debug */,
+				E9AED8F4C4B132F834AE4D5B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		72ADE166D321D2AF0AECC55E /* Build configuration list for PBXNativeTarget "PromptCam" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1FE7FEBEBEE341B8A664B32D /* Debug */,
+				D3D5CF8924C071FD3A3D5D53 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D2CFBD01319F2F6CBF622CCF /* Project object */;
+}
