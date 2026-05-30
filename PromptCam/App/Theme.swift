@@ -1,4 +1,4 @@
-// May 29, 2026 - 12:57pm - GitHub Copilot
+// May 29, 2026 - 11:23pm - GitHub Copilot
 import SwiftUI
 
 enum FontFamily {
@@ -64,11 +64,16 @@ enum Theme {
     static let display64 = fontFamily.font(size: 64)
 
     // Colors
-    static let black = Color(hex: "#0B0B0B")
-    static let white = Color(hex: "#F7F7F7")
+    static let black = Color(hex: "#111111")
+    static let white = Color(hex: "#F5F5F5")
+
     static let blue = Color(hex: "#1E7AF0")
+    static let blueScrollPreview = Color(hex: "#3C74BD")
+
     static let green = Color(hex: "#30D158")
     static let red = Color(hex: "#FF3B30")
+    static let redRecordPreview = Color(hex: "#CC5650")
+
     static let yellow = Color(hex: "#FFD60A")
     static let gray = Color(hex: "#8E8E93")
 
@@ -77,7 +82,7 @@ enum Theme {
     static let separator = Color(hex: "#2C2C2E")
     static let overlayScrim = Color(hex: "#000000")
 
-    static let primaryText = Color(hex: "#F7F7F7")
+    static let primaryText = Color(hex: "#F5F5F5")
     static let secondaryText = Color(hex: "#A1A1A6")
     static let tertiaryText = Color(hex: "#6E6E73")
 
@@ -101,6 +106,8 @@ enum Theme {
     static let space20: CGFloat = 20
     static let space24: CGFloat = 24
     static let space32: CGFloat = 32
+
+    static let headerSpace36: CGFloat = 36
 }
 
 extension Color {

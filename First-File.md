@@ -1,4 +1,4 @@
-May 29, 2026 - 12:57pm - GitHub Copilot
+May 29, 2026 - 11:23pm - GitHub Copilot
 
 # this file is for me to work out prompts for you. It is not cannonical rather insight into my process.
 
@@ -80,3 +80,63 @@ Lets draft a phased development plan make to add unit tests for each part of the
 - Also rough in a settings button on the nav bar view we develop later.
 - Also We will use some icons as we develop the UI so any coding needs to account for this.
 - Any questions ask I have more notes but I think this is a good starting point.
+
+... From GPT
+
+CameraPreviewView.swift
+
+• Clean UIViewRepresentable with AVCaptureVideoPreviewLayer. You might want to add double-tap or long-press gestures later for additional actions (like AE/AF lock) to keep parity with the main view if you want gesture handling centralized.
+
+• Consider exposing videoGravity via an initializer parameter to keep it flexible:
+
+struct CameraPreviewView: UIViewRepresentable {
+let session: AVCaptureSession
+var videoGravity: AVLayerVideoGravity = .resizeAspect
+...
+func makeUIView(context: Context) -> PreviewView {
+let view = PreviewView()
+view.previewLayer.videoGravity = videoGravity
+...
+}
+}
+
+... 8. Teleprompter overlay behavior
+• The teleprompter uses TimelineView(.animation(...)) and offsets content. This is fine, but if you notice performance issues on long text, consider precomputing content size and using a repeating animation or withAnimation tied to a timer. Also, resetting startTime on play is good; you might also want to clamp scrolling so it doesn’t run beyond the content height if that’s desired.
+
+... 
+5. Permissions UX
+• You noted these should be moved to a one-time permission view. That would be a nice polish: present a single onboarding screen with checkmarks and links to Settings if denied. After acceptance, proceed to the camera view.
+• Also consider handling the case where the user has previously denied permissions by offering a deep link:
+if let url = URL(string: UIApplication.openSettingsURLString) {
+UIApplication.shared.open(url)
+}
+
+.... 
+3. Gesture interaction improvements
+• For the exposure drag, you’re clamping exposureBias and sending deltas to the view model. Consider debouncing or throttling the adjustExposure(by:) calls to avoid overwhelming the camera service during rapid drags. Alternatively, compute a scale factor relative to total vertical travel for smoother mapping.
+
+4. State cleanup and work item lifecycle
+   • You correctly cancel the previous hideFocusWorkItem before scheduling a new one. Consider also canceling it in onDisappear to avoid stale work firing if the view is dismissed quickly:
+   .onDisappear {
+   viewModel.onDisappear()
+   hideFocusWorkItem?.cancel()
+   hideFocusWorkItem = nil
+   }
+
+...
+
+CameraViewModel.swift
+
+• The async permission requests and session start sequence look good. You’re correctly marshalling back to main actor via @MainActor.
+• Error and recording state callbacks are captured weakly—good practice.
+
+• Consider surfacing camera formats, FPS options, and resolution in the view model to make formatPanel interactive in the future:
+• Properties like availableResolutions, availableFPS, selectedResolution, selectedFPS.
+• Methods to apply the selected format to the CameraService.
+
+...
+Potential next steps
+
+• Extract a reusable “FocusIndicator” view (currently in CameraView) into its own SwiftUI view with inputs: isVisible, evText, bias, range, and callbacks for drag and long-press. This will make CameraView smaller and the indicator easier to test.
+• Add a small settings sheet for toggling grid, resolution, FPS, and maybe a “stabilization” mode if supported by your CameraService.
+• Add #Preview SwiftUI previews for CameraView with stubbed view model so you can iterate on UI rapidly without a device.

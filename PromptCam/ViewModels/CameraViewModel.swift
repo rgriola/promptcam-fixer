@@ -1,3 +1,4 @@
+// May 29, 2026 - 11:23pm - GitHub Copilot
 import AVFoundation
 import SwiftUI
 
@@ -53,6 +54,22 @@ final class CameraViewModel: ObservableObject {
 
     func toggleScrolling() {
         isScrolling.toggle()
+    }
+
+    func focus(at devicePoint: CGPoint) {
+        cameraService.focus(at: devicePoint)
+    }
+
+    func lockFocusExposure(at devicePoint: CGPoint) {
+        cameraService.lockFocusExposure(at: devicePoint)
+    }
+
+    func unlockFocusExposure() {
+        cameraService.unlockFocusExposure()
+    }
+
+    func adjustExposure(by delta: Float) {
+        cameraService.adjustExposure(by: delta)
     }
 
     private func bindCallbacks() {
