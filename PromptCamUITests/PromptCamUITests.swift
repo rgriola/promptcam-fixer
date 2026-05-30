@@ -9,6 +9,8 @@ final class PromptCamUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.buttons["Record"].exists || app.buttons["Stop"].exists)
+        XCTAssertTrue(app.buttons["Start recording"].exists || app.buttons["Stop recording"].exists)
+        XCTAssertTrue(app.buttons["Format panel"].exists)
+        XCTAssertTrue(app.staticTexts["AUTO"].exists)
     }
 }

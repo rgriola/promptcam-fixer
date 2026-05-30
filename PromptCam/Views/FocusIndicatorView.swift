@@ -6,7 +6,6 @@ struct FocusIndicatorView: View {
     let exposureBias: Float
     let showFocusIndicator: Bool
     let onDragDelta: (CGFloat) -> Void
-    let onLongPressToggleLock: () -> Void
 
     private var biasClamped: Float { min(max(exposureBias, -exposureRange), exposureRange) }
 
@@ -50,11 +49,8 @@ struct FocusIndicatorView: View {
                     onDragDelta(value.translation.height)
                 }
         )
-        .onLongPressGesture(minimumDuration: 1.2) {
-            onLongPressToggleLock()
-        }
         .accessibilityLabel("Exposure and focus control")
-        .accessibilityHint("Drag up or down to adjust exposure. Long press to toggle focus and exposure lock.")
+        .accessibilityHint("Drag up or down to adjust exposure.")
     }
 }
 

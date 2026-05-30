@@ -103,16 +103,14 @@ view.previewLayer.videoGravity = videoGravity
 ... 8. Teleprompter overlay behavior
 • The teleprompter uses TimelineView(.animation(...)) and offsets content. This is fine, but if you notice performance issues on long text, consider precomputing content size and using a repeating animation or withAnimation tied to a timer. Also, resetting startTime on play is good; you might also want to clamp scrolling so it doesn’t run beyond the content height if that’s desired.
 
-... 
-5. Permissions UX
+... 5. Permissions UX
 • You noted these should be moved to a one-time permission view. That would be a nice polish: present a single onboarding screen with checkmarks and links to Settings if denied. After acceptance, proceed to the camera view.
 • Also consider handling the case where the user has previously denied permissions by offering a deep link:
 if let url = URL(string: UIApplication.openSettingsURLString) {
 UIApplication.shared.open(url)
 }
 
-.... 
-3. Gesture interaction improvements
+.... 3. Gesture interaction improvements
 • For the exposure drag, you’re clamping exposureBias and sending deltas to the view model. Consider debouncing or throttling the adjustExposure(by:) calls to avoid overwhelming the camera service during rapid drags. Alternatively, compute a scale factor relative to total vertical travel for smoother mapping.
 
 4. State cleanup and work item lifecycle
@@ -140,3 +138,22 @@ Potential next steps
 • Extract a reusable “FocusIndicator” view (currently in CameraView) into its own SwiftUI view with inputs: isVisible, evText, bias, range, and callbacks for drag and long-press. This will make CameraView smaller and the indicator easier to test.
 • Add a small settings sheet for toggling grid, resolution, FPS, and maybe a “stabilization” mode if supported by your CameraService.
 • Add #Preview SwiftUI previews for CameraView with stubbed view model so you can iterate on UI rapidly without a device.
+
+....
+
+The Short Term Goal is to Wire the Camera Buttons and functions, AE/AF lock is where I left off last night. And through suggestions changes to the subviews as CameraView is doing too much.
+
+The headers and footers styling was an issue so I experimented with the layouts. Not quite there yet.
+
+Answers:
+
+Yes the AE/AF lock should follow native camera behavior; long-pressing directly on the preview target area, instead of requiring long-press on the focus indicator overlay. Yes > For front camera devices without true focus lock, create fallback UX (AE lock only + explicit status text) to avoid false lock feedback.
+
+Yes > produce a no-code Phase 1 exit checklist specifically for AE/AF lock reliability and test criteria before moving further.
+
+Yes > create a subview decomposition map for CameraView (what to split now vs later) that stays strictly within your phased order.
+
+Note I am using print("Specfic Message") to easy test buttons in Xcode, please continue this pattern for buttons and panels.
+
+Next recommended: run a manual on-device gesture feel pass for long-press lock timing and exposure drag smoothness to close the remaining Phase 1 item.
+If you want, I can now do a tight header/footer spacing polish pass while still keeping Phase 2 nav content deferred.

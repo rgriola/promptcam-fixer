@@ -53,6 +53,78 @@ Tests (Pending)
 - UI: record button visible, format panel visible, selfie default.
 - Unit: camera selection state default.
 
+Phase 1 Exit Checklist — AE/AF Reliability (No-Code)
+
+- Tap on preview sets focus/exposure target and shows reticle.
+- Long-press directly on preview target area attempts lock (native behavior), not on reticle overlay.
+- Lock status appears only after capability check and successful camera configuration.
+- Front camera fallback: if full AF+AE lock is unavailable, support AE-only lock with explicit status text.
+- If lock is unsupported, remain in AUTO and show short unsupported status text (no false lock signal).
+- Unlock flow restores continuous auto modes and updates status text immediately.
+- EV value remains in sync between header and focus indicator during tap, lock, unlock, and drag.
+- Exposure drag remains smooth and stable without excessive camera configuration calls.
+- Focus-hide timers/debounce work items are canceled safely on view disappearance.
+- Keep print("Specfic Message") instrumentation for button/panel wiring during Xcode validation.
+
+Phase 1 Reliability Test Criteria
+
+- Manual: back camera tap focus at center and edges updates target and EV text.
+- Manual: long-press at multiple points reliably enters lock state and keeps lock while finger lifts.
+- Manual: front camera long-press shows AE LOCK fallback (or AUTO unsupported) correctly.
+- Manual: drag exposure while locked/unlocked maintains consistent EV and does not desync UI state.
+- Manual: background/foreground app during lock and exposure drag does not leave stale lock indicators.
+- Manual: rapid tap/long-press sequence for 30 seconds does not create stuck lock state.
+- UI test target: long-press on preview changes visible lock status text.
+- UI test target: EV text updates when exposure drag is performed.
+- Unit test target: lock mode decision matrix (AF+AE lock, AE-only lock, unsupported).
+- Unit test target: lock state transitions and unlock return to AUTO.
+
+Phase 1 Implementation Status Update (May 30, 2026)
+
+- Done: long-press lock moved to preview target area (native interaction path).
+- Done: lock status UX added (AUTO, AE/AF LOCK, AE LOCK, AF LOCK, LOCK UNAVAILABLE).
+- Done: fallback lock mode support wired via capability matrix in camera service.
+- Done: CameraView split into focused subviews inside the same file for easier maintenance.
+- Done: bottom bar content reserved/cleared for Phase 2 nav-shell work.
+- Done: test updates added for lock outcome matrix + camera UI smoke assertions.
+- Remaining: manual on-device gesture feel pass and final header/footer spacing polish.
+
+CameraView Subview Decomposition Map (Phased)
+
+Phase 1 — Split Now
+
+- CameraPreviewSurfaceView: preview rendering + tap/long-press gesture capture.
+- FocusExposureOverlayView: reticle + EV slider visualization + drag callbacks.
+- CameraTopControlsView: EV pill, format panel, and top status row.
+- RecordingClusterView: shutter + script scroll control cluster.
+- CameraLockStatusBadgeView: explicit AUTO / AE LOCK / AE-AF LOCK status text.
+
+Phase 2 — Split Next (Header/Nav Framing)
+
+- CameraHeaderFrameView: top safe-area framing/styling shell.
+- CameraFooterFrameView: reserved nav-area shell with spacing contracts.
+- CameraChromeLayoutView: shared layout metrics for header/footer balance.
+
+Phase 3 — Compose + Script Overlay Mode
+
+- ComposeScriptPanelView: edit/paste script UI.
+- CameraModeToggleView: compose/scroll mode switching.
+
+Phase 4 — Scroll Controls Panel
+
+- ScrollControlsDrawerView: speed, font size, color, opacity controls.
+- ScrollControlsTabView: bottom-right open/close handle.
+
+Phase 5 — Overlay Positioning + Safe Marker
+
+- OverlayPositionHandleView: right-lane drag handle and persistence hooks.
+- SafeMarkerOverlayView: visual marker and intensity control.
+
+Phase 6 — Profile / Settings
+
+- CameraSettingsEntryView: camera shell entry point.
+- ProfileSettingsView: app metadata + permission status mapping.
+
 ## Phase 2 — Nav Bar + Header Frame
 
 Milestone: Camera UI framed with top header and bottom nav bar space.

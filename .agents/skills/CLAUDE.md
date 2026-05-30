@@ -70,8 +70,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## 5. iOS development
 
 - Use best practices for file size and purpose.
-- When needed create utility functions for repeated code.
+- When appropriate create logical subviews, maintain separate concerns and create utility functions for repeated code like buttons.
 - Theme.swift is our style file.
+- For easy Xcode tests use print("Specfic Message") for iOS actions; buttons, toggles, panels open/close.
+- Always add unit testing
+- Xcode CLI is available.
+- Add Comments to give context to the purpose of each file
 
 ---
 

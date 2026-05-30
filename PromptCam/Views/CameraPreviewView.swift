@@ -4,19 +4,31 @@ import SwiftUI
 
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
+    var videoGravity: AVLayerVideoGravity = .resizeAspect
     var onTap: ((CGPoint, CGPoint) -> Void)?
+    var onLongPress: ((CGPoint, CGPoint) -> Void)?
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
-        view.previewLayer.videoGravity = .resizeAspect
+        view.previewLayer.videoGravity = videoGravity
         view.previewLayer.session = session
+
+        let longPressRecognizer = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleLongPress))
+        longPressRecognizer.minimumPressDuration = 0.55
+        longPressRecognizer.allowableMovement = 12
+
         let tapRecognizer = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap))
+        tapRecognizer.require(toFail: longPressRecognizer)
+
+        view.addGestureRecognizer(longPressRecognizer)
         view.addGestureRecognizer(tapRecognizer)
         return view
     }
 
     func updateUIView(_ uiView: PreviewView, context: Context) {
+        context.coordinator.parent = self
         uiView.previewLayer.session = session
+        uiView.previewLayer.videoGravity = videoGravity
     }
 
     func makeCoordinator() -> Coordinator {
@@ -24,7 +36,7 @@ struct CameraPreviewView: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject {
-        private let parent: CameraPreviewView
+        var parent: CameraPreviewView
 
         init(parent: CameraPreviewView) {
             self.parent = parent
@@ -35,6 +47,15 @@ struct CameraPreviewView: UIViewRepresentable {
             let viewPoint = sender.location(in: view)
             let devicePoint = view.previewLayer.captureDevicePointConverted(fromLayerPoint: viewPoint)
             parent.onTap?(devicePoint, viewPoint)
+        }
+
+        @objc func handleLongPress(_ sender: UILongPressGestureRecognizer) {
+            guard sender.state == .began else { return }
+            guard let view = sender.view as? PreviewView else { return }
+
+            let viewPoint = sender.location(in: view)
+            let devicePoint = view.previewLayer.captureDevicePointConverted(fromLayerPoint: viewPoint)
+            parent.onLongPress?(devicePoint, viewPoint)
         }
     }
 }

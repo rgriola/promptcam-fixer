@@ -17,3 +17,29 @@ final class TeleprompterConfigTests: XCTestCase {
         XCTAssertFalse(TeleprompterConfig.default.text.isEmpty)
     }
 }
+
+final class CameraServiceLockOutcomeTests: XCTestCase {
+    func testLockOutcomeReturnsFullLockWhenBothCapabilitiesExist() {
+        let outcome = CameraService.lockOutcome(supportsFocusLock: true, supportsExposureLock: true)
+
+        XCTAssertEqual(outcome, .afAeLocked)
+    }
+
+    func testLockOutcomeReturnsAeFallbackWhenOnlyExposureLockExists() {
+        let outcome = CameraService.lockOutcome(supportsFocusLock: false, supportsExposureLock: true)
+
+        XCTAssertEqual(outcome, .aeLocked)
+    }
+
+    func testLockOutcomeReturnsAfOnlyWhenOnlyFocusLockExists() {
+        let outcome = CameraService.lockOutcome(supportsFocusLock: true, supportsExposureLock: false)
+
+        XCTAssertEqual(outcome, .afLocked)
+    }
+
+    func testLockOutcomeReturnsUnsupportedWhenNeitherLockExists() {
+        let outcome = CameraService.lockOutcome(supportsFocusLock: false, supportsExposureLock: false)
+
+        XCTAssertEqual(outcome, .unsupported)
+    }
+}

@@ -2,6 +2,13 @@
 import AVFoundation
 import Photos
 
+enum FocusExposureLockOutcome: Equatable {
+    case afAeLocked
+    case aeLocked
+    case afLocked
+    case unsupported
+}
+
 final class CameraService: NSObject {
     let session = AVCaptureSession()
 
@@ -115,28 +122,66 @@ final class CameraService: NSObject {
     }
 
     func lockFocusExposure(at devicePoint: CGPoint) {
+        lockFocusExposure(at: devicePoint, completion: nil)
+    }
+
+    static func lockOutcome(supportsFocusLock: Bool, supportsExposureLock: Bool) -> FocusExposureLockOutcome {
+        if supportsFocusLock && supportsExposureLock {
+            return .afAeLocked
+        }
+
+        if supportsExposureLock {
+            return .aeLocked
+        }
+
+        if supportsFocusLock {
+            return .afLocked
+        }
+
+        return .unsupported
+    }
+
+    func lockFocusExposure(at devicePoint: CGPoint, completion: ((FocusExposureLockOutcome) -> Void)? = nil) {
         sessionQueue.async {
-            guard let device = self.videoDevice else { return }
+            guard let device = self.videoDevice else {
+                self.publishLockOutcome(.unsupported, completion: completion)
+                return
+            }
+
             do {
                 try device.lockForConfiguration()
 
+                defer {
+                    device.unlockForConfiguration()
+                }
+
+                let supportsFocusLock = device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.locked)
+                let supportsExposureLock = device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.locked)
+                let outcome = Self.lockOutcome(supportsFocusLock: supportsFocusLock, supportsExposureLock: supportsExposureLock)
+
+                guard outcome != .unsupported else {
+                    self.publishLockOutcome(.unsupported, completion: completion)
+                    return
+                }
+
                 if device.isFocusPointOfInterestSupported {
                     device.focusPointOfInterest = devicePoint
-                    if device.isFocusModeSupported(.locked) {
+                    if supportsFocusLock {
                         device.focusMode = .locked
                     }
                 }
 
                 if device.isExposurePointOfInterestSupported {
                     device.exposurePointOfInterest = devicePoint
-                    if device.isExposureModeSupported(.locked) {
+                    if supportsExposureLock {
                         device.exposureMode = .locked
                     }
                 }
 
-                device.unlockForConfiguration()
+                self.publishLockOutcome(outcome, completion: completion)
             } catch {
                 self.publishError("Failed to lock focus/exposure: \(error.localizedDescription)")
+                self.publishLockOutcome(.unsupported, completion: completion)
             }
         }
     }
@@ -209,6 +254,14 @@ final class CameraService: NSObject {
     private func publishError(_ message: String) {
         DispatchQueue.main.async {
             self.onError?(message)
+        }
+    }
+
+    private func publishLockOutcome(_ outcome: FocusExposureLockOutcome, completion: ((FocusExposureLockOutcome) -> Void)?) {
+        guard let completion else { return }
+
+        DispatchQueue.main.async {
+            completion(outcome)
         }
     }
 }
