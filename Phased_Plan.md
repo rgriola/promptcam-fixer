@@ -1,4 +1,4 @@
-May 29, 2026 - 12:57pm - GitHub Copilot
+May 29, 2026 - 11:20pm - GitHub Copilot
 
 # PromptCam Phased Development Plan
 
@@ -8,45 +8,47 @@ Date: May 29, 2026 12:36pm
 
 This plan aligns to the requested order of work and the Q1–Q3 guidance. Each phase includes milestones, acceptance criteria, and test coverage.
 
-## Phase 0 — Style System + Project Hygiene
+## Phase 0 — Style System + Project Hygiene (Completed)
 
 Milestone: PromptCam styling standards locked + Theme scaffolding ready.
 
-Checklist
+Checklist (Done)
 
 - Update STYLING_GUIDE.md for PromptCam: even-number font sizes only; project-specific token rules.
 - Add Theme.swift (fonts, colors, spacing, radii, icon sizes).
 - Replace inline fonts/colors/radii in existing views with Theme tokens.
 - Add placeholder icon tokens for upcoming nav bar controls.
 
-Acceptance criteria
+Acceptance criteria (Met)
 
 - No .font(.system(size:)) or raw colors in views.
 - All existing screens render identically (no UI regressions).
 
-Tests
+Tests (Pending)
 
 - Unit: validate TeleprompterConfig.default and clamping (existing).
 - UI: smoke test to confirm camera view renders with Theme tokens.
 
-## Phase 1 — Camera Main View (no nav bar yet)
+## Phase 1 — Camera Main View (In Progress)
 
 Milestone: Selfie camera mimics iOS native camera controls using the iPhone17 reference.
 
-Checklist
+Checklist (In Progress)
 
 - Default to selfie camera (portrait).
 - Add top-left record format panel (tappable to open settings stub).
 - Keep only the native-like controls; remove the "XXXX" areas for future nav bar.
 - Add touch AF/AE target indicator (visual only for now if needed).
+- Add touch focus/exposure behavior with long-press lock and drag exposure adjustment.
+- Ensure EV value is synced between header and focus indicator.
 
-Acceptance criteria
+Acceptance criteria (In Progress)
 
 - Selfie camera is default and persistent.
 - Format panel visible and tappable.
 - "XXXX" space stays empty/reserved.
 
-Tests
+Tests (Pending)
 
 - UI: record button visible, format panel visible, selfie default.
 - Unit: camera selection state default.
