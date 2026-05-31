@@ -1,4 +1,4 @@
-// May 29, 2026 - 11:23pm - GitHub Copilot
+// May 30, 2026 - 4:23pm - GitHub Copilot
 import AVFoundation
 import Photos
 
@@ -9,6 +9,12 @@ enum FocusExposureLockOutcome: Equatable {
     case unsupported
 }
 
+enum PreferredCameraSelection: Equatable {
+    case front
+    case back
+    case unavailable
+}
+
 final class CameraService: NSObject {
     let session = AVCaptureSession()
 
@@ -16,13 +22,31 @@ final class CameraService: NSObject {
     private let movieFileOutput = AVCaptureMovieFileOutput()
     private var currentOutputURL: URL?
     private var videoDevice: AVCaptureDevice?
+    private var isSessionConfigured = false
 
     var onRecordingStateChanged: ((Bool) -> Void)?
+    var onSessionRunningStateChanged: ((Bool) -> Void)?
     var onError: ((String) -> Void)?
+
+    static func preferredCameraSelection(frontAvailable: Bool, backAvailable: Bool) -> PreferredCameraSelection {
+        if frontAvailable {
+            return .front
+        }
+
+        if backAvailable {
+            return .back
+        }
+
+        return .unavailable
+    }
 
     func configureSession() {
         sessionQueue.async {
-            guard self.session.inputs.isEmpty else { return }
+            guard !self.isSessionConfigured else { return }
+            guard self.session.inputs.isEmpty else {
+                self.isSessionConfigured = true
+                return
+            }
 
             self.session.beginConfiguration()
             self.session.sessionPreset = .high
@@ -30,9 +54,26 @@ final class CameraService: NSObject {
             defer { self.session.commitConfiguration() }
 
             do {
-                guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) ??
-                        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-                else {
+                var didAddVideoInput = false
+                var didAddMovieOutput = false
+                let frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+                let backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+                let selection = Self.preferredCameraSelection(
+                    frontAvailable: frontCamera != nil,
+                    backAvailable: backCamera != nil
+                )
+                let videoDevice: AVCaptureDevice?
+
+                switch selection {
+                case .front:
+                    videoDevice = frontCamera
+                case .back:
+                    videoDevice = backCamera
+                case .unavailable:
+                    videoDevice = nil
+                }
+
+                guard let videoDevice else {
                     self.publishError("No camera device found.")
                     return
                 }
@@ -41,6 +82,7 @@ final class CameraService: NSObject {
                 let videoInput = try AVCaptureDeviceInput(device: videoDevice)
                 if self.session.canAddInput(videoInput) {
                     self.session.addInput(videoInput)
+                    didAddVideoInput = true
                 }
 
                 if let audioDevice = AVCaptureDevice.default(for: .audio) {
@@ -52,7 +94,15 @@ final class CameraService: NSObject {
 
                 if self.session.canAddOutput(self.movieFileOutput) {
                     self.session.addOutput(self.movieFileOutput)
+                    didAddMovieOutput = true
                 }
+
+                guard didAddVideoInput && didAddMovieOutput else {
+                    self.publishError("Failed to prepare camera inputs/outputs.")
+                    return
+                }
+
+                self.isSessionConfigured = true
             } catch {
                 self.publishError("Failed to configure camera: \(error.localizedDescription)")
             }
@@ -61,8 +111,17 @@ final class CameraService: NSObject {
 
     func startSession() {
         sessionQueue.async {
-            guard !self.session.isRunning else { return }
+            guard self.isSessionConfigured else {
+                self.publishSessionRunningState(false)
+                return
+            }
+
+            guard !self.session.isRunning else {
+                self.publishSessionRunningState(true)
+                return
+            }
             self.session.startRunning()
+            self.publishSessionRunningState(true)
         }
     }
 
@@ -70,12 +129,25 @@ final class CameraService: NSObject {
         sessionQueue.async {
             guard self.session.isRunning else { return }
             self.session.stopRunning()
+            self.publishSessionRunningState(false)
         }
     }
 
     func startRecording() {
         sessionQueue.async {
             guard !self.movieFileOutput.isRecording else { return }
+            guard self.isSessionConfigured else {
+                self.publishError("Camera is still preparing. Try again in a moment.")
+                return
+            }
+            guard self.session.isRunning else {
+                self.publishError("Camera is starting up. Try again in a moment.")
+                return
+            }
+            guard self.movieFileOutput.connection(with: .video) != nil else {
+                self.publishError("Camera not ready for recording yet. Try again.")
+                return
+            }
 
             let outputURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString)
@@ -83,7 +155,6 @@ final class CameraService: NSObject {
 
             self.currentOutputURL = outputURL
             self.movieFileOutput.startRecording(to: outputURL, recordingDelegate: self)
-            self.publishRecordingState(true)
         }
     }
 
@@ -257,6 +328,12 @@ final class CameraService: NSObject {
         }
     }
 
+    private func publishSessionRunningState(_ isRunning: Bool) {
+        DispatchQueue.main.async {
+            self.onSessionRunningStateChanged?(isRunning)
+        }
+    }
+
     private func publishLockOutcome(_ outcome: FocusExposureLockOutcome, completion: ((FocusExposureLockOutcome) -> Void)?) {
         guard let completion else { return }
 
@@ -267,6 +344,14 @@ final class CameraService: NSObject {
 }
 
 extension CameraService: AVCaptureFileOutputRecordingDelegate {
+    func fileOutput(
+        _ output: AVCaptureFileOutput,
+        didStartRecordingTo fileURL: URL,
+        from connections: [AVCaptureConnection]
+    ) {
+        publishRecordingState(true)
+    }
+
     func fileOutput(
         _ output: AVCaptureFileOutput,
         didFinishRecordingTo outputFileURL: URL,

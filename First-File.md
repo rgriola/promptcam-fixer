@@ -157,3 +157,18 @@ Note I am using print("Specfic Message") to easy test buttons in Xcode, please c
 
 Next recommended: run a manual on-device gesture feel pass for long-press lock timing and exposure drag smoothness to close the remaining Phase 1 item.
 If you want, I can now do a tight header/footer spacing polish pass while still keeping Phase 2 nav content deferred.
+
+... iOS layouts.
+anchored natural layout with no offsets:
+
+One overlay container.
+Header top-aligned with top padding constant.
+Recording cluster bottom-aligned with bottom padding constant.
+Footer row bottom-aligned with its own bottom padding constant.
+No spacer-driven coupling between those three.
+
+Avoid:
+
+Hardcoding padding, use safe-area-aware layout.
+Putting critical actions in transient overlays only.
+Letting keyboard cover form controls with no scroll or inset behavior.

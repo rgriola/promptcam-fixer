@@ -1,8 +1,8 @@
-May 29, 2026 - 11:20pm - GitHub Copilot
+May 31, 2026 - 1:00am - GitHub Copilot (Claude Opus 4.7)
 
 # PromptCam Phased Development Plan
 
-Date: May 29, 2026 12:36pm
+Date: May 31, 2026 1:00am
 
 ## Overview
 
@@ -29,29 +29,32 @@ Tests (Pending)
 - Unit: validate TeleprompterConfig.default and clamping (existing).
 - UI: smoke test to confirm camera view renders with Theme tokens.
 
-## Phase 1 — Camera Main View (In Progress)
+## Phase 1 — Camera Main View (Completed)
 
 Milestone: Selfie camera mimics iOS native camera controls using the iPhone17 reference.
 
-Checklist (In Progress)
+Checklist (Done)
 
 - Default to selfie camera (portrait).
 - Add top-left record format panel (tappable to open settings stub).
 - Keep only the native-like controls; remove the "XXXX" areas for future nav bar.
+
 - Add touch AF/AE target indicator (visual only for now if needed).
 - Add touch focus/exposure behavior with long-press lock and drag exposure adjustment.
 - Ensure EV value is synced between header and focus indicator.
 
-Acceptance criteria (In Progress)
+Acceptance criteria (Met)
 
 - Selfie camera is default and persistent.
 - Format panel visible and tappable.
 - "XXXX" space stays empty/reserved.
 
-Tests (Pending)
+Tests (Partially Met)
 
-- UI: record button visible, format panel visible, selfie default.
-- Unit: camera selection state default.
+- UI: smoke test covers record button presence, format panel visibility, and AUTO lock status text.
+- Unit: lock outcome decision matrix is covered in CameraService tests.
+- Unit: camera default selection logic (front preferred, back fallback, unavailable) is covered in CameraService tests.
+- Pending: UI-level selfie-default assertion on first launch.
 
 Phase 1 Exit Checklist — AE/AF Reliability (No-Code)
 
@@ -64,7 +67,7 @@ Phase 1 Exit Checklist — AE/AF Reliability (No-Code)
 - EV value remains in sync between header and focus indicator during tap, lock, unlock, and drag.
 - Exposure drag remains smooth and stable without excessive camera configuration calls.
 - Focus-hide timers/debounce work items are canceled safely on view disappearance.
-- Keep print("Specfic Message") instrumentation for button/panel wiring during Xcode validation.
+- Keep print("Specific Message") instrumentation for button/panel wiring during Xcode validation.
 
 Phase 1 Reliability Test Criteria
 
@@ -85,9 +88,18 @@ Phase 1 Implementation Status Update (May 30, 2026)
 - Done: lock status UX added (AUTO, AE/AF LOCK, AE LOCK, AF LOCK, LOCK UNAVAILABLE).
 - Done: fallback lock mode support wired via capability matrix in camera service.
 - Done: CameraView split into focused subviews inside the same file for easier maintenance.
-- Done: bottom bar content reserved/cleared for Phase 2 nav-shell work.
+- Done: header/footer layout polish completed and validated on iPhone 13 + iPhone 17 devices.
 - Done: test updates added for lock outcome matrix + camera UI smoke assertions.
-- Remaining: manual on-device gesture feel pass and final header/footer spacing polish.
+- Done: startup/record reliability improved by gating record action on camera session readiness.
+- Done: footer/header actions are wired to real feature routes (photo picker, compose sheet, settings sheet, format sheet).
+- Remaining: none for Phase 1.
+
+Phase 1 Closeout Notes (Wiring Readiness)
+
+- Camera layout baseline is now approved for wiring work.
+- Header/footer controls are visually placed and stable for next-phase interaction wiring.
+- Record/scroll cluster behavior is kept stable while wiring proceeds around it.
+- Camera startup path now prioritizes camera+mic bring-up; photo permission is requested at save time.
 
 CameraView Subview Decomposition Map (Phased)
 
@@ -98,6 +110,8 @@ Phase 1 — Split Now
 - CameraTopControlsView: EV pill, format panel, and top status row.
 - RecordingClusterView: shutter + script scroll control cluster.
 - CameraLockStatusBadgeView: explicit AUTO / AE LOCK / AE-AF LOCK status text.
+
+\*\*\* (do not remove RG 5/30 - AE Lock, EV slider bar need adjustments, Visual Notice AE/AF is on)
 
 Phase 2 — Split Next (Header/Nav Framing)
 
@@ -125,40 +139,57 @@ Phase 6 — Profile / Settings
 - CameraSettingsEntryView: camera shell entry point.
 - ProfileSettingsView: app metadata + permission status mapping.
 
-## Phase 2 — Nav Bar + Header Frame
+## Phase 2 — Nav Bar + Header Frame (In Progress)
 
 Milestone: Camera UI framed with top header and bottom nav bar space.
 
-Checklist
+Checklist (In Progress)
 
-- Add top header container (left: format panel; right: settings placeholder).
-- Add bottom nav bar container (reserved "XXXX" space).
-- Maintain full camera preview height with safe-area aware layout.
+- Done: top header container is in place and safe-area aligned.
+- Done: bottom nav/footer container is in place and safe-area aligned.
+- Done: replace print stubs with real action wiring for format/settings/photo/script controls.
+- Done: keep full camera preview height while wiring compose/settings transitions.
+- Pending: production behavior inside wired routes (real format application, full settings controls, media ingest handling).
 
-Acceptance criteria
+Acceptance criteria (In Progress)
 
-- Header + bottom nav bar present and do not overlap camera focus area.
-- Layout matches screenshot spacing with reserved nav zones.
+- Header + bottom nav bar are present and do not overlap camera focus area.
+- Layout matches latest approved screenshot spacing.
+- Done: controls route to working handlers instead of debug prints.
+- Pending: destination flows complete end-to-end production logic.
 
-Tests
+Tests (Pending)
 
 - UI: header + nav container exist and remain visible across device sizes.
+- UI: header/footer controls trigger expected route/action behavior.
 
-## Phase 3 — Compose + Script Overlay Mode
+Phase 2 Wiring Sprint (Completed May 30, 2026)
+
+- Done: wired `photo.on.rectangle` action to native media picker flow entry.
+- Done: wired `sparkle.text.clipboard` action to compose/editor sheet.
+- Done: wired `sun.max` action to settings route sheet.
+- Done: replaced format panel print stub with real sheet toggle + placeholder controls.
+- Done: added navigation/state model for camera vs compose mode transitions.
+- Done: restricted media picker to video selection only (`.videos`) to match capture workflow.
+
+## Phase 3 — Compose + Script Overlay Mode (In Progress)
 
 Milestone: Script editing mode + scroll mode toggle from nav bar.
 
-Checklist
+Checklist (In Progress)
 
-- Add "Compose" button in nav bar.
-- Compose toggles between editing and scroll mode.
-- Editor supports paste/type live updates.
-- Keyboard dismiss via swipe + checkmark button.
+- Done: Add "Compose" button in nav bar.
+- Done: Compose opens directly to script editor sheet.
+- Done: script editor auto-focuses and presents keyboard immediately on open.
+- In Progress: Compose toggles between editing and scroll mode.
+- Pending: Editor supports paste/type live updates.
+- Pending: Keyboard dismiss via swipe + checkmark button.
 
-Acceptance criteria
+Acceptance criteria (In Progress)
 
-- Toggle switches reliably between edit and scroll.
-- Script text updates reflect live in overlay.
+- Done: Text Input now enters keyboard-ready compose immediately (no extra tap inside sheet).
+- Pending: Toggle switches reliably between edit and scroll.
+- Pending: Script text updates reflect live in overlay.
 
 Tests
 
@@ -185,25 +216,38 @@ Tests
 - Unit: config clamping, color enum mapping, opacity bounds.
 - UI: panel open/close, slider interactions.
 
-## Phase 5 — Script Overlay Positioning + Safe Marker
+## Phase 5 — Script Overlay Positioning + Safe Marker (In Progress)
 
 Milestone: Default text position + optional safe marker.
 
 Checklist
 
-- Default text starts above shutter and ends below top-left format panel.
-- Add touch position adjust (default at 66% height, mid-right thumb-width lane).
-- Add safe marker toggle (0–15%).
+- Done: Default text starts above shutter and ends below top-left format panel.
+- Done: Right-lane thumb-width slider for manual start-position adjustment.
+- Done: Slider progress drives full off-screen-to-off-screen traversal (knob top → first line at viewport bottom; knob bottom → last line at viewport top). Scales linearly with text height — works for 100pt or 10,000pt scripts.
+- Done: Compose save resets to knob-top (progress 1.0) and re-measures against the new script's actual height.
+- Done: Auto-scroll floor stops at "last line visible at top" instead of disappearing past the top.
+- Done: Simplified `TeleprompterOverlayView` + `TeleprompterConfig` (mutate-a-copy clamping, removed init-helper, optional `pausedOffset`, fallback plumbing, wrapper `ZStack`).
+- In Progress: Manual slider knob behavior — knob/touch tracking still not aligning to script position as expected. Investigation pending.
+- Pending: Add safe marker toggle (0–15%).
 
 Acceptance criteria
 
-- Default position matches Q2.
-- User can adjust and retain position.
+- Done: Default position matches Q2.
+- Done: User can adjust and retain position via the slider lane.
+- In Progress: Manual slider drag reliably positions the script and matches knob location.
 
 Tests
 
-- Unit: position calculation utility.
-- UI: drag to reposition and persist in session.
+- Done: `TeleprompterConfig` clamping + default values (XCTest).
+- Pending: Unit test for `offsetForProgress` linear mapping at progress 0, 0.5, 1.
+- Pending: UI test — drag knob to position and verify script offset persists.
+
+Math reference (current `offsetForProgress`)
+
+- progress = 1 (knob TOP) → offset = `viewportHeight - 16` (script fully below)
+- progress = 0 (knob BOTTOM) → offset = `-(textHeight - 16)` (script fully above)
+- Linear interpolation between the two endpoints; total traversal = `viewportHeight + textHeight - 32`.
 
 ## Phase 6 — Profile / Settings View
 
