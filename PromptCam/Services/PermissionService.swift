@@ -2,21 +2,35 @@ import AVFoundation
 import Photos
 
 struct PermissionService {
-    func requestCameraAndMicrophoneAccess() async -> Bool {
-        let cameraAuthorized = await requestVideoAccess()
-        let microphoneAuthorized = await requestAudioAccess()
-        return cameraAuthorized && microphoneAuthorized
+    // MARK: - Status Getters (no prompt triggered)
+
+    var cameraStatus: AVAuthorizationStatus {
+        AVCaptureDevice.authorizationStatus(for: .video)
     }
 
-    func requestPhotoLibraryAddAccess() async -> Bool {
-        await withCheckedContinuation { continuation in
-            PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-                continuation.resume(returning: status == .authorized || status == .limited)
-            }
-        }
+    var microphoneStatus: AVAuthorizationStatus {
+        AVCaptureDevice.authorizationStatus(for: .audio)
     }
 
-    private func requestVideoAccess() async -> Bool {
+    var photoLibraryStatus: PHAuthorizationStatus {
+        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    }
+
+    /// Returns `true` only when camera, mic, and photo library are all authorized.
+    var allPermissionsGranted: Bool {
+        cameraStatus == .authorized
+            && microphoneStatus == .authorized
+            && (photoLibraryStatus == .authorized || photoLibraryStatus == .limited)
+    }
+
+    /// Returns `true` when camera and microphone are both authorized.
+    var cameraAndMicGranted: Bool {
+        cameraStatus == .authorized && microphoneStatus == .authorized
+    }
+
+    // MARK: - Individual Request Methods
+
+    func requestCameraAccess() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             return true
@@ -27,7 +41,7 @@ struct PermissionService {
         }
     }
 
-    private func requestAudioAccess() async -> Bool {
+    func requestMicrophoneAccess() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
             return true
@@ -36,5 +50,25 @@ struct PermissionService {
         default:
             return false
         }
+    }
+
+    func requestPhotoLibraryAccess() async -> Bool {
+        await withCheckedContinuation { continuation in
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                continuation.resume(returning: status == .authorized || status == .limited)
+            }
+        }
+    }
+
+    // MARK: - Aggregate Request (legacy convenience)
+
+    func requestCameraAndMicrophoneAccess() async -> Bool {
+        let cameraAuthorized = await requestCameraAccess()
+        let microphoneAuthorized = await requestMicrophoneAccess()
+        return cameraAuthorized && microphoneAuthorized
+    }
+
+    func requestPhotoLibraryAddAccess() async -> Bool {
+        await requestPhotoLibraryAccess()
     }
 }

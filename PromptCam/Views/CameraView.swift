@@ -1,4 +1,5 @@
 // May 31, 2026 - 10:30pm - GitHub Copilot (Claude Opus 4.7)
+import AVFoundation
 import PhotosUI
 import SwiftUI
 
@@ -191,12 +192,7 @@ struct CameraView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        // Permission and runtime error feedback.
-        .alert("Permissions Required", isPresented: $viewModel.showPermissionsAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Enable camera, microphone, and photo library permissions in Settings.")
-        }
+        // Runtime error feedback.
         .alert("Error", isPresented: Binding(get: {
             viewModel.errorMessage != nil
         }, set: { _ in
@@ -234,19 +230,19 @@ struct CameraView: View {
             lastExposureDrag = .zero
         }
         // Picker result handler (placeholder until ingest pipeline is wired).
-        .onChange(of: selectedMediaItem) { newItem in
+        .onChange(of: selectedMediaItem) { _, newItem in
             guard newItem != nil else { return }
             print("Media selected from library picker")
             selectedMediaItem = nil
         }
         // Modal lifecycle relays used by the view model presentation queue.
-        .onChange(of: viewModel.activeSheet) { newValue in
+        .onChange(of: viewModel.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
-        .onChange(of: viewModel.isPhotoPickerPresented) { newValue in
+        .onChange(of: viewModel.isPhotoPickerPresented) { _, newValue in
             viewModel.handlePhotoPickerStateChanged(newValue)
         }
-        .onChange(of: viewModel.lockStatus) { newStatus in
+        .onChange(of: viewModel.lockStatus) { _, newStatus in
             switch newStatus {
             case .aeAfLocked:
                 print("AE/AF lock engaged")
@@ -819,7 +815,13 @@ private struct CameraSettingsSheet: View {
     /// Callback to dismiss settings sheet.
     let onClose: () -> Void
 
-    /// Settings placeholder showing app and permission status.
+    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Settings view showing app info and live permission statuses.
     var body: some View {
         NavigationStack {
             List {
@@ -828,14 +830,30 @@ private struct CameraSettingsSheet: View {
                 }
 
                 Section("Permissions") {
-                    SettingStatusRow(title: "Camera + Microphone", value: "Requested on launch")
-                    SettingStatusRow(title: "Photo Library Add", value: "Requested when saving recording")
-                }
-
-                Section("Status") {
-                    Text("Settings route wiring is active. Detailed controls can be added in Phase 6.")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(Theme.secondaryText)
+                    PermissionStatusRow(
+                        icon: "camera.fill",
+                        iconColor: .blue,
+                        title: "Camera",
+                        status: avLabel(cameraStatus),
+                        statusColor: avColor(cameraStatus),
+                        isDenied: cameraStatus == .denied || cameraStatus == .restricted
+                    )
+                    PermissionStatusRow(
+                        icon: "mic.fill",
+                        iconColor: .orange,
+                        title: "Microphone",
+                        status: avLabel(micStatus),
+                        statusColor: avColor(micStatus),
+                        isDenied: micStatus == .denied || micStatus == .restricted
+                    )
+                    PermissionStatusRow(
+                        icon: "photo.on.rectangle",
+                        iconColor: .green,
+                        title: "Photo Library",
+                        status: phLabel(photoStatus),
+                        statusColor: phColor(photoStatus),
+                        isDenied: photoStatus == .denied || photoStatus == .restricted
+                    )
                 }
             }
             .navigationTitle("Settings")
@@ -843,6 +861,10 @@ private struct CameraSettingsSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done", action: onClose)
                 }
+            }
+            .onAppear { refreshStatuses() }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active { refreshStatuses() }
             }
         }
     }
@@ -852,6 +874,95 @@ private struct CameraSettingsSheet: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    private func refreshStatuses() {
+        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    }
+
+    private func avLabel(_ status: AVAuthorizationStatus) -> String {
+        switch status {
+        case .authorized: return "Granted"
+        case .notDetermined: return "Not Set"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private func avColor(_ status: AVAuthorizationStatus) -> Color {
+        switch status {
+        case .authorized: return .green
+        case .notDetermined: return .orange
+        case .denied, .restricted: return .red
+        @unknown default: return .gray
+        }
+    }
+
+    private func phLabel(_ status: PHAuthorizationStatus) -> String {
+        switch status {
+        case .authorized, .limited: return "Granted"
+        case .notDetermined: return "Not Set"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private func phColor(_ status: PHAuthorizationStatus) -> Color {
+        switch status {
+        case .authorized, .limited: return .green
+        case .notDetermined: return .orange
+        case .denied, .restricted: return .red
+        @unknown default: return .gray
+        }
+    }
+}
+
+// MARK: - Permission Status Row
+private struct PermissionStatusRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let status: String
+    let statusColor: Color
+    let isDenied: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(Theme.icon16)
+                .foregroundStyle(iconColor)
+                .frame(width: 24)
+
+            Text(title)
+                .font(Theme.font16Medium)
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                Text(status)
+                    .font(Theme.font12Medium)
+                    .foregroundStyle(statusColor)
+            }
+
+            if isDenied {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Settings")
+                        .font(Theme.font12Medium)
+                        .foregroundStyle(.blue)
+                }
+            }
+        }
     }
 }
 

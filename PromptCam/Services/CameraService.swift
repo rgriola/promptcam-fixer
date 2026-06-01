@@ -27,6 +27,7 @@ final class CameraService: NSObject {
     var onRecordingStateChanged: ((Bool) -> Void)?
     var onSessionRunningStateChanged: ((Bool) -> Void)?
     var onFormatApplied: ((RecordingFormat) -> Void)?
+    var onSupportedFormatsQueried: (([VideoResolution], [VideoFrameRate]) -> Void)?
     var onError: ((String) -> Void)?
 
     static func preferredCameraSelection(frontAvailable: Bool, backAvailable: Bool) -> PreferredCameraSelection {
@@ -114,6 +115,12 @@ final class CameraService: NSObject {
                 self.applyFrameRate(format.frameRate, to: videoDevice)
 
                 self.isSessionConfigured = true
+
+                // Query supported formats NOW — videoDevice and preset are set.
+                let supported = self.supportedFormats()
+                DispatchQueue.main.async {
+                    self.onSupportedFormatsQueried?(supported.resolutions, supported.frameRates)
+                }
             } catch {
                 self.publishError("Failed to configure camera: \(error.localizedDescription)")
             }
@@ -412,23 +419,23 @@ final class CameraService: NSObject {
     }
 
     private func saveRecordingToPhotoLibrary(_ outputFileURL: URL) {
-        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-            guard status == .authorized || status == .limited else {
-                self.publishError("Photo library permission is required to save recordings.")
-                return
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            self.publishError("Photo library permission is required to save recordings. Please grant access in Settings.")
+            try? FileManager.default.removeItem(at: outputFileURL)
+            return
+        }
+
+        PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputFileURL)
+        } completionHandler: { success, error in
+            if let error {
+                self.publishError("Failed to save video: \(error.localizedDescription)")
+            } else if !success {
+                self.publishError("Video save operation did not complete.")
             }
 
-            PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputFileURL)
-            } completionHandler: { success, error in
-                if let error {
-                    self.publishError("Failed to save video: \(error.localizedDescription)")
-                } else if !success {
-                    self.publishError("Video save operation did not complete.")
-                }
-
-                try? FileManager.default.removeItem(at: outputFileURL)
-            }
+            try? FileManager.default.removeItem(at: outputFileURL)
         }
     }
 

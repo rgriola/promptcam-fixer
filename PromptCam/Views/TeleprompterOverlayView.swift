@@ -96,12 +96,12 @@ struct TeleprompterOverlayView: View {
                 tp("task(id:) fired textLen=\(text.count) width=\(Int(proxy.size.width))")
                 remeasureText(width: proxy.size.width)
             }
-            .onChange(of: proxy.size.height) { newValue in
+            .onChange(of: proxy.size.height) { _, newValue in
                 tp("viewport size change \(Int(viewportHeight)) -> \(Int(newValue))")
                 viewportHeight = newValue
                 if !isScrolling { resetScrollPosition() }
             }
-            .onChange(of: resetToken) { _ in
+            .onChange(of: resetToken) { _, _ in
                 let geo = TeleprompterGeometry(
                     viewportHeight: viewportHeight,
                     textHeight: max(measuredTextHeight, 1),
@@ -112,7 +112,7 @@ struct TeleprompterOverlayView: View {
                 manualOffset = 0
                 resetScrollPosition()
             }
-            .onChange(of: isScrolling) { newValue in
+            .onChange(of: isScrolling) { _, newValue in
                 tp("isScrolling -> \(newValue)")
                 handleScrollStateChanged(newValue)
             }

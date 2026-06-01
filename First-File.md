@@ -172,3 +172,24 @@ Avoid:
 Hardcoding padding, use safe-area-aware layout.
 Putting critical actions in transient overlays only.
 Letting keyboard cover form controls with no scroll or inset behavior.
+
+... May 31
+**_ Task _**
+Please review this project.
+We are addressing the script starting/endpoint and scrolling issue we worked on last night.
+
+**_ context _**
+I want to take a different approach from the Manual Scroll Bar Setting which tried - and fails - to set a script starting point. Turn off the manual scroll bar for now and hide it's UI.
+
+**_ New approach _** Feature allows the user to directly touch screen swipe up/down to shift the script.
+
+The Script traveling start/end points are the first line of script just below Telepriompter Viewport (screen bottom) and Last Line of Script Just Above the Telepriompter Viewport (screen top)
+
+I need one button placed mid-screen right where the manual scroll priviously was positioned; The button resets the script to Telepriompter Viewport Center-midpoint.
+
+Read this back to me, create a plan to impliment this update and place it into a markdown file called teleprompter-fix.md
+
+
+.. 
+I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script.  I need options to get this so any size script will start center screeen and completely roll off screen.  My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review. 
+

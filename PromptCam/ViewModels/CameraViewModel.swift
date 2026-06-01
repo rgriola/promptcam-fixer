@@ -52,7 +52,7 @@ final class CameraViewModel: ObservableObject {
     @Published var config = TeleprompterConfig.default
     @Published var isRecording = false
     @Published var isScrolling = false
-    @Published var showPermissionsAlert = false
+
     @Published var errorMessage: String?
     @Published var lockStatus: CameraLockStatus = .auto
     @Published var isCameraReady = false
@@ -90,33 +90,11 @@ final class CameraViewModel: ObservableObject {
 
     func onAppear() {
         isCameraReady = false
-
-        Task {
-            let cameraAndMicAuthorized = await permissionService.requestCameraAndMicrophoneAccess()
-            guard cameraAndMicAuthorized else {
-                showPermissionsAlert = true
-                return
-            }
-
-            cameraService.configureSession(format: recordingFormat)
-            cameraService.startSession()
-
-            // Query hardware capabilities after session is configured.
-            let supported = cameraService.supportedFormats()
-            supportedResolutions = supported.resolutions
-            supportedFrameRates = supported.frameRates
-
-            // If saved format isn't supported, fall back to default.
-            if !supportedResolutions.contains(recordingFormat.resolution) ||
-               !supportedFrameRates.contains(recordingFormat.frameRate) {
-                let fallback = RecordingFormat(
-                    resolution: supportedResolutions.first ?? .hd1080p,
-                    frameRate: supportedFrameRates.contains(.fps30) ? .fps30 : (supportedFrameRates.first ?? .fps30)
-                )
-                recordingFormat = fallback
-                fallback.save()
-            }
-        }
+        // Permissions are already granted by the onboarding page.
+        cameraService.configureSession(format: recordingFormat)
+        cameraService.startSession()
+        // Supported formats are received via onSupportedFormatsQueried callback
+        // after configureSession completes on the session queue.
     }
 
     func onDisappear() {
@@ -278,6 +256,25 @@ final class CameraViewModel: ObservableObject {
             self.recordingFormat = applied
             applied.save()
             print("[TP] VM format applied res=\(applied.resolution.rawValue) fps=\(applied.frameRate.rawValue)")
+        }
+
+        cameraService.onSupportedFormatsQueried = { [weak self] resolutions, frameRates in
+            guard let self else { return }
+            self.supportedResolutions = resolutions
+            self.supportedFrameRates = frameRates
+            print("[TP] VM supported formats res=\(resolutions.map(\.rawValue)) fps=\(frameRates.map(\.rawValue))")
+
+            // If saved format isn't supported by this hardware, fall back.
+            if !resolutions.contains(self.recordingFormat.resolution) ||
+               !frameRates.contains(self.recordingFormat.frameRate) {
+                let fallback = RecordingFormat(
+                    resolution: resolutions.first ?? .hd1080p,
+                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30)
+                )
+                self.recordingFormat = fallback
+                fallback.save()
+                print("[TP] VM format fell back to res=\(fallback.resolution.rawValue) fps=\(fallback.frameRate.rawValue)")
+            }
         }
 
         cameraService.onError = { [weak self] message in

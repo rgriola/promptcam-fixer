@@ -1,4 +1,5 @@
 May 31, 2026 - 1:00am - GitHub Copilot (Claude Opus 4.7)
+Updated: June 1, 2026 - 12:25am - Antigravity (Claude Opus 4.6)
 
 # PromptCam Phased Development Plan
 
@@ -259,24 +260,85 @@ Architecture reference (current Pipeline A)
 - `scrollStopOffset` = `−(textH + padding)` (last line exits top)
 - `dragCeiling` = `viewportH − lineH` (first line can't go below viewport)
 
-## Phase 6 — Profile / Settings View
+## Phase 6 — Profile / Settings View (Completed)
 
-Milestone: Settings view accessible from nav bar.
+Milestone: Settings view accessible from nav bar with live permission statuses.
 
-Checklist
+Checklist (Done)
 
-- Show app name, version.
-- Permission status display for Camera/Mic/Photo write.
-- Settings button placeholder now links to view.
+- Done: Show app name, version.
+- Done: Live permission status display for Camera, Microphone, and Photo Library with colored indicators (green/orange/red).
+- Done: Settings button in footer links to settings sheet.
+- Done: Denied permissions show tappable "Settings" link to open iOS Settings.
+- Done: Statuses auto-refresh on sheet appear and when returning from iOS Settings (`scenePhase`).
 
-Acceptance criteria
+Acceptance criteria (Met)
 
-- Settings view accessible and displays real status values.
+- Settings view accessible from nav bar and displays real-time authorization status values.
+- Each permission row shows SF Symbol icon, title, colored status dot, and status label.
+- Denied permissions provide direct link to iOS Settings.
 
 Tests
 
-- Unit: permission status mapper.
-- UI: settings view loads from nav bar.
+- Done: Manual — settings sheet opens, shows correct statuses, Settings link works.
+- Pending: Unit — permission status mapper.
+- Pending: UI — settings view loads from nav bar.
+
+Phase 6 Implementation Notes (June 1, 2026)
+
+- `CameraSettingsSheet` replaced static placeholder rows with `PermissionStatusRow` components.
+- Added `AVFoundation` import to `CameraView.swift` for `AVCaptureDevice.authorizationStatus`.
+- Status helpers (`avLabel`, `avColor`, `phLabel`, `phColor`) are private to the settings sheet.
+
+## Phase 6A — Permissions Onboarding + App Assets (Completed)
+
+Milestone: Unified permissions page gates camera entry; app icon and splash screen configured.
+
+Checklist (Done)
+
+- Done: Created `PermissionsOnboardingView.swift` — light-themed full-screen onboarding with three permission rows (Camera, Microphone, Photo Library).
+- Done: "Grant Permissions" button serially requests all not-determined permissions.
+- Done: "Continue" button enabled once Camera + Mic are granted (photo library recommended but not required).
+- Done: Denied rows show tappable "Settings" link to open iOS Settings.
+- Done: `scenePhase` listener refreshes statuses when returning from Settings.
+- Done: `PromptCamApp.swift` gates root view with `@AppStorage("hasCompletedOnboarding")` — show-once behavior.
+- Done: `PermissionService.swift` expanded with individual status getters, individual request methods, `allPermissionsGranted`, `cameraAndMicGranted`.
+- Done: Photo library scope changed from `.addOnly` to `.readWrite` for video browsing/review.
+- Done: `CameraViewModel.onAppear()` no longer requests permissions (assumes onboarding handled it).
+- Done: `CameraView.swift` removed "Permissions Required" alert.
+- Done: `CameraService.saveRecordingToPhotoLibrary()` guards on current status instead of re-requesting.
+- Done: `NSPhotoLibraryAddUsageDescription` → `NSPhotoLibraryUsageDescription` in project.yml + pbxproj.
+- Done: Created `Assets.xcassets` with `AppIcon` (1024×1024), `SplashIcon` (1x/2x/3x), and `AccentColor`.
+- Done: Registered `Assets.xcassets` in pbxproj with `PBXResourcesBuildPhase`.
+- Done: Created `PromptCam/Info.plist` with `UILaunchScreen` → `UIImageName: SplashIcon` for splash screen.
+- Done: App icon visible on Home Screen, splash screen shows PromptCam icon on white background.
+
+Acceptance criteria (Met)
+
+- Fresh install shows onboarding page with all three permissions as "Not Set".
+- Granting Camera + Mic enables Continue; tapping Continue transitions to camera.
+- Subsequent launches skip onboarding and go directly to camera.
+- App icon appears on Home Screen.
+- Splash screen shows PromptCam icon centered on white background during launch.
+- Recordings save without additional permission prompts.
+
+Tests
+
+- Done: Manual — clean install, permission grant flow, deny + Settings link, subsequent launch bypass.
+- Done: Build verification — `xcodebuild clean build` passes with zero errors.
+- Pending: Unit — `PermissionService.allPermissionsGranted` for all status combinations.
+
+Files Changed (Phase 6A)
+
+- New: `PromptCam/Views/PermissionsOnboardingView.swift`
+- New: `PromptCam/Assets.xcassets/` (AppIcon, SplashIcon, AccentColor)
+- New: `PromptCam/Info.plist`
+- Modified: `PromptCam/Services/PermissionService.swift`
+- Modified: `PromptCam/App/PromptCamApp.swift`
+- Modified: `PromptCam/ViewModels/CameraViewModel.swift`
+- Modified: `PromptCam/Views/CameraView.swift`
+- Modified: `PromptCam/Services/CameraService.swift`
+- Modified: `project.yml`, `PromptCam.xcodeproj/project.pbxproj`
 
 ## Phase 7 — Polish + Regression
 
