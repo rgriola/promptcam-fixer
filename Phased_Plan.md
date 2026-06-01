@@ -223,31 +223,41 @@ Milestone: Default text position + optional safe marker.
 Checklist
 
 - Done: Default text starts above shutter and ends below top-left format panel.
-- Done: Right-lane thumb-width slider for manual start-position adjustment.
-- Done: Slider progress drives full off-screen-to-off-screen traversal (knob top → first line at viewport bottom; knob bottom → last line at viewport top). Scales linearly with text height — works for 100pt or 10,000pt scripts.
-- Done: Compose save resets to knob-top (progress 1.0) and re-measures against the new script's actual height.
+- Done (Superseded): Right-lane thumb-width slider removed — replaced by direct viewport drag + center-reset button.
+- Done: Compose save resets position to centered and re-measures against the new script's actual height.
 - Done: Auto-scroll floor stops at "last line visible at top" instead of disappearing past the top.
-- Done: Simplified `TeleprompterOverlayView` + `TeleprompterConfig` (mutate-a-copy clamping, removed init-helper, optional `pausedOffset`, fallback plumbing, wrapper `ZStack`).
-- In Progress: Manual slider knob behavior — knob/touch tracking still not aligning to script position as expected. Investigation pending.
+- Done: Manual drag ceiling (`viewportH − lineH`) prevents dragging first line below viewport.
+- Done: Simplified `TeleprompterGeometry` — removed `manualEndOffset`, `offset(forProgress:)`, `progress(forOffset:)`, `centerProgress`, `manualTravel`. Added `scrollStopOffset` + `dragCeiling`.
+- Done: Removed `startOffsetProgress` from `TeleprompterConfig`.
+- Done: Replaced `updateScriptStartProgress` / `resetScriptStart` in ViewModel with `teleprompterResetToken` + `resetTeleprompterPosition()`.
+- Done: Completely refactored `TeleprompterOverlayView` — unified Pipeline A offset model (`baseOffset + manualOffset + drag + autoOffset`, clamped to `[scrollStopOffset, dragCeiling]`). Removed all dead code (`pausedOffset`, `scrollStartOffset`, `currentOffset(at:)`, `offsetForProgress`, `autoScrollFloor`, hidden measuring Text, preference key path).
+- Done: Fixed hidden measuring Text layout bug — `fixedSize(vertical: true)` inflated the ZStack to full text height (6978pt for large scripts), causing `.frame(height: 500)` to center the oversized content ~3000pt off-screen. Removed hidden text; UIKit `remeasureText()` handles measurement.
+- Done: Fixed `ScrollingTeleprompterText` rendering — replaced `fixedSize + offset + frame(maxHeight: .infinity)` chain with `GeometryReader + offset + frame(alignment: .topLeading) + clipped()` for reliable text positioning.
+- Done: Removed `TeleprompterSwipeCaptureLayer`, `TeleprompterStartOffsetLane`, `kManualLaneEnabled` gate, and all related CameraView wiring.
+- Done: Added diagnostic logging (`MEASURE`, `RESET`, `DRAG`, `isScrolling`) for runtime debugging.
 - Pending: Add safe marker toggle (0–15%).
 
 Acceptance criteria
 
-- Done: Default position matches Q2.
-- Done: User can adjust and retain position via the slider lane.
-- In Progress: Manual slider drag reliably positions the script and matches knob location.
+- Done: Default position centers first line in viewport for both short and long scripts.
+- Done: User can manually drag script up/down within bounds (`scrollStopOffset` to `dragCeiling`).
+- Done: Center-reset button returns first line to viewport center.
+- Done: Auto-scroll works correctly and bakes position on pause.
+- Verified: Build passes with zero errors. Manual testing confirmed on device.
 
 Tests
 
 - Done: `TeleprompterConfig` clamping + default values (XCTest).
-- Pending: Unit test for `offsetForProgress` linear mapping at progress 0, 0.5, 1.
-- Pending: UI test — drag knob to position and verify script offset persists.
+- Superseded: `offsetForProgress` tests no longer applicable (progress pipeline removed).
+- Pending: Unit test for `TeleprompterGeometry.scrollStopOffset` and `dragCeiling` at various text/viewport sizes.
+- Pending: UI test — drag to scroll, reset button returns to center.
 
-Math reference (current `offsetForProgress`)
+Architecture reference (current Pipeline A)
 
-- progress = 1 (knob TOP) → offset = `viewportHeight - 16` (script fully below)
-- progress = 0 (knob BOTTOM) → offset = `-(textHeight - 16)` (script fully above)
-- Linear interpolation between the two endpoints; total traversal = `viewportHeight + textHeight - 32`.
+- `totalY = clamp(startOffset + manualOffset + dragTranslationY + autoOffset, scrollStopOffset, dragCeiling)`
+- `startOffset` = `viewportH/2 − padding − lineH/2` (first line centered)
+- `scrollStopOffset` = `−(textH + padding)` (last line exits top)
+- `dragCeiling` = `viewportH − lineH` (first line can't go below viewport)
 
 ## Phase 6 — Profile / Settings View
 

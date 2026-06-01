@@ -1,4 +1,4 @@
-// May 30, 2026 - 9:29pm - GitHub Copilot
+// May 31, 2026 - 2:30am - GitHub Copilot (Claude Opus 4.7)
 import AVFoundation
 import SwiftUI
 
@@ -59,6 +59,8 @@ final class CameraViewModel: ObservableObject {
     @Published var isPhotoPickerPresented = false
     @Published var activeSheet: CameraSheetRoute?
     @Published var cameraMode: CameraMode = .camera
+    /// Bumped to signal the overlay to reset position (zero manualOffset).
+    @Published var teleprompterResetToken: Int = 0
 
     private var queuedSheet: CameraSheetRoute?
     private var queuedPhotoPicker = false
@@ -111,6 +113,7 @@ final class CameraViewModel: ObservableObject {
 
     func toggleScrolling() {
         isScrolling.toggle()
+        print("[TP] VM toggleScrolling -> \(isScrolling)")
     }
 
     func openPhotoLibrary() {
@@ -160,12 +163,19 @@ final class CameraViewModel: ObservableObject {
     }
 
     func updateScriptText(_ text: String) {
+        print("[TP] VM updateScriptText len=\(text.count)")
         config.text = text
     }
 
-    func updateScriptStartProgress(_ progress: Double) {
-        config.startOffsetProgress = progress
-        config = config.clamped
+    /// Resets the teleprompter to its centered starting position.
+    /// Pauses scrolling first so the reset is visible to the user.
+    func resetTeleprompterPosition() {
+        if isScrolling {
+            isScrolling = false
+            print("[TP] VM resetTeleprompterPosition paused scrolling")
+        }
+        teleprompterResetToken += 1
+        print("[TP] VM resetTeleprompterPosition token=\(teleprompterResetToken)")
     }
 
     private func presentSheet(_ route: CameraSheetRoute) {

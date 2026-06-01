@@ -1,6 +1,8 @@
-// May 30, 2026 - 10:28pm - GitHub Copilot
+// May 31, 2026 - 10:30pm - GitHub Copilot (Claude Opus 4.7)
 import PhotosUI
 import SwiftUI
+
+
 
 // MARK: - Camera Screen Layout Tokens
 private enum CameraChromeLayout {
@@ -26,10 +28,10 @@ private enum CameraChromeLayout {
     static let teleprompterViewportHeight: CGFloat = 500
     /// Sets distance from preview bottom edge to viewport bottom (position knob).
     static let teleprompterBottomInset: CGFloat = 140
-    /// Width of the right-side drag lane for adjusting script start position.
-    static let teleprompterDragLaneWidth: CGFloat = 34
-    /// Horizontal inset from the preview right edge for drag lane placement.
-    static let teleprompterDragLaneEdgeInset: CGFloat = 18
+    /// Horizontal inset from the preview right edge for the center-reset button.
+    static let teleprompterResetEdgeInset: CGFloat = 18
+    /// Diameter of the center-reset button placed where the manual lane used to be.
+    static let teleprompterResetButtonSize: CGFloat = 36
 }
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
@@ -59,8 +61,8 @@ struct CameraView: View {
     @State private var lastAppliedExposureBias: Float = 0
     /// Temporary media selection binding for PhotosPicker.
     @State private var selectedMediaItem: PhotosPickerItem?
-    /// Last measured teleprompter text height used to map drag travel range.
-    @State private var teleprompterTextHeight: CGFloat = 0
+    /// Script text we last auto-centered for. Re-center whenever the text changes.
+    @State private var lastCenteredScriptText: String?
 
     var body: some View {
         GeometryReader { proxy in
@@ -74,7 +76,7 @@ struct CameraView: View {
             let maxTeleprompterCenterY = previewBottomY - (teleprompterViewportHeight / 2)
             let requestedTeleprompterCenterY = previewBottomY - CameraChromeLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
             let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
-            let teleprompterDragLaneX = previewCenter.x + (proxy.size.width / 2) - CameraChromeLayout.teleprompterDragLaneEdgeInset
+            let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraChromeLayout.teleprompterResetEdgeInset
             let safeTopInset = proxy.safeAreaInsets.top
             let safeBottomInset = proxy.safeAreaInsets.bottom
 
@@ -157,34 +159,35 @@ struct CameraView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Bottom-anchored teleprompter viewport with independent size and position knobs.
+                // Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     text: viewModel.config.text,
                     fontSize: viewModel.config.fontSize,
                     speed: viewModel.config.speedPointsPerSecond,
                     isScrolling: viewModel.isScrolling,
-                    startOffsetProgress: viewModel.config.startOffsetProgress,
+                    resetToken: viewModel.teleprompterResetToken,
                     onTextHeightChanged: { measuredHeight in
-                        teleprompterTextHeight = measuredHeight
+                        let currentText = viewModel.config.text
+                        if lastCenteredScriptText != currentText,
+                           measuredHeight > 0 {
+                            viewModel.resetTeleprompterPosition()
+                            lastCenteredScriptText = currentText
+                        }
                     }
                 )
                 .frame(width: proxy.size.width, height: teleprompterViewportHeight)
                 .position(x: previewCenter.x, y: teleprompterCenterY)
-                .allowsHitTesting(false)
 
-                // Right-side lane for manual script start-position adjustment.
-                TeleprompterStartOffsetLane(
-                    isEnabled: !viewModel.isScrolling,
-                    currentProgress: viewModel.config.startOffsetProgress,
-                    onProgressChanged: { progress in
-                        handleStartOffsetProgressChanged(progress)
-                    },
-                    onDragEnded: {
-                        // no-op
+                // Mid-screen reset button: snaps first line to viewport vertical center.
+                TeleprompterCenterResetButton(
+                    isDisabled: viewModel.isRecording,
+                    action: {
+                        viewModel.resetTeleprompterPosition()
                     }
                 )
-                .frame(width: CameraChromeLayout.teleprompterDragLaneWidth, height: teleprompterViewportHeight)
-                .position(x: teleprompterDragLaneX, y: teleprompterCenterY)
+                .frame(width: CameraChromeLayout.teleprompterResetButtonSize,
+                       height: CameraChromeLayout.teleprompterResetButtonSize)
+                .position(x: teleprompterResetX, y: teleprompterCenterY)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
@@ -351,13 +354,7 @@ struct CameraView: View {
         }
     }
 
-    /// Applies a normalized progress value from the drag lane while paused.
-    /// - Parameter progress: Normalized start progress where 0 places the first line off-screen below and 1 places it off-screen above; 0.5 centers it.
-    private func handleStartOffsetProgressChanged(_ progress: Double) {
-        guard !viewModel.isScrolling else { return }
 
-        viewModel.updateScriptStartProgress(progress)
-    }
 
     /// Schedules reticle fade-out for non-locked focus states.
     private func scheduleFocusHide() {
@@ -390,9 +387,8 @@ struct CameraView: View {
                 initialText: viewModel.config.text,
                 onSave: { text in
                     viewModel.updateScriptText(text)
-                    // Reset to knob-top so first line of the freshly-pasted script sits at viewport bottom,
-                    // ready to scroll up. Recalculated against the new script's measured height by the overlay.
-                    viewModel.updateScriptStartProgress(1.0)
+                    // Position is set by the overlay's auto-center once the new text
+                    // is remeasured (see `onTextHeightChanged` in CameraView body).
                     viewModel.dismissActiveSheet()
                 },
                 onCancel: {
@@ -599,57 +595,30 @@ private struct CameraFooterControlsView: View {
     }
 }
 
-// MARK: - Start Offset Drag Lane
-private struct TeleprompterStartOffsetLane: View {
-    /// Enables drag interaction only while teleprompter is paused.
-    let isEnabled: Bool
-    /// Current normalized start progress (0 bottom, 1 top).
-    let currentProgress: Double
-    /// Called continuously as normalized progress changes.
-    let onProgressChanged: (Double) -> Void
-    /// Called when drag interaction ends.
-    let onDragEnded: () -> Void
 
-    /// Vertical lane used to manually tune script starting offset.
+
+// MARK: - Teleprompter Center Reset Button
+/// Single round control placed where the legacy manual lane used to sit.
+/// Snaps the first line of script to the teleprompter viewport vertical center.
+private struct TeleprompterCenterResetButton: View {
+    /// Disables interaction (and dims) while recording.
+    let isDisabled: Bool
+    /// Callback fired on tap to perform the center-reset action.
+    let action: () -> Void
+
     var body: some View {
-        GeometryReader { geometry in
-            let laneHeight = max(geometry.size.height, 1)
-            let clampedProgress = min(max(currentProgress, 0), 1)
-            let indicatorY = (1 - clampedProgress) * laneHeight
-
+        Button(action: action) {
             ZStack {
-                Capsule()
-                    .fill(Theme.panelBg.opacity(isEnabled ? 0.42 : 0.2))
-                    .frame(width: 6)
-
-                Circle()
-                    .fill(Theme.white.opacity(isEnabled ? 0.9 : 0.45))
-                    .frame(width: 16, height: 16)
-                    .position(x: geometry.size.width / 2, y: indicatorY)
+                Circle().fill(Theme.panelBg.opacity(0.9))
+                Image(systemName: "arrow.up.and.down.text.horizontal")
+                    .font(Theme.icon16)
+                    .foregroundStyle(Theme.white)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .opacity(isEnabled ? 1 : 0.65)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        guard isEnabled else { return }
-
-                        let clampedY = min(max(value.location.y, 0), laneHeight)
-                        let progress = 1 - (clampedY / laneHeight)
-                        onProgressChanged(Double(progress))
-                    }
-                    .onEnded { _ in
-                        onDragEnded()
-                    }
-            )
-            .accessibilityLabel("Adjust script start position")
-            .accessibilityHint(
-                isEnabled
-                    ? "Drag up or down to change where the script starts before scrolling."
-                    : "Pause scrolling to adjust script start position."
-            )
         }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.4 : 1)
+        .accessibilityLabel("Reset script position")
+        .accessibilityHint("Centers the first line of script in the teleprompter viewport.")
     }
 }
 
