@@ -1,5 +1,4 @@
 // !$*UTF8*$!
-// May 29, 2026 - 11:23pm - GitHub Copilot
 {
 	archiveVersion = 1;
 	classes = {
@@ -10,9 +9,9 @@
 /* Begin PBXBuildFile section */
 		135F477ECF06843A6EA1B4A1 /* TeleprompterConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
+		5A1B2C3D4E5F6A7B8C9D0E1F /* RecordingFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* RecordingFormat.swift */; };
+		66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */; };
 		7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */; };
-		780A293B2FCA873E0085E8C0 /* CameraLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780A293A2FCA873E0085E8C0 /* CameraLayout.swift */; };
-		780A293D2FCA875F0085E8C0 /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780A293C2FCA875F0085E8C0 /* FocusIndicatorView.swift */; };
 		7903D6611F488BA869F2A267 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */; };
 		8822631F7E4FCED4165D036E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26EEA7971142FD517E1511C6 /* Theme.swift */; };
 		8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E807D783DFBBE234865C83 /* PromptCamApp.swift */; };
@@ -20,6 +19,8 @@
 		A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */; };
 		C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */; };
 		D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749694F8D9812A53CBCC6CC /* CameraView.swift */; };
+		D8EC07E8A337C37A0A90B209 /* CameraLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F8A85D424243EE0008DF6D /* CameraLayout.swift */; };
+		E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */; };
 		EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C5486901965005D700AC21 /* CameraService.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,15 +48,17 @@
 		26EEA7971142FD517E1511C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
+		42F8A85D424243EE0008DF6D /* CameraLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLayout.swift; sourceTree = "<group>"; };
 		55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
-		780A293A2FCA873E0085E8C0 /* CameraLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLayout.swift; sourceTree = "<group>"; };
-		780A293C2FCA875F0085E8C0 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
+		8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* RecordingFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFormat.swift; sourceTree = "<group>"; };
 		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
 		B1E807D783DFBBE234865C83 /* PromptCamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamApp.swift; sourceTree = "<group>"; };
 		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterGeometry.swift; sourceTree = "<group>"; };
 		E749694F8D9812A53CBCC6CC /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -112,11 +115,11 @@
 		95805BE9560DBDD612842BBB /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				42F8A85D424243EE0008DF6D /* CameraLayout.swift */,
 				3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */,
 				E749694F8D9812A53CBCC6CC /* CameraView.swift */,
+				8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */,
 				34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */,
-				780A293A2FCA873E0085E8C0 /* CameraLayout.swift */,
-				780A293C2FCA875F0085E8C0 /* FocusIndicatorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -132,7 +135,9 @@
 		A37EE752DAE42251664E344F /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* RecordingFormat.swift */,
 				20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */,
+				D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -250,15 +255,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D8EC07E8A337C37A0A90B209 /* CameraLayout.swift in Sources */,
 				7903D6611F488BA869F2A267 /* CameraPreviewView.swift in Sources */,
 				EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */,
 				D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */,
 				A23F1AAB79BEC4162246E355 /* CameraViewModel.swift in Sources */,
-				780A293D2FCA875F0085E8C0 /* FocusIndicatorView.swift in Sources */,
-				780A293B2FCA873E0085E8C0 /* CameraLayout.swift in Sources */,
+				E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */,
 				A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */,
 				8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */,
+				5A1B2C3D4E5F6A7B8C9D0E1F /* RecordingFormat.swift in Sources */,
 				135F477ECF06843A6EA1B4A1 /* TeleprompterConfig.swift in Sources */,
+				66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */,
 				C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */,
 				8822631F7E4FCED4165D036E /* Theme.swift in Sources */,
 			);
@@ -382,6 +389,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -463,6 +471,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -504,6 +513,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -521,6 +531,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

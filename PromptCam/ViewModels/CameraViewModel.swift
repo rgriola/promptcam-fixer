@@ -61,6 +61,12 @@ final class CameraViewModel: ObservableObject {
     @Published var cameraMode: CameraMode = .camera
     /// Bumped to signal the overlay to reset position (zero manualOffset).
     @Published var teleprompterResetToken: Int = 0
+    /// Current recording format (resolution + FPS). Persisted across launches.
+    @Published var recordingFormat: RecordingFormat
+    /// Hardware-supported resolutions for the active camera.
+    @Published var supportedResolutions: [VideoResolution] = VideoResolution.allCases
+    /// Hardware-supported frame rates for the active camera.
+    @Published var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
 
     private var queuedSheet: CameraSheetRoute?
     private var queuedPhotoPicker = false
@@ -75,6 +81,7 @@ final class CameraViewModel: ObservableObject {
     ) {
         self.cameraService = cameraService
         self.permissionService = permissionService
+        self.recordingFormat = RecordingFormat.loadSaved()
 
         bindCallbacks()
     }
@@ -91,8 +98,24 @@ final class CameraViewModel: ObservableObject {
                 return
             }
 
-            cameraService.configureSession()
+            cameraService.configureSession(format: recordingFormat)
             cameraService.startSession()
+
+            // Query hardware capabilities after session is configured.
+            let supported = cameraService.supportedFormats()
+            supportedResolutions = supported.resolutions
+            supportedFrameRates = supported.frameRates
+
+            // If saved format isn't supported, fall back to default.
+            if !supportedResolutions.contains(recordingFormat.resolution) ||
+               !supportedFrameRates.contains(recordingFormat.frameRate) {
+                let fallback = RecordingFormat(
+                    resolution: supportedResolutions.first ?? .hd1080p,
+                    frameRate: supportedFrameRates.contains(.fps30) ? .fps30 : (supportedFrameRates.first ?? .fps30)
+                )
+                recordingFormat = fallback
+                fallback.save()
+            }
         }
     }
 
@@ -232,6 +255,15 @@ final class CameraViewModel: ObservableObject {
         cameraService.adjustExposure(by: delta)
     }
 
+    // MARK: - Recording Format
+
+    /// Applies a new recording format to the camera. No-op if recording.
+    func updateRecordingFormat(_ format: RecordingFormat) {
+        guard !isRecording else { return }
+        print("[TP] VM updateRecordingFormat res=\(format.resolution.rawValue) fps=\(format.frameRate.rawValue)")
+        cameraService.applyFormat(format)
+    }
+
     private func bindCallbacks() {
         cameraService.onRecordingStateChanged = { [weak self] isRecording in
             self?.isRecording = isRecording
@@ -239,6 +271,13 @@ final class CameraViewModel: ObservableObject {
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
             self?.isCameraReady = isRunning
+        }
+
+        cameraService.onFormatApplied = { [weak self] applied in
+            guard let self else { return }
+            self.recordingFormat = applied
+            applied.save()
+            print("[TP] VM format applied res=\(applied.resolution.rawValue) fps=\(applied.frameRate.rawValue)")
         }
 
         cameraService.onError = { [weak self] message in

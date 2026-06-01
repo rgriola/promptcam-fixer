@@ -283,6 +283,8 @@ struct CameraView: View {
         return CameraTopControlsView(
             evText: evText,
             lockStatus: viewModel.lockStatus,
+            resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
+            fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             safeTopInset: safeTopInset,
             onTapEV: {
                 print("EV button tapped")
@@ -379,9 +381,18 @@ struct CameraView: View {
     private func sheetContent(for route: CameraSheetRoute) -> some View {
         switch route {
         case .formatPanel:
-            CameraFormatPanelSheet {
-                viewModel.dismissActiveSheet()
-            }
+            CameraFormatPanelSheet(
+                recordingFormat: viewModel.recordingFormat,
+                supportedResolutions: viewModel.supportedResolutions,
+                supportedFrameRates: viewModel.supportedFrameRates,
+                isRecording: viewModel.isRecording,
+                onFormatChanged: { format in
+                    viewModel.updateRecordingFormat(format)
+                },
+                onClose: {
+                    viewModel.dismissActiveSheet()
+                }
+            )
         case .composeScript:
             ComposeScriptSheet(
                 initialText: viewModel.config.text,
@@ -409,6 +420,10 @@ private struct CameraTopControlsView: View {
     let evText: String
     /// Current focus/exposure lock state shown in the center badge.
     let lockStatus: CameraLockStatus
+    /// Resolution label for the format pill (e.g. "HD", "4K").
+    let resolutionLabel: String
+    /// FPS label for the format pill (e.g. "30", "60").
+    let fpsLabel: String
     /// Device safe-area top inset used for notch-aware placement.
     let safeTopInset: CGFloat
     /// Action for tapping the EV pill.
@@ -455,7 +470,7 @@ private struct CameraTopControlsView: View {
             HStack {
                 Button(action: onTapFormat) {
                     HStack(spacing: Theme.space8) {
-                        Text("HD")
+                        Text(resolutionLabel)
                             .font(Theme.font16Semibold)
                         Text("RES")
                             .font(Theme.font12Medium)
@@ -463,7 +478,7 @@ private struct CameraTopControlsView: View {
                         Divider()
                             .frame(height: 14)
                             .overlay(Theme.separator)
-                        Text("30")
+                        Text(fpsLabel)
                             .font(Theme.font16Semibold)
                         Text("FPS")
                             .font(Theme.font12Medium)
@@ -676,36 +691,58 @@ private struct ScrollToggleButton: View {
 
 // MARK: - Format Sheet
 private struct CameraFormatPanelSheet: View {
-    /// Local placeholder selected resolution value.
-    @State private var selectedResolution = "HD"
-    /// Local placeholder selected frames-per-second value.
-    @State private var selectedFPS = "30"
+    /// Current recording format (read from ViewModel).
+    let recordingFormat: RecordingFormat
+    /// Hardware-supported resolutions for the active camera.
+    let supportedResolutions: [VideoResolution]
+    /// Hardware-supported frame rates for the active camera.
+    let supportedFrameRates: [VideoFrameRate]
+    /// Whether the camera is currently recording (disables changes).
+    let isRecording: Bool
+    /// Callback fired when the user selects a new format.
+    let onFormatChanged: (RecordingFormat) -> Void
     /// Callback to dismiss the format sheet.
     let onClose: () -> Void
 
-    /// Format selection sheet placeholder for upcoming camera config wiring.
     var body: some View {
         NavigationStack {
             List {
-                Section("Recording Format") {
-                    Picker("Resolution", selection: $selectedResolution) {
-                        Text("HD").tag("HD")
-                        Text("4K").tag("4K")
+                Section("Resolution") {
+                    Picker("Resolution", selection: Binding(
+                        get: { recordingFormat.resolution },
+                        set: { newRes in
+                            onFormatChanged(RecordingFormat(resolution: newRes, frameRate: recordingFormat.frameRate))
+                        }
+                    )) {
+                        ForEach(supportedResolutions, id: \.self) { res in
+                            Text(res.rawValue).tag(res)
+                        }
                     }
                     .pickerStyle(.segmented)
-
-                    Picker("Frame Rate", selection: $selectedFPS) {
-                        Text("24 FPS").tag("24")
-                        Text("30 FPS").tag("30")
-                        Text("60 FPS").tag("60")
-                    }
-                    .pickerStyle(.segmented)
+                    .disabled(isRecording)
                 }
 
-                Section("Status") {
-                    Text("Format panel routing is wired. Device recording configuration wiring is next.")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(Theme.secondaryText)
+                Section("Frame Rate") {
+                    Picker("Frame Rate", selection: Binding(
+                        get: { recordingFormat.frameRate },
+                        set: { newFPS in
+                            onFormatChanged(RecordingFormat(resolution: recordingFormat.resolution, frameRate: newFPS))
+                        }
+                    )) {
+                        ForEach(supportedFrameRates, id: \.self) { rate in
+                            Text("\(rate.rawValue) FPS").tag(rate)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(isRecording)
+                }
+
+                if isRecording {
+                    Section {
+                        Label("Stop recording to change format.", systemImage: "exclamationmark.triangle")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
                 }
             }
             .navigationTitle("Format")

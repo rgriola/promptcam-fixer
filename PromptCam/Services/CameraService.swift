@@ -26,6 +26,7 @@ final class CameraService: NSObject {
 
     var onRecordingStateChanged: ((Bool) -> Void)?
     var onSessionRunningStateChanged: ((Bool) -> Void)?
+    var onFormatApplied: ((RecordingFormat) -> Void)?
     var onError: ((String) -> Void)?
 
     static func preferredCameraSelection(frontAvailable: Bool, backAvailable: Bool) -> PreferredCameraSelection {
@@ -40,7 +41,7 @@ final class CameraService: NSObject {
         return .unavailable
     }
 
-    func configureSession() {
+    func configureSession(format: RecordingFormat = .default) {
         sessionQueue.async {
             guard !self.isSessionConfigured else { return }
             guard self.session.inputs.isEmpty else {
@@ -49,7 +50,14 @@ final class CameraService: NSObject {
             }
 
             self.session.beginConfiguration()
-            self.session.sessionPreset = .high
+
+            // Apply resolution preset — fall back to .high if device doesn't support requested preset.
+            let desiredPreset = format.resolution.sessionPreset
+            if self.session.canSetSessionPreset(desiredPreset) {
+                self.session.sessionPreset = desiredPreset
+            } else {
+                self.session.sessionPreset = .high
+            }
 
             defer { self.session.commitConfiguration() }
 
@@ -102,6 +110,9 @@ final class CameraService: NSObject {
                     return
                 }
 
+                // Apply frame rate after inputs/outputs are wired.
+                self.applyFrameRate(format.frameRate, to: videoDevice)
+
                 self.isSessionConfigured = true
             } catch {
                 self.publishError("Failed to configure camera: \(error.localizedDescription)")
@@ -123,6 +134,111 @@ final class CameraService: NSObject {
             self.session.startRunning()
             self.publishSessionRunningState(true)
         }
+    }
+
+    // MARK: - Format Management
+
+    /// Applies a new recording format to the live session.
+    /// No-op if currently recording. Runs on sessionQueue.
+    func applyFormat(_ format: RecordingFormat) {
+        sessionQueue.async {
+            guard self.isSessionConfigured else { return }
+            guard !self.movieFileOutput.isRecording else {
+                self.publishError("Cannot change format while recording.")
+                return
+            }
+
+            self.session.beginConfiguration()
+
+            // Resolution
+            let desiredPreset = format.resolution.sessionPreset
+            if self.session.canSetSessionPreset(desiredPreset) {
+                self.session.sessionPreset = desiredPreset
+            } else {
+                // Fall back — keep current preset, notify caller.
+                self.session.sessionPreset = .high
+            }
+
+            // Frame rate — apply after preset change, may fall back if unsupported.
+            var appliedRate = format.frameRate
+            if let device = self.videoDevice {
+                appliedRate = self.applyFrameRate(format.frameRate, to: device)
+            }
+
+            self.session.commitConfiguration()
+
+            // Report what was actually applied.
+            let appliedResolution: VideoResolution = self.session.sessionPreset == .hd4K3840x2160 ? .uhd4K : .hd1080p
+            let applied = RecordingFormat(resolution: appliedResolution, frameRate: appliedRate)
+            DispatchQueue.main.async {
+                self.onFormatApplied?(applied)
+            }
+        }
+    }
+
+    /// Queries the video device's **full hardware capabilities** for supported resolutions and frame rates.
+    /// Returns the complete set the device can handle — stable regardless of current active format.
+    /// The actual `applyFrameRate` method validates against the active format at apply time.
+    func supportedFormats() -> (resolutions: [VideoResolution], frameRates: [VideoFrameRate]) {
+        // Must be called after configureSession so videoDevice is set.
+        guard let device = videoDevice else {
+            return (VideoResolution.allCases, VideoFrameRate.allCases)
+        }
+
+        var resolutions: [VideoResolution] = [.hd1080p] // 1080p is universally supported
+        if session.canSetSessionPreset(.hd4K3840x2160) {
+            resolutions.append(.uhd4K)
+        }
+
+        // Scan ALL device formats to determine full hardware FPS capability.
+        var frameRates = Set<VideoFrameRate>()
+        for deviceFormat in device.formats {
+            for range in deviceFormat.videoSupportedFrameRateRanges {
+                for rate in VideoFrameRate.allCases {
+                    if Double(rate.rawValue) >= range.minFrameRate &&
+                       Double(rate.rawValue) <= range.maxFrameRate {
+                        frameRates.insert(rate)
+                    }
+                }
+            }
+        }
+
+        let sortedRates = frameRates.sorted { $0.rawValue < $1.rawValue }
+        return (resolutions, sortedRates.isEmpty ? [.fps30] : sortedRates)
+    }
+
+    /// Sets the frame rate on a video device. Returns the actually applied rate (may fall back).
+    /// Call within a session configuration block.
+    @discardableResult
+    private func applyFrameRate(_ rate: VideoFrameRate, to device: AVCaptureDevice) -> VideoFrameRate {
+        let desiredFPS = Double(rate.rawValue)
+
+        // Check if the ACTIVE format supports the requested FPS.
+        let activeRanges = device.activeFormat.videoSupportedFrameRateRanges
+        let supported = activeRanges.contains { desiredFPS >= $0.minFrameRate && desiredFPS <= $0.maxFrameRate }
+
+        let targetRate: VideoFrameRate
+        if supported {
+            targetRate = rate
+        } else {
+            // Fall back to the highest supported rate.
+            let maxSupported = activeRanges.map(\.maxFrameRate).max() ?? 30
+            targetRate = VideoFrameRate.allCases
+                .filter { Double($0.rawValue) <= maxSupported }
+                .max { $0.rawValue < $1.rawValue } ?? .fps30
+            print("[TP] FPS \(rate.rawValue) unsupported by active format, falling back to \(targetRate.rawValue)")
+        }
+
+        do {
+            try device.lockForConfiguration()
+            device.activeVideoMinFrameDuration = CMTime(value: 1, timescale: CMTimeScale(targetRate.rawValue))
+            device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: CMTimeScale(targetRate.rawValue))
+            device.unlockForConfiguration()
+        } catch {
+            self.publishError("Failed to set frame rate: \(error.localizedDescription)")
+        }
+
+        return targetRate
     }
 
     func stopSession() {
