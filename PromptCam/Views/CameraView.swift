@@ -1,39 +1,18 @@
-// May 31, 2026 - 10:30pm - GitHub Copilot (Claude Opus 4.7)
+// PromptCam — Primary Camera Screen
+// Refactored June 1, 2026 — sub-views extracted into Views/Camera/ and Views/Sheets/
+//
+// Architecture:
+// CameraView is the root composition layer. It owns:
+// 1. ZStack layering order: preview → focus reticle → control chrome → teleprompter → reset button
+// 2. Focus/exposure gesture state (tap, long-press, EV drag)
+// 3. Sheet routing via sheetContent(for:)
+//
+// Focus/exposure @State lives here (not in ViewModel) because it controls
+// view-local animation timing and position — the ViewModel only owns the
+// camera-service-facing lock status.
 import AVFoundation
 import PhotosUI
 import SwiftUI
-
-
-
-// MARK: - Camera Screen Layout Tokens
-private enum CameraChromeLayout {
-    /// Vertical adjustment for the top control row cluster.
-    static let topRowDrop: CGFloat = 0
-    /// Horizontal inset for header controls.
-    static let headerHorizontalPadding: CGFloat = 16
-    /// Bottom inset under the header cluster.
-    static let headerBottomPadding: CGFloat = 0
-    /// Vertical offset for the full header container.
-    static let headerVerticalOffset: CGFloat = 0
-    /// Bottom spacing between record cluster and footer bar.
-    static let recordingBottomPadding: CGFloat = 18
-    /// Extra footer bar height if additional chrome is introduced.
-    static let footerBarExtraHeight: CGFloat = 0
-    /// Bottom inset inside footer controls.
-    static let footerBottomPadding: CGFloat = 0
-    /// Moves footer controls lower to align with approved design.
-    static let footerVerticalOffset: CGFloat = 38 // adjusts footer elements downward.
-    /// Shared circular icon button size for footer controls.
-    static let footerIconSize: CGFloat = 44
-    /// Sets teleprompter viewport height (length knob).
-    static let teleprompterViewportHeight: CGFloat = 500
-    /// Sets distance from preview bottom edge to viewport bottom (position knob).
-    static let teleprompterBottomInset: CGFloat = 140
-    /// Horizontal inset from the preview right edge for the center-reset button.
-    static let teleprompterResetEdgeInset: CGFloat = 18
-    /// Diameter of the center-reset button placed where the manual lane used to be.
-    static let teleprompterResetButtonSize: CGFloat = 36
-}
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
@@ -41,6 +20,8 @@ struct CameraView: View {
     @StateObject var viewModel: CameraViewModel
     /// Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
+
+    // MARK: - Focus / Exposure Gesture State
 
     /// Current focus indicator center in preview coordinates.
     @State private var focusIndicatorPoint: CGPoint?
@@ -60,10 +41,18 @@ struct CameraView: View {
     @State private var exposureDragBaselineY: CGFloat = 0
     /// Last EV value sent to camera service to compute incremental deltas.
     @State private var lastAppliedExposureBias: Float = 0
+
+    // MARK: - Sheet / Picker State
+
     /// Temporary media selection binding for PhotosPicker.
     @State private var selectedMediaItem: PhotosPickerItem?
+
+    // MARK: - Teleprompter State
+
     /// Script text we last auto-centered for. Re-center whenever the text changes.
     @State private var lastCenteredScriptText: String?
+
+    // MARK: - Body
 
     var body: some View {
         GeometryReader { proxy in
@@ -72,17 +61,17 @@ struct CameraView: View {
             let previewCenter = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
             let previewTopY = previewCenter.y - (previewHeight / 2)
             let previewBottomY = previewCenter.y + (previewHeight / 2)
-            let teleprompterViewportHeight = min(max(CameraChromeLayout.teleprompterViewportHeight, 0), previewHeight)
+            let teleprompterViewportHeight = min(max(CameraLayout.teleprompterViewportHeight, 0), previewHeight)
             let minTeleprompterCenterY = previewTopY + (teleprompterViewportHeight / 2)
             let maxTeleprompterCenterY = previewBottomY - (teleprompterViewportHeight / 2)
-            let requestedTeleprompterCenterY = previewBottomY - CameraChromeLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
+            let requestedTeleprompterCenterY = previewBottomY - CameraLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
             let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
-            let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraChromeLayout.teleprompterResetEdgeInset
+            let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraLayout.teleprompterResetEdgeInset
             let safeTopInset = proxy.safeAreaInsets.top
             let safeBottomInset = proxy.safeAreaInsets.bottom
 
             ZStack {
-                // Live camera preview layer with tap and long-press gesture hooks.
+                // Layer 1: Live camera preview with tap/long-press gesture hooks.
                 CameraPreviewView(
                     session: viewModel.session,
                     onTap: { devicePoint, viewPoint in
@@ -95,47 +84,23 @@ struct CameraView: View {
                 .frame(width: proxy.size.width, height: previewHeight)
                 .position(previewCenter)
 
-                // Focus reticle + EV drag layer shown after tap/long-press interaction.
+                // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
                 if showFocusIndicator, let focusIndicatorPoint {
                     FocusIndicatorView(
                         exposureRange: exposureRange,
                         exposureBias: exposureBias,
                         showFocusIndicator: showFocusIndicator,
                         onDragDelta: { translationHeight in
-                            if lastExposureDrag == .zero {
-                                exposureDragBaselineBias = exposureBias
-                                exposureDragBaselineY = translationHeight
-                                lastAppliedExposureBias = exposureBias
-                            }
-
-                            let totalDeltaY = translationHeight - exposureDragBaselineY
-                            let scalePerPoint: Float = (exposureRange * 2) / Float(CameraLayout.evFullRangePoints)
-                            let newBias = min(max(exposureDragBaselineBias - Float(totalDeltaY) * scalePerPoint, -exposureRange), exposureRange)
-
-                            exposureBias = newBias
-                            showFocusIndicator = true
-                            scheduleFocusHide()
-
-                            let pending = newBias - lastAppliedExposureBias
-                            exposureDebounceWorkItem?.cancel()
-                            let work = DispatchWorkItem {
-                                viewModel.adjustExposure(by: pending)
-                                lastAppliedExposureBias = newBias
-                            }
-                            exposureDebounceWorkItem = work
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
-
-                            lastExposureDrag = CGSize(width: 0, height: translationHeight)
+                            handleExposureDrag(translationHeight: translationHeight)
                         }
                     )
                     .position(focusIndicatorPoint)
                 }
 
-                // Header, record cluster, and footer chrome above preview.
+                // Layer 3: Header, record cluster, and footer chrome.
                 VStack(spacing: 0) {
                     cameraHeader(safeTopInset: safeTopInset)
                         .frame(height: barHeight + safeTopInset, alignment: .top)
-                        .offset(y: CameraChromeLayout.headerVerticalOffset)
 
                     Spacer(minLength: 0)
 
@@ -152,15 +117,15 @@ struct CameraView: View {
                             print("Scroll toggled")
                         }
                     )
-                    .padding(.bottom, CameraChromeLayout.recordingBottomPadding)
+                    .padding(.bottom, CameraLayout.recordingBottomPadding)
 
                     cameraFooter(safeBottomInset: safeBottomInset)
-                        .frame(height: barHeight + CameraChromeLayout.footerBarExtraHeight + safeBottomInset, alignment: .bottom)
-                        .offset(y: CameraChromeLayout.footerVerticalOffset)
+                        .frame(height: barHeight + safeBottomInset, alignment: .bottom)
+                        .offset(y: CameraLayout.footerVerticalOffset)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Bottom-anchored teleprompter viewport.
+                // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     text: viewModel.config.text,
                     fontSize: viewModel.config.fontSize,
@@ -179,20 +144,20 @@ struct CameraView: View {
                 .frame(width: proxy.size.width, height: teleprompterViewportHeight)
                 .position(x: previewCenter.x, y: teleprompterCenterY)
 
-                // Mid-screen reset button: snaps first line to viewport vertical center.
+                // Layer 5: Mid-screen reset button.
                 TeleprompterCenterResetButton(
                     isDisabled: viewModel.isRecording,
                     action: {
                         viewModel.resetTeleprompterPosition()
                     }
                 )
-                .frame(width: CameraChromeLayout.teleprompterResetButtonSize,
-                       height: CameraChromeLayout.teleprompterResetButtonSize)
+                .frame(width: CameraLayout.teleprompterResetButtonSize,
+                       height: CameraLayout.teleprompterResetButtonSize)
                 .position(x: teleprompterResetX, y: teleprompterCenterY)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        // Runtime error feedback.
+        // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
             viewModel.errorMessage != nil
         }, set: { _ in
@@ -204,38 +169,28 @@ struct CameraView: View {
         } message: {
             Text(viewModel.errorMessage ?? "Unknown error")
         }
-        // Media import route from footer photo action.
         .photosPicker(
             isPresented: $viewModel.isPhotoPickerPresented,
             selection: $selectedMediaItem,
             matching: .videos,
             preferredItemEncoding: .automatic
         )
-        // Routed sheets for format, compose, and settings.
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
         }
-        // Screen lifecycle hooks for camera startup and cleanup.
+        // MARK: - Lifecycle
         .onAppear { viewModel.onAppear() }
         .onDisappear {
             viewModel.onDisappear()
             viewModel.unlockFocusExposure()
-            hideFocusWorkItem?.cancel()
-            hideFocusWorkItem = nil
-            exposureDebounceWorkItem?.cancel()
-            exposureDebounceWorkItem = nil
-            exposureDragBaselineY = 0
-            exposureDragBaselineBias = exposureBias
-            lastAppliedExposureBias = exposureBias
-            lastExposureDrag = .zero
+            cleanupFocusState()
         }
-        // Picker result handler (placeholder until ingest pipeline is wired).
+        // MARK: - State Observers
         .onChange(of: selectedMediaItem) { _, newItem in
             guard newItem != nil else { return }
             print("Media selected from library picker")
             selectedMediaItem = nil
         }
-        // Modal lifecycle relays used by the view model presentation queue.
         .onChange(of: viewModel.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
@@ -243,31 +198,18 @@ struct CameraView: View {
             viewModel.handlePhotoPickerStateChanged(newValue)
         }
         .onChange(of: viewModel.lockStatus) { _, newStatus in
-            switch newStatus {
-            case .aeAfLocked:
-                print("AE/AF lock engaged")
+            // Simplified: locked states keep reticle visible, unlocked states auto-hide.
+            if newStatus.isLocked {
                 showFocusIndicator = true
                 hideFocusWorkItem?.cancel()
                 hideFocusWorkItem = nil
-            case .aeLocked:
-                print("AE lock fallback engaged")
-                showFocusIndicator = true
-                hideFocusWorkItem?.cancel()
-                hideFocusWorkItem = nil
-            case .afLocked:
-                print("AF lock engaged")
-                showFocusIndicator = true
-                hideFocusWorkItem?.cancel()
-                hideFocusWorkItem = nil
-            case .unsupported:
-                print("Lock unavailable on this camera")
-                scheduleFocusHide()
-            case .auto:
-                print("Lock status set to AUTO")
+            } else {
                 scheduleFocusHide()
             }
         }
     }
+
+    // MARK: - Header & Footer Builders
 
     /// Builds the top camera controls row and format quick panel.
     /// - Parameter safeTopInset: Safe-area inset used to anchor controls below the notch.
@@ -312,11 +254,9 @@ struct CameraView: View {
         )
     }
 
+    // MARK: - Focus / Exposure Gesture Handlers
+
     /// Handles single tap to focus and return to auto lock mode when needed.
-    /// - Parameters:
-    ///   - devicePoint: Normalized camera-space point used by AVFoundation focus APIs.
-    ///   - viewPoint: View-space touch location used to place the reticle.
-    ///   - barHeight: Top letterbox height used to translate reticle coordinates.
     private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
         if viewModel.lockStatus != .auto {
             viewModel.unlockFocusExposure()
@@ -330,10 +270,6 @@ struct CameraView: View {
     }
 
     /// Handles long press to attempt lock behavior at the touched camera point.
-    /// - Parameters:
-    ///   - devicePoint: Normalized camera-space point used for lock request.
-    ///   - viewPoint: View-space touch location used to position the reticle.
-    ///   - barHeight: Top letterbox height used to align reticle coordinates.
     private func handlePreviewLongPress(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
         print("Preview long press lock attempt")
         updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
@@ -342,9 +278,6 @@ struct CameraView: View {
     }
 
     /// Positions and shows the focus indicator using preview touch coordinates.
-    /// - Parameters:
-    ///   - viewPoint: Touch location from preview view coordinates.
-    ///   - barHeight: Letterbox offset used to translate to parent coordinates.
     private func updateFocusIndicatorPosition(viewPoint: CGPoint, barHeight: CGFloat) {
         withAnimation(.easeOut(duration: 0.15)) {
             focusIndicatorPoint = CGPoint(x: viewPoint.x, y: viewPoint.y + barHeight)
@@ -352,7 +285,33 @@ struct CameraView: View {
         }
     }
 
+    /// Processes EV drag gesture translation into exposure bias updates.
+    private func handleExposureDrag(translationHeight: CGFloat) {
+        if lastExposureDrag == .zero {
+            exposureDragBaselineBias = exposureBias
+            exposureDragBaselineY = translationHeight
+            lastAppliedExposureBias = exposureBias
+        }
 
+        let totalDeltaY = translationHeight - exposureDragBaselineY
+        let scalePerPoint: Float = (exposureRange * 2) / Float(CameraLayout.evFullRangePoints)
+        let newBias = min(max(exposureDragBaselineBias - Float(totalDeltaY) * scalePerPoint, -exposureRange), exposureRange)
+
+        exposureBias = newBias
+        showFocusIndicator = true
+        scheduleFocusHide()
+
+        let pending = newBias - lastAppliedExposureBias
+        exposureDebounceWorkItem?.cancel()
+        let work = DispatchWorkItem {
+            viewModel.adjustExposure(by: pending)
+            lastAppliedExposureBias = newBias
+        }
+        exposureDebounceWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
+
+        lastExposureDrag = CGSize(width: 0, height: translationHeight)
+    }
 
     /// Schedules reticle fade-out for non-locked focus states.
     private func scheduleFocusHide() {
@@ -370,10 +329,24 @@ struct CameraView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
 
-    @ViewBuilder
+    /// Cancels pending focus/exposure work items on view disappearance.
+    private func cleanupFocusState() {
+        hideFocusWorkItem?.cancel()
+        hideFocusWorkItem = nil
+        exposureDebounceWorkItem?.cancel()
+        exposureDebounceWorkItem = nil
+        exposureDragBaselineY = 0
+        exposureDragBaselineBias = exposureBias
+        lastAppliedExposureBias = exposureBias
+        lastExposureDrag = .zero
+    }
+
+    // MARK: - Sheet Router
+
     /// Routes the currently active sheet to its destination content.
     /// - Parameter route: Selected modal route from the view model.
     /// - Returns: Sheet content view for the selected route.
+    @ViewBuilder
     private func sheetContent(for route: CameraSheetRoute) -> some View {
         switch route {
         case .formatPanel:
@@ -394,8 +367,6 @@ struct CameraView: View {
                 initialText: viewModel.config.text,
                 onSave: { text in
                     viewModel.updateScriptText(text)
-                    // Position is set by the overlay's auto-center once the new text
-                    // is remeasured (see `onTextHeightChanged` in CameraView body).
                     viewModel.dismissActiveSheet()
                 },
                 onCancel: {
@@ -407,616 +378,5 @@ struct CameraView: View {
                 viewModel.dismissActiveSheet()
             }
         }
-    }
-}
-
-// MARK: - Top Header Controls
-private struct CameraTopControlsView: View {
-    /// Formatted EV display value shown in the left pill.
-    let evText: String
-    /// Current focus/exposure lock state shown in the center badge.
-    let lockStatus: CameraLockStatus
-    /// Resolution label for the format pill (e.g. "HD", "4K").
-    let resolutionLabel: String
-    /// FPS label for the format pill (e.g. "30", "60").
-    let fpsLabel: String
-    /// Device safe-area top inset used for notch-aware placement.
-    let safeTopInset: CGFloat
-    /// Action for tapping the EV pill.
-    let onTapEV: () -> Void
-    /// Action for tapping the grid toggle button.
-    let onTapGrid: () -> Void
-    /// Action for tapping the format quick panel.
-    let onTapFormat: () -> Void
-
-    /// Header layout containing EV, lock status, grid, and format controls.
-    var body: some View {
-        // Header rows are intentionally compact to preserve preview space.
-        VStack(spacing: 0) {
-            HStack {
-                Button(action: onTapEV) {
-                    Text("EV \(evText)") // These control the look of the panels
-                        .font(Theme.mono10Medium)
-                        .foregroundStyle(Theme.white)
-                        .padding(.horizontal, Theme.space12)
-                        .padding(.vertical, Theme.space8)
-                        .background(Theme.panelBg.opacity(0.9), in: Capsule())
-                        .accessibilityLabel("Exposure value")
-                        .accessibilityHint("Shows current exposure")
-                }
-
-                Spacer()
-
-                CameraLockStatusBadgeView(status: lockStatus)
-
-                Spacer()
-
-                Button(action: onTapGrid) {
-                    Image(systemName: "circle.grid.3x3.fill")
-                        .font(Theme.icon20)
-                        .foregroundStyle(Theme.white)
-                        .padding(10)
-                        .background(Theme.panelBg.opacity(0.9), in: Circle())
-                        .accessibilityLabel("Toggle grid")
-                        .accessibilityHint("Shows or hides the composition grid")
-                }
-            }
-            .padding(.top, max(safeTopInset - 200, 0) + CameraChromeLayout.topRowDrop)
-
-            HStack {
-                Button(action: onTapFormat) {
-                    HStack(spacing: Theme.space8) {
-                        Text(resolutionLabel)
-                            .font(Theme.font16Semibold)
-                        Text("RES")
-                            .font(Theme.font12Medium)
-                            .foregroundStyle(Theme.secondaryText)
-                        Divider()
-                            .frame(height: 14)
-                            .overlay(Theme.separator)
-                        Text(fpsLabel)
-                            .font(Theme.font16Semibold)
-                        Text("FPS")
-                            .font(Theme.font12Medium)
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                    .foregroundStyle(Theme.primaryText)
-                    .padding(.horizontal, Theme.space12)
-                    .padding(.vertical, Theme.space8)
-                    .background(Theme.panelBg.opacity(0.9), in: Capsule())
-                }
-                .accessibilityLabel("Format panel")
-                .accessibilityHint("Opens camera record format settings")
-
-                Spacer()
-            }
-        }
-        .padding(.horizontal, CameraChromeLayout.headerHorizontalPadding)
-        .padding(.bottom, CameraChromeLayout.headerBottomPadding)
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - Lock Status Badge
-private struct CameraLockStatusBadgeView: View {
-    /// Lock status used to derive badge text and color.
-    let status: CameraLockStatus
-
-    /// Semantic color for current lock state.
-    private var statusColor: Color {
-        switch status {
-        case .auto:
-            return Theme.green
-        case .unsupported:
-            return Theme.yellow
-        case .aeAfLocked, .aeLocked, .afLocked:
-            return Theme.yellow
-        }
-    }
-
-    /// Badge pill that surfaces current autofocus/exposure state.
-    var body: some View {
-        Text(status.text)
-            .font(Theme.mono10Medium)
-            .foregroundStyle(statusColor)
-            .padding(.horizontal, Theme.space12)
-            .padding(.vertical, Theme.space8)
-            .background(Theme.panelBg.opacity(0.9), in: Capsule())
-            .accessibilityLabel("Focus and exposure lock status")
-            .accessibilityValue(status.text)
-    }
-}
-
-// MARK: - Center Record Cluster
-private struct RecordingClusterView: View {
-    /// Whether capture is currently recording.
-    let isRecording: Bool
-    /// Whether teleprompter auto-scroll is currently active.
-    let isScrolling: Bool
-    /// Enables/disables record interaction based on camera readiness.
-    let isRecordEnabled: Bool
-    /// Action to start/stop recording.
-    let onRecordTap: () -> Void
-    /// Action to pause/play teleprompter scrolling.
-    let onScrollTap: () -> Void
-
-    /// Native-like stacked record + scroll control cluster.
-    var body: some View {
-        ZStack {
-            RecordButton(isRecording: isRecording, isEnabled: isRecordEnabled, action: onRecordTap)
-                .frame(width: 72, height: 72)
-
-            ScrollToggleButton(isScrolling: isScrolling, action: onScrollTap)
-                .frame(width: 36, height: 36)
-                .offset(x: -72)
-        }
-    }
-}
-
-// MARK: - Bottom Footer Controls
-private struct CameraFooterControlsView: View {
-    /// Device safe-area bottom inset for home-indicator spacing.
-    let safeBottomInset: CGFloat
-    /// Action to open PhotosPicker.
-    let onTapPhotoLibrary: () -> Void
-    /// Action to open compose sheet.
-    let onTapScriptAssist: () -> Void
-    /// Action to open settings sheet.
-    let onTapSettings: () -> Void
-
-    /// Footer control row for media import and utility actions.
-    var body: some View {
-        HStack(spacing: Theme.space12) {
-            Spacer()
-
-            footerIconButton(systemName: "photo.on.rectangle", action: onTapPhotoLibrary)
-                .accessibilityLabel("Open photo library")
-
-            Spacer()
-
-            footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
-                .accessibilityLabel("Insert generated script")
-
-            Spacer()
-
-            footerIconButton(systemName: "sun.max", action: onTapSettings)
-                .accessibilityLabel("Open camera settings")
-
-            Spacer()
-        }
-        .padding(.bottom, max(safeBottomInset - 18, 0) + CameraChromeLayout.footerBottomPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-    }
-
-    /// Shared circular icon button used by footer controls.
-    /// - Parameters:
-    ///   - systemName: SF Symbol identifier for the icon.
-    ///   - action: Callback fired when the footer icon is tapped.
-    /// - Returns: Styled footer icon button.
-    private func footerIconButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            ZStack {
-                Circle().fill(Theme.panelBg.opacity(0.9))
-                Image(systemName: systemName)
-                    .font(Theme.icon20)
-                    .foregroundStyle(Theme.white)
-            }
-            .frame(width: CameraChromeLayout.footerIconSize, height: CameraChromeLayout.footerIconSize)
-        }
-    }
-}
-
-
-
-// MARK: - Teleprompter Center Reset Button
-/// Single round control placed where the legacy manual lane used to sit.
-/// Snaps the first line of script to the teleprompter viewport vertical center.
-private struct TeleprompterCenterResetButton: View {
-    /// Disables interaction (and dims) while recording.
-    let isDisabled: Bool
-    /// Callback fired on tap to perform the center-reset action.
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle().fill(Theme.panelBg.opacity(0.9))
-                Image(systemName: "arrow.up.and.down.text.horizontal")
-                    .font(Theme.icon16)
-                    .foregroundStyle(Theme.white)
-            }
-        }
-        .disabled(isDisabled)
-        .opacity(isDisabled ? 0.4 : 1)
-        .accessibilityLabel("Reset script position")
-        .accessibilityHint("Centers the first line of script in the teleprompter viewport.")
-    }
-}
-
-// MARK: - Record Button
-private struct RecordButton: View {
-    /// Whether recording is currently active.
-    let isRecording: Bool
-    /// Whether the button should accept taps.
-    let isEnabled: Bool
-    /// Callback to toggle recording state.
-    let action: () -> Void
-
-    /// Primary shutter control used for start/stop recording.
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle().strokeBorder(Theme.white, lineWidth: 4)
-                Circle().fill(isRecording ? Theme.redRecordPreview : Theme.red)
-                if isRecording {
-                    Image(systemName: "square.fill")
-                        .font(Theme.icon16)
-                        .foregroundStyle(Theme.white)
-                }
-            }
-        }
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.55)
-        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
-        .accessibilityHint("Toggles video recording")
-    }
-}
-
-// MARK: - Scroll Toggle Button
-private struct ScrollToggleButton: View {
-    /// Whether teleprompter scrolling is active.
-    let isScrolling: Bool
-    /// Callback to toggle scroll state.
-    let action: () -> Void
-
-    /// Secondary control to pause/play teleprompter movement.
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle().strokeBorder(Theme.white, lineWidth: 4)
-                Circle().fill(isScrolling ? Theme.blueScrollPreview : Theme.blue)
-                Image(systemName: isScrolling ? "pause.fill" : "play.fill")
-                    .font(Theme.icon12)
-                    .foregroundStyle(Theme.white)
-            }
-        }
-        .accessibilityLabel(isScrolling ? "Pause teleprompter" : "Play teleprompter")
-        .accessibilityHint("Toggles teleprompter scrolling")
-    }
-}
-
-// MARK: - Format Sheet
-private struct CameraFormatPanelSheet: View {
-    /// Current recording format (read from ViewModel).
-    let recordingFormat: RecordingFormat
-    /// Hardware-supported resolutions for the active camera.
-    let supportedResolutions: [VideoResolution]
-    /// Hardware-supported frame rates for the active camera.
-    let supportedFrameRates: [VideoFrameRate]
-    /// Whether the camera is currently recording (disables changes).
-    let isRecording: Bool
-    /// Callback fired when the user selects a new format.
-    let onFormatChanged: (RecordingFormat) -> Void
-    /// Callback to dismiss the format sheet.
-    let onClose: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Resolution") {
-                    Picker("Resolution", selection: Binding(
-                        get: { recordingFormat.resolution },
-                        set: { newRes in
-                            onFormatChanged(RecordingFormat(resolution: newRes, frameRate: recordingFormat.frameRate))
-                        }
-                    )) {
-                        ForEach(supportedResolutions, id: \.self) { res in
-                            Text(res.rawValue).tag(res)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(isRecording)
-                }
-
-                Section("Frame Rate") {
-                    Picker("Frame Rate", selection: Binding(
-                        get: { recordingFormat.frameRate },
-                        set: { newFPS in
-                            onFormatChanged(RecordingFormat(resolution: recordingFormat.resolution, frameRate: newFPS))
-                        }
-                    )) {
-                        ForEach(supportedFrameRates, id: \.self) { rate in
-                            Text("\(rate.rawValue) FPS").tag(rate)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(isRecording)
-                }
-
-                if isRecording {
-                    Section {
-                        Label("Stop recording to change format.", systemImage: "exclamationmark.triangle")
-                            .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                }
-            }
-            .navigationTitle("Format")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onClose)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Compose Sheet
-private struct ComposeScriptSheet: View {
-    /// Local draft text edited before save is committed.
-    @State private var draftText: String
-    /// Focus binding used to open the keyboard on sheet presentation.
-    @FocusState private var isEditorFocused: Bool
-    /// Callback fired with latest text when user saves.
-    let onSave: (String) -> Void
-    /// Callback fired when user cancels editing.
-    let onCancel: () -> Void
-
-    /// Creates compose sheet state from current teleprompter text.
-    /// - Parameters:
-    ///   - initialText: Source text shown when compose opens.
-    ///   - onSave: Callback invoked with user-edited script.
-    ///   - onCancel: Callback invoked when user dismisses without saving.
-    init(initialText: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
-        _draftText = State(initialValue: initialText)
-        self.onSave = onSave
-        self.onCancel = onCancel
-    }
-
-    /// Script editor UI with immediate keyboard focus.
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: Theme.space12) {
-                TextEditor(text: $draftText)
-                    .font(Theme.font16Regular)
-                    .focused($isEditorFocused)
-                    .padding(Theme.space8)
-                    .background(Theme.panelBg.opacity(0.2), in: RoundedRectangle(cornerRadius: Theme.radiusMd))
-
-                Text("Edits are applied to the teleprompter text when you tap Save.")
-                    .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.secondaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(Theme.space16)
-            .navigationTitle("Compose")
-            .onAppear {
-                DispatchQueue.main.async {
-                    isEditorFocused = true
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", action: onCancel)
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        onSave(draftText)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Settings Sheet
-private struct CameraSettingsSheet: View {
-    /// Callback to dismiss settings sheet.
-    let onClose: () -> Void
-
-    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-
-    @Environment(\.scenePhase) private var scenePhase
-
-    /// Settings view showing app info and live permission statuses.
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("PromptCam") {
-                    SettingStatusRow(title: "Version", value: appVersion)
-                }
-
-                Section("Permissions") {
-                    PermissionStatusRow(
-                        icon: "camera.fill",
-                        iconColor: .blue,
-                        title: "Camera",
-                        status: avLabel(cameraStatus),
-                        statusColor: avColor(cameraStatus),
-                        isDenied: cameraStatus == .denied || cameraStatus == .restricted
-                    )
-                    PermissionStatusRow(
-                        icon: "mic.fill",
-                        iconColor: .orange,
-                        title: "Microphone",
-                        status: avLabel(micStatus),
-                        statusColor: avColor(micStatus),
-                        isDenied: micStatus == .denied || micStatus == .restricted
-                    )
-                    PermissionStatusRow(
-                        icon: "photo.on.rectangle",
-                        iconColor: .green,
-                        title: "Photo Library",
-                        status: phLabel(photoStatus),
-                        statusColor: phColor(photoStatus),
-                        isDenied: photoStatus == .denied || photoStatus == .restricted
-                    )
-                }
-            }
-            .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onClose)
-                }
-            }
-            .onAppear { refreshStatuses() }
-            .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .active { refreshStatuses() }
-            }
-        }
-    }
-
-    /// Human-readable app version/build string shown in settings.
-    private var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "\(version) (\(build))"
-    }
-
-    private func refreshStatuses() {
-        cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
-        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    }
-
-    private func avLabel(_ status: AVAuthorizationStatus) -> String {
-        switch status {
-        case .authorized: return "Granted"
-        case .notDetermined: return "Not Set"
-        case .denied: return "Denied"
-        case .restricted: return "Restricted"
-        @unknown default: return "Unknown"
-        }
-    }
-
-    private func avColor(_ status: AVAuthorizationStatus) -> Color {
-        switch status {
-        case .authorized: return .green
-        case .notDetermined: return .orange
-        case .denied, .restricted: return .red
-        @unknown default: return .gray
-        }
-    }
-
-    private func phLabel(_ status: PHAuthorizationStatus) -> String {
-        switch status {
-        case .authorized, .limited: return "Granted"
-        case .notDetermined: return "Not Set"
-        case .denied: return "Denied"
-        case .restricted: return "Restricted"
-        @unknown default: return "Unknown"
-        }
-    }
-
-    private func phColor(_ status: PHAuthorizationStatus) -> Color {
-        switch status {
-        case .authorized, .limited: return .green
-        case .notDetermined: return .orange
-        case .denied, .restricted: return .red
-        @unknown default: return .gray
-        }
-    }
-}
-
-// MARK: - Permission Status Row
-private struct PermissionStatusRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let status: String
-    let statusColor: Color
-    let isDenied: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(Theme.icon16)
-                .foregroundStyle(iconColor)
-                .frame(width: 24)
-
-            Text(title)
-                .font(Theme.font16Medium)
-
-            Spacer()
-
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(status)
-                    .font(Theme.font12Medium)
-                    .foregroundStyle(statusColor)
-            }
-
-            if isDenied {
-                Button {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    Text("Settings")
-                        .font(Theme.font12Medium)
-                        .foregroundStyle(.blue)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Reusable Settings Row
-private struct SettingStatusRow: View {
-    /// Left-side label for the setting item.
-    let title: String
-    /// Right-side value text for the setting item.
-    let value: String
-
-    /// Two-column status row used in settings sections.
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(Theme.font16Medium)
-
-            Spacer()
-
-            Text(value)
-                .font(Theme.font12Medium)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-}
-
-// MARK: - Component Previews
-#Preview("RecordButton - Idle") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        RecordButton(isRecording: false, isEnabled: true) {}
-            .frame(width: 72, height: 72)
-    }
-}
-
-#Preview("RecordButton - Recording") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        RecordButton(isRecording: true, isEnabled: true) {}
-            .frame(width: 72, height: 72)
-    }
-}
-
-#Preview("ScrollToggleButton - Paused") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        ScrollToggleButton(isScrolling: false) {}
-            .frame(width: 36, height: 36)
-    }
-}
-
-#Preview("ScrollToggleButton - Scrolling") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        ScrollToggleButton(isScrolling: true) {}
-            .frame(width: 36, height: 36)
     }
 }

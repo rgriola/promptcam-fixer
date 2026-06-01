@@ -47,6 +47,20 @@ enum CameraLockStatus: Equatable {
     }
 }
 
+/// Central state owner for the camera screen.
+///
+/// **@MainActor**: All published properties drive SwiftUI views, so the entire
+/// class is main-actor-isolated. Camera hardware calls go through `CameraService`
+/// which runs them on its own serial queue.
+///
+/// **Modal queue pattern**: SwiftUI allows only one `.sheet` presenter at a time.
+/// If the user triggers a second modal while one is active, the request is queued
+/// in `queuedSheet` (or `queuedPhotoPicker`). When the active modal dismisses,
+/// `presentQueuedModalIfNeeded()` dequeues the next one. This prevents the
+/// "sheet not presented" bug that occurs with rapid modal switching.
+///
+/// **Callback binding**: `bindCallbacks()` connects `CameraService` closures to
+/// published properties at init time, keeping the service layer protocol-free.
 @MainActor
 final class CameraViewModel: ObservableObject {
     @Published var config = TeleprompterConfig.default
@@ -67,6 +81,9 @@ final class CameraViewModel: ObservableObject {
     @Published var supportedResolutions: [VideoResolution] = VideoResolution.allCases
     /// Hardware-supported frame rates for the active camera.
     @Published var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
+
+    // MARK: - Modal Queue State
+    // See class-level doc for explanation of the queue pattern.
 
     private var queuedSheet: CameraSheetRoute?
     private var queuedPhotoPicker = false

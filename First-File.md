@@ -193,3 +193,9 @@ Read this back to me, create a plan to impliment this update and place it into a
 .. 
 I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script.  I need options to get this so any size script will start center screeen and completely roll off screen.  My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review. 
 
+... Jun 1 2026
+Evaluate the promptercam-fixer codebase. I am at a point of MVP, the next steps in the development arc is a feature branch then refactoring the codebase before further development in the Phased_Plan.md I am open to simplifying the exsisting codebase including the layouts, elminating duplications, creating and using functions for buttons and other reapeated blocks of code. Also Adding Comments to Make the Code More Readable.
+
+I know CameraView.swift is carrying a lot of responsibilities and needs to be separated out.  this is only a code review and refactor plan. Refer to Phased_Plan.md 
+
+The first step is creating a feature branch then a code review. 

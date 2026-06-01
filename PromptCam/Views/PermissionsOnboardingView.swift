@@ -1,9 +1,12 @@
+// PromptCam — Permissions Onboarding
+// Refactored June 1, 2026 — uses shared PermissionStatusDisplay helpers and Theme tokens.
 import AVFoundation
 import Photos
 import SwiftUI
 
 /// Full-screen onboarding view that requests camera, microphone,
 /// and photo library permissions before allowing access to the camera.
+/// Shown only on first launch; subsequent launches skip to the camera.
 struct PermissionsOnboardingView: View {
     /// Callback fired when the user taps Continue to proceed to camera.
     let onContinue: () -> Void
@@ -34,73 +37,73 @@ struct PermissionsOnboardingView: View {
             Spacer().frame(height: 60)
 
             // App icon and title
-            VStack(spacing: 12) {
+            VStack(spacing: Theme.space12) {
                 Image(systemName: "video.fill")
-                    .font(.system(size: 48, weight: .medium))
+                    .font(Theme.display44)
                     .foregroundStyle(.blue)
 
                 Text("PromptCam")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(Theme.font28Bold)
                     .foregroundStyle(.primary)
 
                 Text("To get started, PromptCam needs access to\nyour camera, microphone, and photo library.")
-                    .font(.system(size: 15, weight: .regular))
+                    .font(Theme.font16Regular)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, Theme.space32)
             }
 
             Spacer().frame(height: 40)
 
             // Permission rows
-            VStack(spacing: 16) {
-                PermissionRow(
+            VStack(spacing: Theme.space16) {
+                OnboardingPermissionRow(
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
                     description: "Record videos with your camera",
-                    status: avStatusLabel(cameraStatus),
-                    statusColor: avStatusColor(cameraStatus),
+                    status: PermissionStatusDisplay.label(for: cameraStatus),
+                    statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                     showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
                 )
 
-                PermissionRow(
+                OnboardingPermissionRow(
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
                     description: "Capture audio with your recordings",
-                    status: avStatusLabel(micStatus),
-                    statusColor: avStatusColor(micStatus),
+                    status: PermissionStatusDisplay.label(for: micStatus),
+                    statusColor: PermissionStatusDisplay.color(for: micStatus),
                     showSettingsLink: micStatus == .denied || micStatus == .restricted
                 )
 
-                PermissionRow(
+                OnboardingPermissionRow(
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
                     description: "Save and review your recordings",
-                    status: phStatusLabel(photoStatus),
-                    statusColor: phStatusColor(photoStatus),
+                    status: PermissionStatusDisplay.label(for: photoStatus),
+                    statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
                 )
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.space24)
 
             Spacer()
 
             // Action buttons
-            VStack(spacing: 12) {
+            VStack(spacing: Theme.space12) {
                 if hasUndetermined {
                     Button {
                         requestAllPermissions()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: Theme.space8) {
                             if isRequesting {
                                 ProgressView()
                                     .tint(.white)
                             }
                             Text("Grant Permissions")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(Theme.font16Semibold)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
@@ -115,7 +118,7 @@ struct PermissionsOnboardingView: View {
                     onContinue()
                 } label: {
                     Text("Continue")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(Theme.font16Semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(canContinue ? Color.blue : Color.gray.opacity(0.3))
@@ -124,7 +127,7 @@ struct PermissionsOnboardingView: View {
                 }
                 .disabled(!canContinue)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.space24)
             .padding(.bottom, 40)
         }
         .background(Color(.systemBackground))
@@ -159,51 +162,14 @@ struct PermissionsOnboardingView: View {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     }
-
-    // MARK: - Status Labels
-
-    private func avStatusLabel(_ status: AVAuthorizationStatus) -> String {
-        switch status {
-        case .authorized: return "Granted"
-        case .notDetermined: return "Not Set"
-        case .denied: return "Denied"
-        case .restricted: return "Restricted"
-        @unknown default: return "Unknown"
-        }
-    }
-
-    private func avStatusColor(_ status: AVAuthorizationStatus) -> Color {
-        switch status {
-        case .authorized: return .green
-        case .notDetermined: return .orange
-        case .denied, .restricted: return .red
-        @unknown default: return .gray
-        }
-    }
-
-    private func phStatusLabel(_ status: PHAuthorizationStatus) -> String {
-        switch status {
-        case .authorized, .limited: return "Granted"
-        case .notDetermined: return "Not Set"
-        case .denied: return "Denied"
-        case .restricted: return "Restricted"
-        @unknown default: return "Unknown"
-        }
-    }
-
-    private func phStatusColor(_ status: PHAuthorizationStatus) -> Color {
-        switch status {
-        case .authorized, .limited: return .green
-        case .notDetermined: return .orange
-        case .denied, .restricted: return .red
-        @unknown default: return .gray
-        }
-    }
 }
 
-// MARK: - Permission Row
+// MARK: - Onboarding Permission Row
 
-private struct PermissionRow: View {
+/// Card-style permission row used only on the onboarding screen.
+/// Differs from `PermissionStatusRow` (settings) in visual treatment:
+/// rounded card with icon circle, description text, and background fill.
+private struct OnboardingPermissionRow: View {
     let icon: String
     let iconColor: Color
     let title: String
@@ -220,49 +186,41 @@ private struct PermissionRow: View {
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 44, height: 44)
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Theme.font16Semibold)
                     .foregroundStyle(iconColor)
             }
 
             // Title + description
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(Theme.font16Semibold)
                     .foregroundStyle(.primary)
                 Text(description)
-                    .font(.system(size: 13, weight: .regular))
+                    .font(Theme.font12Regular)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             // Status badge
-            VStack(spacing: 4) {
-                HStack(spacing: 4) {
+            VStack(spacing: Theme.space4) {
+                HStack(spacing: Theme.space4) {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 8, height: 8)
                     Text(status)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Theme.font12Medium)
                         .foregroundStyle(statusColor)
                 }
 
                 if showSettingsLink {
-                    Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        Text("Settings")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.blue)
-                    }
+                    OpenSettingsButton()
                 }
             }
         }
-        .padding(16)
+        .padding(Theme.space16)
         .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMd))
     }
 }
 

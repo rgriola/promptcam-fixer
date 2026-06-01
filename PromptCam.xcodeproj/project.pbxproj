@@ -24,6 +24,16 @@
 		E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */; };
 		EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C5486901965005D700AC21 /* CameraService.swift */; };
 		F1A2B3C4D5E6F7081920A1B2 /* PermissionsOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D5E6F7A8B9C0D1E2F30415 /* PermissionsOnboardingView.swift */; };
+		AA0001010101010101010101 /* CameraTopControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011010101010101010101 /* CameraTopControlsView.swift */; };
+		AA0001020202020202020202 /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011020202020202020202 /* CameraLockStatusBadgeView.swift */; };
+		AA0001030303030303030303 /* RecordingClusterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011030303030303030303 /* RecordingClusterView.swift */; };
+		AA0001040404040404040404 /* CameraFooterControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011040404040404040404 /* CameraFooterControlsView.swift */; };
+		AA0001050505050505050505 /* TeleprompterCenterResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011050505050505050505 /* TeleprompterCenterResetButton.swift */; };
+		AA0001060606060606060606 /* CameraFormatPanelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011060606060606060606 /* CameraFormatPanelSheet.swift */; };
+		AA0001070707070707070707 /* ComposeScriptSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011070707070707070707 /* ComposeScriptSheet.swift */; };
+		AA0001080808080808080808 /* CameraSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011080808080808080808 /* CameraSettingsSheet.swift */; };
+		AA0001090909090909090909 /* PermissionStatusHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011090909090909090909 /* PermissionStatusHelpers.swift */; };
+		AA0001100A0A0A0A0A0A0A0A /* PermissionStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0011100A0A0A0A0A0A0A0A /* PermissionStatusRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +61,16 @@
 		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
 		42F8A85D424243EE0008DF6D /* CameraLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLayout.swift; sourceTree = "<group>"; };
+		AA0011010101010101010101 /* CameraTopControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTopControlsView.swift; sourceTree = "<group>"; };
+		AA0011020202020202020202 /* CameraLockStatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLockStatusBadgeView.swift; sourceTree = "<group>"; };
+		AA0011030303030303030303 /* RecordingClusterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingClusterView.swift; sourceTree = "<group>"; };
+		AA0011040404040404040404 /* CameraFooterControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFooterControlsView.swift; sourceTree = "<group>"; };
+		AA0011050505050505050505 /* TeleprompterCenterResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterCenterResetButton.swift; sourceTree = "<group>"; };
+		AA0011060606060606060606 /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
+		AA0011070707070707070707 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
+		AA0011080808080808080808 /* CameraSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsSheet.swift; sourceTree = "<group>"; };
+		AA0011090909090909090909 /* PermissionStatusHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusHelpers.swift; sourceTree = "<group>"; };
+		AA0011100A0A0A0A0A0A0A0A /* PermissionStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusRow.swift; sourceTree = "<group>"; };
 		55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
 		8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
 		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
@@ -120,7 +140,9 @@
 		95805BE9560DBDD612842BBB /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				42F8A85D424243EE0008DF6D /* CameraLayout.swift */,
+				AA00GRP1CAMERA010101010101 /* Camera */,
+				AA00GRP2SHEETS020202020202 /* Sheets */,
+				AA00GRP3COMPON030303030303 /* Components */,
 				3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */,
 				E749694F8D9812A53CBCC6CC /* CameraView.swift */,
 				8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */,
@@ -128,6 +150,38 @@
 				34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		AA00GRP1CAMERA010101010101 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				42F8A85D424243EE0008DF6D /* CameraLayout.swift */,
+				AA0011010101010101010101 /* CameraTopControlsView.swift */,
+				AA0011020202020202020202 /* CameraLockStatusBadgeView.swift */,
+				AA0011030303030303030303 /* RecordingClusterView.swift */,
+				AA0011040404040404040404 /* CameraFooterControlsView.swift */,
+				AA0011050505050505050505 /* TeleprompterCenterResetButton.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		AA00GRP2SHEETS020202020202 /* Sheets */ = {
+			isa = PBXGroup;
+			children = (
+				AA0011060606060606060606 /* CameraFormatPanelSheet.swift */,
+				AA0011070707070707070707 /* ComposeScriptSheet.swift */,
+				AA0011080808080808080808 /* CameraSettingsSheet.swift */,
+			);
+			path = Sheets;
+			sourceTree = "<group>";
+		};
+		AA00GRP3COMPON030303030303 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AA0011090909090909090909 /* PermissionStatusHelpers.swift */,
+				AA0011100A0A0A0A0A0A0A0A /* PermissionStatusRow.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		959EA3D47CF576057E3AB9E0 /* ViewModels */ = {
@@ -287,6 +341,16 @@
 				66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */,
 				C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */,
 				8822631F7E4FCED4165D036E /* Theme.swift in Sources */,
+				AA0001010101010101010101 /* CameraTopControlsView.swift in Sources */,
+				AA0001020202020202020202 /* CameraLockStatusBadgeView.swift in Sources */,
+				AA0001030303030303030303 /* RecordingClusterView.swift in Sources */,
+				AA0001040404040404040404 /* CameraFooterControlsView.swift in Sources */,
+				AA0001050505050505050505 /* TeleprompterCenterResetButton.swift in Sources */,
+				AA0001060606060606060606 /* CameraFormatPanelSheet.swift in Sources */,
+				AA0001070707070707070707 /* ComposeScriptSheet.swift in Sources */,
+				AA0001080808080808080808 /* CameraSettingsSheet.swift in Sources */,
+				AA0001090909090909090909 /* PermissionStatusHelpers.swift in Sources */,
+				AA0001100A0A0A0A0A0A0A0A /* PermissionStatusRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -402,7 +466,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -419,7 +483,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -483,7 +547,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -501,7 +565,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -555,7 +619,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -573,7 +637,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

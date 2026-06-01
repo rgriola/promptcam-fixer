@@ -132,7 +132,7 @@ Phase 4 — Scroll Controls Panel
 
 Phase 5 — Overlay Positioning + Safe Marker
 
-- OverlayPositionHandleView: right-lane drag handle and persistence hooks.
+- OverlayPositionHandleView: right-lane drag handle and persistence hooks. (depreciated) in 
 - SafeMarkerOverlayView: visual marker and intensity control.
 
 Phase 6 — Profile / Settings
@@ -353,3 +353,22 @@ Checklist
 Acceptance criteria
 
 - No overlaps, no clipped controls, tests stable.
+
+
+Known Issues and Features June 1
+- Tap autofocus not working in TeleprompterView. Camera I believe native autofocues do it is an issue of communicating with the user of the status. 
+- Sometime on load the Camera is not active causing white flash in Camera Viewport - looks like a problem.
+- Text Jump starts at times. 
+- Auto Scroll Could use better visible controls. 
+
+- Need to add Font Size, Font Color (4 Colors Standards), Scroll Speed Toggle Panel, Script Scroll Window Opacity
+- Layout mods, move Camera + Teleprompter view up in the screen to make space at the bottom for controls UI.
+- Script Archive - Local or Cloud. Save System for Copy/Paste - Button on Footer
+- Add Video Review from Photo Library >> Trim Options later. 
+- Header should have a clear purpose [Format][EV Level ][Focus][Guide Dog]
+- EV only button should move to bottom.
+- Add User Profile + Logins / Email + DB and push/pull scripts and settings to cloud.
+
+- Set up Privacy Policy Page, Security Policy Page.
+- How to use apple analytics. 
+- 

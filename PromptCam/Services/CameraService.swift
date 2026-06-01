@@ -15,6 +15,19 @@ enum PreferredCameraSelection: Equatable {
     case unavailable
 }
 
+/// Manages the AVCaptureSession lifecycle, recording, and focus/exposure hardware.
+///
+/// **Threading model**: All camera configuration runs on `sessionQueue` (a serial
+/// dispatch queue) to avoid blocking the main thread. Results are relayed back to
+/// the main thread via callback closures (`onRecordingStateChanged`, `onError`, etc.)
+/// using `DispatchQueue.main.async`.
+///
+/// **Why NSObject**: Required for `AVCaptureFileOutputRecordingDelegate` conformance,
+/// which provides `fileOutput(_:didStartRecordingTo:from:)` and
+/// `fileOutput(_:didFinishRecordingTo:from:error:)` callbacks.
+///
+/// **Callback pattern**: The ViewModel binds closures in `bindCallbacks()` at init.
+/// This avoids Combine/async bridging complexity while keeping the service testable.
 final class CameraService: NSObject {
     let session = AVCaptureSession()
 
