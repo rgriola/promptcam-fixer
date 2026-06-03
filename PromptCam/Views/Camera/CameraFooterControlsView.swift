@@ -8,7 +8,7 @@ import SwiftUI
 /// Contains photo library, compose, and settings icon buttons.
 struct CameraFooterControlsView: View {
     /// Device safe-area bottom inset for home-indicator spacing.
-    let safeBottomInset: CGFloat
+   // let safeBottomInset: CGFloat
     /// Action to open PhotosPicker.
     let onTapPhotoLibrary: () -> Void
     /// Action to open compose sheet.
@@ -18,7 +18,7 @@ struct CameraFooterControlsView: View {
 
     /// Footer control row for media import and utility actions.
     var body: some View {
-        HStack(spacing: Theme.space12) {
+        HStack{
             Spacer()
 
             footerIconButton(systemName: "photo.on.rectangle", action: onTapPhotoLibrary)
@@ -31,13 +31,15 @@ struct CameraFooterControlsView: View {
 
             Spacer()
 
-            footerIconButton(systemName: "sun.max", action: onTapSettings)
+            footerIconButton(systemName: "gear", action: onTapSettings)
                 .accessibilityLabel("Open camera settings")
-
+            
             Spacer()
         }
-        .padding(.bottom, max(safeBottomInset - 18, 0))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .padding(.horizontal, Theme.space12)
+            .padding(.bottom, Theme.space8) // Separate from preview.
+            .background(Theme.panelBg.opacity(0.9))
+            .frame(maxWidth: .infinity)
     }
 
     /// Shared circular icon button used by footer controls.
@@ -48,9 +50,8 @@ struct CameraFooterControlsView: View {
     private func footerIconButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(Theme.panelBg.opacity(0.9))
                 Image(systemName: systemName)
-                    .font(Theme.icon20)
+                    .font(Theme.icon24)
                     .foregroundStyle(Theme.white)
             }
             .frame(width: CameraLayout.footerIconSize, height: CameraLayout.footerIconSize)

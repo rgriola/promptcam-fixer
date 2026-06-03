@@ -100,8 +100,7 @@ struct CameraView: View {
                 // Layer 3: Header, record cluster, and footer chrome.
                 VStack(spacing: 0) {
                     cameraHeader()
-                       // .frame(height: barHeight + safeTopInset, alignment: .top)
-                       .frame(height: safeTopInset, alignment: .top)
+                    .frame(height: safeTopInset, alignment: .top)
 
                     Spacer(minLength: 0)
 
@@ -120,9 +119,11 @@ struct CameraView: View {
                     )
                     .padding(.bottom, CameraLayout.recordingBottomPadding)
 
-                    cameraFooter(safeBottomInset: safeBottomInset)
-                        .frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                        .offset(y: CameraLayout.footerVerticalOffset)
+                   cameraFooter()
+                        //.frame(height: barHeight + safeBottomInset, alignment: .bottom)
+                        .frame(height: safeBottomInset, alignment: .bottom)
+                       .offset(y: CameraLayout.footerVerticalOffset)
+
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -239,9 +240,8 @@ struct CameraView: View {
     /// Builds footer controls for photo picker, compose, and settings routes.
     /// - Parameter safeBottomInset: Safe-area inset used to align footer above home indicator.
     /// - Returns: Configured footer controls view.
-    private func cameraFooter(safeBottomInset: CGFloat) -> some View {
+   private func cameraFooter() -> some View {
         CameraFooterControlsView(
-            safeBottomInset: safeBottomInset,
             onTapPhotoLibrary: {
                 viewModel.openPhotoLibrary()
             },

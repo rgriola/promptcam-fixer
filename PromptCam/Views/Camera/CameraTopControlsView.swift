@@ -78,9 +78,8 @@ struct CameraTopControlsView: View {
                         .accessibilityHint("Shows or hides the composition grid")
                 }
             }
-          //  .padding(.horizontal, CameraLayout.headerHorizontalPadding)
             .padding(.horizontal, Theme.space12)
-            .padding(.top, Theme.space4) // Add space for notch.
+            .padding(.bottom, Theme.space8) // Separate from preview.
             .background(Theme.panelBg.opacity(0.9))
             .frame(maxWidth: .infinity)
     }

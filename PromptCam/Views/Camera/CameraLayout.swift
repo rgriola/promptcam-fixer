@@ -29,25 +29,22 @@ enum CameraLayout {
     }
 
     // MARK: - Header Chrome
-
     /// Horizontal inset for header controls (EV pill, grid, format panel).
     static let headerHorizontalPadding: CGFloat = 16
 
     // MARK: - Recording Cluster
-
     /// Bottom spacing between record cluster and footer bar.
     static let recordingBottomPadding: CGFloat = 18
 
     // MARK: - Footer Chrome
 
     /// Moves footer controls lower to align with approved design.
-    static let footerVerticalOffset: CGFloat = 38
+    static let footerVerticalOffset: CGFloat = 22
 
     /// Shared circular icon button diameter for footer controls.
     static let footerIconSize: CGFloat = 44
 
     // MARK: - Teleprompter
-
     /// Sets teleprompter viewport height (length knob).
     static let teleprompterViewportHeight: CGFloat = 500
 
@@ -55,7 +52,7 @@ enum CameraLayout {
     static let teleprompterBottomInset: CGFloat = 140
 
     /// Horizontal inset from the preview right edge for the center-reset button.
-    static let teleprompterResetEdgeInset: CGFloat = 18
+    static let teleprompterResetEdgeInset: CGFloat = 26
 
     /// Diameter of the center-reset button placed where the manual lane used to be.
     static let teleprompterResetButtonSize: CGFloat = 36

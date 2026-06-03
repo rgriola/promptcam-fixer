@@ -56,6 +56,7 @@ enum Theme {
     static let icon12 = fontFamily.font(size: 12)
     static let icon16 = fontFamily.font(size: 16)
     static let icon20 = fontFamily.font(size: 20)
+    static let icon24 = fontFamily.font(size: 24)
 
     // Display
     static let display24 = fontFamily.font(size: 24)
@@ -78,8 +79,8 @@ enum Theme {
     static let gray = Color(hex: "#8E8E93")
 
     static let cameraBg = Color(hex: "#0B0B0B")
-    static let panelBg = Color(hex: "#1C1C1E")
-    static let separator = Color(hex: "#2C2C2E")
+    static let panelBg = Color(hex: "#111111")
+    static let separator = Color(hex: "#F5F5F5").opacity(0.5)
     static let overlayScrim = Color(hex: "#000000")
 
     static let primaryText = Color(hex: "#F5F5F5")
