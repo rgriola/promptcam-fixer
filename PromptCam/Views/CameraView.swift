@@ -99,8 +99,9 @@ struct CameraView: View {
 
                 // Layer 3: Header, record cluster, and footer chrome.
                 VStack(spacing: 0) {
-                    cameraHeader(safeTopInset: safeTopInset)
-                        .frame(height: barHeight + safeTopInset, alignment: .top)
+                    cameraHeader()
+                       // .frame(height: barHeight + safeTopInset, alignment: .top)
+                       .frame(height: safeTopInset, alignment: .top)
 
                     Spacer(minLength: 0)
 
@@ -214,7 +215,7 @@ struct CameraView: View {
     /// Builds the top camera controls row and format quick panel.
     /// - Parameter safeTopInset: Safe-area inset used to anchor controls below the notch.
     /// - Returns: Configured top controls view.
-    private func cameraHeader(safeTopInset: CGFloat) -> some View {
+    private func cameraHeader() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
@@ -223,7 +224,6 @@ struct CameraView: View {
             lockStatus: viewModel.lockStatus,
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
-            safeTopInset: safeTopInset,
             onTapEV: {
                 print("EV button tapped")
             },
