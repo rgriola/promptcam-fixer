@@ -25,11 +25,8 @@ struct CameraLockStatusBadgeView: View {
     /// Badge pill that surfaces current autofocus/exposure state.
     var body: some View {
         Text(status.text)
-            .font(Theme.mono10Medium)
+            .font(Theme.mono16Medium)
             .foregroundStyle(statusColor)
-            .padding(.horizontal, Theme.space12)
-            .padding(.vertical, Theme.space8)
-            .background(Theme.panelBg.opacity(0.9), in: Capsule())
             .accessibilityLabel("Focus and exposure lock status")
             .accessibilityValue(status.text)
     }
