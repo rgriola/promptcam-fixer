@@ -13,7 +13,8 @@ enum CameraLayout {
     // MARK: - Preview Geometry
 
     /// Standard 9:16 aspect ratio used to compute preview height from width.
-    static let previewAspect: CGFloat = 9.0 / 16.0
+    /// 
+    static let previewAspect: CGFloat = 9.0 / 16.0 // 0.5625 aspect ratio
 
     /// Points of vertical drag to traverse the full ±exposure range (10 EV total).
     /// Used by `FocusIndicatorView` EV drag calculations.
@@ -49,11 +50,11 @@ enum CameraLayout {
     static let teleprompterViewportHeight: CGFloat = 500
 
     /// Sets distance from preview bottom edge to viewport bottom (position knob).
-    static let teleprompterBottomInset: CGFloat = 140
+    static let teleprompterBottomInset: CGFloat = 300 // guessed correct the first time
 
-    /// Horizontal inset from the preview right edge for the center-reset button.
-    static let teleprompterResetEdgeInset: CGFloat = 26
+    /// This move the horiz pos of both text and button
+    static let teleprompterResetEdgeInset: CGFloat = 25
 
-    /// Diameter of the center-reset button placed where the manual lane used to be.
+    /// button Size. 
     static let teleprompterResetButtonSize: CGFloat = 36
 }

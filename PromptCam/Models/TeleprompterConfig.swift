@@ -6,7 +6,7 @@ struct TeleprompterConfig: Equatable {
     var fontSize: Double
 
     static let `default` = TeleprompterConfig(
-        text: "Middle Bottom Button Opens The Compose Screen To Type or Past Your Script.",
+        text: "Tap script button below to load your script.",
         speedPointsPerSecond: 35,
         fontSize: 30
     )

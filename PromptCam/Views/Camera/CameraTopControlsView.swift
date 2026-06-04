@@ -79,8 +79,7 @@ struct CameraTopControlsView: View {
                 }
             }
             .padding(.horizontal, Theme.space12)
-            .padding(.bottom, Theme.space8) // Separate from preview.
-            .background(Theme.panelBg.opacity(0.9))
+            .padding(.bottom, Theme.space8)
             .frame(maxWidth: .infinity)
     }
 

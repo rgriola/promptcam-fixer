@@ -124,14 +124,16 @@ final class CameraViewModel: ObservableObject {
 
         if isRecording {
             cameraService.stopRecording()
+            print("[r] VM toggleRecording -> stopped")
         } else {
             cameraService.startRecording()
+            print("[r] VM toggleRecording -> started")
         }
     }
 
     func toggleScrolling() {
         isScrolling.toggle()
-        print("[TP] VM toggleScrolling -> \(isScrolling)")
+        print("[tScroll] VM toggleScrolling -> \(isScrolling)")
     }
 
     func openPhotoLibrary() {
@@ -181,7 +183,7 @@ final class CameraViewModel: ObservableObject {
     }
 
     func updateScriptText(_ text: String) {
-        print("[TP] VM updateScriptText len=\(text.count)")
+        print("[uScriptText] VM updateScriptText len=\(text.count)")
         config.text = text
     }
 
@@ -190,7 +192,7 @@ final class CameraViewModel: ObservableObject {
     func resetTeleprompterPosition() {
         if isScrolling {
             isScrolling = false
-            print("[TP] VM resetTeleprompterPosition paused scrolling")
+            print("[rTP] VM resetTeleprompterPosition paused scrolling")
         }
         teleprompterResetToken += 1
         print("[TP] VM resetTeleprompterPosition token=\(teleprompterResetToken)")

@@ -22,7 +22,6 @@ struct CameraView: View {
     private let exposureRange: Float = 5.0
 
     // MARK: - Focus / Exposure Gesture State
-
     /// Current focus indicator center in preview coordinates.
     @State private var focusIndicatorPoint: CGPoint?
     /// Controls visibility of the focus indicator.
@@ -43,12 +42,10 @@ struct CameraView: View {
     @State private var lastAppliedExposureBias: Float = 0
 
     // MARK: - Sheet / Picker State
-
     /// Temporary media selection binding for PhotosPicker.
     @State private var selectedMediaItem: PhotosPickerItem?
 
     // MARK: - Teleprompter State
-
     /// Script text we last auto-centered for. Re-center whenever the text changes.
     @State private var lastCenteredScriptText: String?
 
@@ -58,15 +55,23 @@ struct CameraView: View {
         GeometryReader { proxy in
             // Shared geometry values for safe-area-aware camera composition.
             let (barHeight, previewHeight) = CameraLayout.barHeights(containerSize: proxy.size)
+
             let previewCenter = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
             let previewTopY = previewCenter.y - (previewHeight / 2)
             let previewBottomY = previewCenter.y + (previewHeight / 2)
+
+            // Clamps prompter viewport height to a specic range. Max returns the larger of the two values. Min returns the smaller of the two values.
             let teleprompterViewportHeight = min(max(CameraLayout.teleprompterViewportHeight, 0), previewHeight)
+
             let minTeleprompterCenterY = previewTopY + (teleprompterViewportHeight / 2)
             let maxTeleprompterCenterY = previewBottomY - (teleprompterViewportHeight / 2)
+
             let requestedTeleprompterCenterY = previewBottomY - CameraLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
+
             let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
+
             let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraLayout.teleprompterResetEdgeInset
+
             let safeTopInset = proxy.safeAreaInsets.top
             let safeBottomInset = proxy.safeAreaInsets.bottom
 
@@ -110,18 +115,17 @@ struct CameraView: View {
                         isRecordEnabled: viewModel.isCameraReady,
                         onRecordTap: {
                             viewModel.toggleRecording()
-                            print("Recording toggled")
                         },
                         onScrollTap: {
                             viewModel.toggleScrolling()
-                            print("Scroll toggled")
                         }
                     )
                     .padding(.bottom, CameraLayout.recordingBottomPadding)
 
                    cameraFooter()
                         //.frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                        .frame(height: safeBottomInset, alignment: .bottom)
+                       // .frame(height: safeBottomInset, alignment: .bottom)
+                       .frame(height: barHeight + safeBottomInset, alignment: .bottom)
                        .offset(y: CameraLayout.footerVerticalOffset)
 
                 }
@@ -129,7 +133,7 @@ struct CameraView: View {
 
                 // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
-                    text: viewModel.config.text,
+                    text: viewModel.config.text,  // text 
                     fontSize: viewModel.config.fontSize,
                     speed: viewModel.config.speedPointsPerSecond,
                     isScrolling: viewModel.isScrolling,
@@ -157,6 +161,7 @@ struct CameraView: View {
                        height: CameraLayout.teleprompterResetButtonSize)
                 .position(x: teleprompterResetX, y: teleprompterCenterY)
             }
+            .background(Theme.bgGrad) // background for main view ZStack
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         // MARK: - Alerts & Pickers

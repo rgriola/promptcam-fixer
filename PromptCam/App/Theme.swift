@@ -109,6 +109,15 @@ enum Theme {
     static let space32: CGFloat = 32
 
     static let headerSpace36: CGFloat = 36
+
+    static let purple = Color(hex: "#8576EE")
+
+    static let bgGrad = LinearGradient(
+        colors: [Theme.black, Theme.purple],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
 }
 
 extension Color {
