@@ -1,4 +1,5 @@
 // May 29, 2026 - 11:23pm - GitHub Copilot
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add teleprompterHPad constant
 import SwiftUI
 
 enum FontFamily {
@@ -86,8 +87,9 @@ enum Theme {
     static let primaryText = Color(hex: "#F5F5F5")
     static let secondaryText = Color(hex: "#A1A1A6")
     static let tertiaryText = Color(hex: "#6E6E73")
+    static let blackText = Color(hex: "#111111")
 
-    static let glassOverlay = Color.white.opacity(0.08)
+    static let glassOverlay = Color.white.opacity(0.2)
     static let glassBorder = Color.white.opacity(0.12)
 
     // Materials
@@ -98,6 +100,9 @@ enum Theme {
     static let radiusMd: CGFloat = 12
     static let radiusLg: CGFloat = 16
     static let radiusXl: CGFloat = 20
+
+    // Teleprompter
+    static let teleprompterHPad: CGFloat = 24
 
     // Spacing
     static let space4: CGFloat = 4
@@ -113,6 +118,12 @@ enum Theme {
     static let purple = Color(hex: "#8576EE")
 
     static let bgGrad = LinearGradient(
+        colors: [Theme.black, Theme.purple],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let prompterEdgeBlur = LinearGradient(
         colors: [Theme.black, Theme.purple],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -139,3 +150,99 @@ extension Color {
         )
     }
 }
+
+
+// Drag Gesture based control
+/*
+ Component API
+struct CameraStyleSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let tickCount: Int = 9
+    let formatLabel: (Double) -> String  // e.g., "+0.3" or "50%"
+    let onReset: () -> Void
+    let onDismiss: () -> Void
+}
+3. Implementation Layers
+Layer 1: Container (Capsule Background)
+Dark capsule (60-70pt height, full available width minus padding)
+.background(.ultraThinMaterial.opacity(0.8)) or solid dark gray
+Overlay blur/shadow for depth
+
+Layer 2: Track with Tick Marks
+HStack approach:
+ForEach(0..<tickCount) → thin gray Rectangles (1-2pt wide, 12-16pt tall)
+Equal spacing via Spacer() between each
+Alternative Canvas approach: Draw lines at calculated X positions for pixel-perfect spacing
+
+Layer 3: Yellow Indicator Line
+Vertical Rectangle (2-3pt wide, 24-32pt tall, Theme.yellow)
+Position via .offset(x: thumbOffset)
+Calculate: thumbOffset = (value - range.lowerBound) / (range.upperBound - range.lowerBound) * trackWidth - (trackWidth / 2)
+Needs GeometryReader to get trackWidth
+
+Layer 4: Value Label
+Text above indicator line, same X offset
+Format via formatLabel(value) closure
+Consider adding +/- prefix logic
+
+Layer 5: Action Buttons
+Left X button: Calls onDismiss()
+Right reset button: Calls onReset()
+SF Symbols: xmark and arrow.counterclockwise
+Fixed width (~40-48pt each)
+
+@GestureState private var isDragging = false
+
+DragGesture(minimumDistance: 0)
+    .updating($isDragging) { _, state, _ in state = true }
+    .onChanged { gesture in
+        // Convert gesture.location.x to normalized 0...1
+        let normalized = gesture.location.x / trackWidth
+        let newValue = range.lowerBound + normalized * (range.upperBound - range.lowerBound)
+        value = newValue.clamped(to: range)
+        
+        // Optional: UIImpactFeedbackGenerator at tick boundaries
+    }
+
+5. Integration Points
+Replace existing sliders in:
+
+TeleprompterAdjustmentPanel.swift (3 sliders)
+Any future camera exposure/focus/zoom controls
+Theme additions needed:
+
+Theme.sliderTickGray (for tick marks)
+Theme.sliderIndicatorYellow (or reuse existing yellow)
+Possibly Theme.sliderCapsuleBg
+6. Optional Enhancements
+Phase 1 (MVP):
+
+Basic drag gesture + visual feedback
+Reset/dismiss buttons
+Value label
+Phase 2 (Polish):
+
+Haptic feedback at notch boundaries
+Smooth spring animation when reset
+Accessibility: VoiceOver adjustable trait
+Double-tap on track to jump to value
+Phase 3 (Advanced):
+
+Snapping to tick positions (discrete mode)
+Min/max labels at track ends
+Vertical orientation option
+7. Testing Strategy
+Manual:
+
+Drag across full range, verify min/max boundaries
+Test reset button snaps to default
+Verify dismiss closes without changing value
+Check on different screen sizes (SE, Pro Max)
+Unit tests:
+
+Value clamping logic
+Offset calculation (value → pixel position)
+Reverse calculation (pixel position → value)
+
+*/

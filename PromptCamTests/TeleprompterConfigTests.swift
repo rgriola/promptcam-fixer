@@ -1,6 +1,7 @@
 // PromptCam Unit Tests
 // Updated June 1, 2026 — aligned with current TeleprompterGeometry API
 // (progress-based pipeline was removed in Phase 5)
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textColor/backgroundOpacity to init calls after Phase 2 model expansion
 import XCTest
 @testable import PromptCam
 
@@ -8,7 +9,7 @@ import XCTest
 
 final class TeleprompterConfigTests: XCTestCase {
     func testClampedConfigLimitsFontAndSpeed() {
-        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8)
+        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15)
 
         let clamped = config.clamped
 
@@ -23,18 +24,30 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testClampedConfigSnapsToEvenFontSize() {
-        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25)
+        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25, textColor: .white, backgroundOpacity: 0.15)
         XCTAssertEqual(oddConfig.clamped.fontSize, 26) // rounds to nearest even
     }
 
     func testClampedConfigClampsSpeedLowerBound() {
-        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30)
+        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30, textColor: .white, backgroundOpacity: 0.15)
         XCTAssertEqual(lowSpeed.clamped.speedPointsPerSecond, 5)
     }
 
     func testClampedConfigClampsFontUpperBound() {
-        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100)
+        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100, textColor: .white, backgroundOpacity: 0.15)
         XCTAssertEqual(bigFont.clamped.fontSize, 72)
+    }
+
+    func testDefaultConfigTextColorIsWhite() {
+        XCTAssertEqual(TeleprompterConfig.default.textColor, .white)
+    }
+
+    func testClampedConfigClampsBackgroundOpacity() {
+        let overOpaque = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 1.5)
+        XCTAssertEqual(overOpaque.clamped.backgroundOpacity, 0.85, accuracy: 0.001)
+
+        let negative = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: -0.5)
+        XCTAssertEqual(negative.clamped.backgroundOpacity, 0.0, accuracy: 0.001)
     }
 }
 

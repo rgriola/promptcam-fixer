@@ -1,5 +1,7 @@
 // PromptCam — Primary Camera Screen
 // Refactored June 1, 2026 — sub-views extracted into Views/Camera/ and Views/Sheets/
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 3: pass TeleprompterConfig object to TeleprompterOverlayView
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 5: add TeleprompterAdjustmentPanel toggle + persistence
 //
 // Architecture:
 // CameraView is the root composition layer. It owns:
@@ -48,6 +50,8 @@ struct CameraView: View {
     // MARK: - Teleprompter State
     /// Script text we last auto-centered for. Re-center whenever the text changes.
     @State private var lastCenteredScriptText: String?
+    /// Controls visibility of the teleprompter adjustment panel.
+    @State private var showAdjustmentPanel: Bool = false
 
     // MARK: - Body
 
@@ -133,9 +137,7 @@ struct CameraView: View {
 
                 // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
-                    text: viewModel.config.text,  // text 
-                    fontSize: viewModel.config.fontSize,
-                    speed: viewModel.config.speedPointsPerSecond,
+                    config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
                     resetToken: viewModel.teleprompterResetToken,
                     onTextHeightChanged: { measuredHeight in
@@ -160,6 +162,44 @@ struct CameraView: View {
                 .frame(width: CameraLayout.teleprompterResetButtonSize,
                        height: CameraLayout.teleprompterResetButtonSize)
                 .position(x: teleprompterResetX, y: teleprompterCenterY)
+
+                // Layer 6: Teleprompter adjustment panel — slides up from below viewport.
+                if showAdjustmentPanel {
+                    VStack {
+                        // Tap-off-screen dismiss area — covers everything above the panel.
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showAdjustmentPanel = false
+                                }
+                                print("[TP] adjustmentPanel dismissed via tap-outside")
+                            }
+                        TeleprompterAdjustmentPanel(
+                            config: Binding(
+                                get: { viewModel.config },
+                                set: { viewModel.updateTeleprompterStyle($0) }
+                            ),
+                            onReset: {
+                                viewModel.updateTeleprompterStyle({
+                                    var defaults = TeleprompterConfig.default
+                                    defaults.text = viewModel.config.text
+                                    return defaults
+                                }())
+                            }
+                        )
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                // Layer 7: Temporary warning banner (top center).
+                TemporaryWarningBanner(
+                    message: "Stop recording to change format.",
+                    systemImage: "exclamationmark.triangle.fill",
+                    autoDismissAfter: 3.0,
+                    isPresented: $viewModel.showFormatLockedWarning
+                )
             }
             .background(Theme.bgGrad) // background for main view ZStack
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -252,6 +292,12 @@ struct CameraView: View {
             },
             onTapScriptAssist: {
                 viewModel.openCompose()
+            },
+            onTapAdjust: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showAdjustmentPanel.toggle()
+                }
+                print("[TP] adjustmentPanel toggled -> \(showAdjustmentPanel)")
             },
             onTapSettings: {
                 viewModel.openSettings()

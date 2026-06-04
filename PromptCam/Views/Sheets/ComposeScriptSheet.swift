@@ -7,6 +7,8 @@ import SwiftUI
 /// Modal sheet for editing teleprompter script text.
 /// Opens with keyboard focused and provides Save/Cancel toolbar actions.
 struct ComposeScriptSheet: View {
+    /// Maximum allowed script length (10,000 characters).
+    private static let kMaxScriptLength = 10_000
     /// Local draft text edited before save is committed.
     @State private var draftText: String
     /// Focus binding used to open the keyboard on sheet presentation.
@@ -27,6 +29,16 @@ struct ComposeScriptSheet: View {
         self.onCancel = onCancel
     }
 
+    /// Sanitizes script text by trimming whitespace and stripping control characters (except newlines/tabs).
+    private func sanitizeScript(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let allowed = CharacterSet.newlines.union(.init(charactersIn: "\t"))
+        let filtered = trimmed.unicodeScalars.filter { scalar in
+            !CharacterSet.controlCharacters.contains(scalar) || allowed.contains(scalar)
+        }
+        return String(String.UnicodeScalarView(filtered))
+    }
+
     /// Script editor UI with immediate keyboard focus.
     var body: some View {
         NavigationStack {
@@ -36,30 +48,53 @@ struct ComposeScriptSheet: View {
                     .focused($isEditorFocused)
                     .padding(Theme.space8)
                     .background(Theme.panelBg.opacity(0.2), in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+                    .frame(minHeight: 200, maxHeight: .infinity)
+                    .onChange(of: draftText) { _, newValue in
+                        if newValue.count > Self.kMaxScriptLength {
+                            draftText = String(newValue.prefix(Self.kMaxScriptLength))
+                        }
+                    }
 
-                Text("Edits are applied to the teleprompter text when you tap Save.")
-                    .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.secondaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Text("Save to apply script updates.")
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(Theme.primaryText)
+                    
+                    Spacer()
+                    
+                    Text("\(draftText.count) / \(Self.kMaxScriptLength)")
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
+                        .monospacedDigit()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .padding(Theme.space16)
-            .navigationTitle("Compose")
+            .frame(maxHeight: .infinity)
+            .navigationTitle("Script")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark)
             .onAppear {
-                DispatchQueue.main.async {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     isEditorFocused = true
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", action: onCancel)
+                    Button("X", action: onCancel)
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        onSave(draftText)
+                        let sanitized = sanitizeScript(draftText)
+                        let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
+                        onSave(truncated)
                     }
+                    .disabled(draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
+        .presentationBackground(Theme.bgGrad)
     }
 }

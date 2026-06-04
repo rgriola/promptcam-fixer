@@ -132,7 +132,7 @@ Phase 4 — Scroll Controls Panel
 
 Phase 5 — Overlay Positioning + Safe Marker
 
-- OverlayPositionHandleView: right-lane drag handle and persistence hooks. (depreciated) in 
+- OverlayPositionHandleView: right-lane drag handle and persistence hooks. (depreciated) in
 - SafeMarkerOverlayView: visual marker and intensity control.
 
 Phase 6 — Profile / Settings
@@ -354,42 +354,43 @@ Acceptance criteria
 
 - No overlaps, no clipped controls, tests stable.
 
-
 Known Issues and June 3 Priorities
-- [] Change Icons PhotoPicker, Settings, GuideDog
-- [] New Layout for Header [Format Panel + EV] [Focus Status] [GuideDog Icon]
-- [] Script reset button needs 25 - 50 right margin [maybe a new icon]
 
-- Hook up Library View so user can view captured videos w/o leaving app. Change Photo Icon  
+- [x] Change Icons PhotoPicker, Settings, GuideDog
+- [x] New Layout for Header [Format Panel + EV] [Focus Status] [GuideDog Icon]
+- [x] Script reset button needs 25 - 50 right margin [maybe a new icon]
 
-- Compose View Layout needs work, the pasted text also moves with Compose Title and it is too large. 
+- Hook up Library View so user can view captured videos w/o leaving app. Change Photo Icon
 
+[X] Compose View Layout needs work, the pasted text also moves with Compose Title and it is too large.
 
 - Record Needs a + Counter Panel to show record duration. 10% Opacity - White font size 12 Bold, this state changes to Red Background - 20% opacity on Record, changes back to default on Stop.
 
-- Need to add Panel Chooser for Font Size, Font Color (4 Colors Standards), Scroll Speed Toggle Panel, Teleprompter background 0 - 20%.  
+- Need to add Panel Chooser for Font Size, Font Color (4 Colors Standards), Scroll Speed Toggle Panel, Teleprompter background 0 - 20%.
 
-- Get on Boarding Set Up. 
+- Get on Boarding Set Up.
 
-- Make Guide dog Icon functional - with instructions. 
+- Make Guide dog Icon functional - with instructions.
 
-- VU Meter and Audio Input Choice for External Mics. 
+- VU Meter and Audio Input Choice for External Mics.
 
-Auto Focus + EV Lock covered by Teleprompter - 
-- Toggle Telepromopter view i/o maybe 
-- Tap autofocus not working in TeleprompterView. Camera I believe native autofocues do it is an issue of communicating with the user of the status. 
+Auto Focus + EV Lock covered by Teleprompter -
+
+- Toggle Telepromopter view i/o maybe
+- Tap autofocus not working in TeleprompterView. Camera I believe native autofocues do it is an issue of communicating with the user of the status.
 - Sometimes onload the Camera is not active causing white flash in Camera Viewport - looks like a problem where it is actually initializing.
 - Scroll Text Jump starts at times, maybe add and Easy In/Out
-- Text Also jumps on Touch. 
-- Auto Scroll Could use better visible controls. 
+- Text Also jumps on Touch.
+- Auto Scroll Could use better visible controls.
 
- Features
+Features
+
 - Need to add Font Size, Font Color (4 Colors Standards), Scroll Speed Toggle Panel, Script Scroll Window Opacity
 - Layout mods, move Camera + Teleprompter view up in the screen to make space at the bottom for controls UI.
 - Script Archive - Local or Cloud. Save System for Copy/Paste - Button on Footer
-- Add Video Review from Photo Library >> Trim Options later. 
+- Add Video Review from Photo Library >> Trim Options later.
 - Header should have a clear purpose [Format][EV Level ][Focus][Guide Dog]
-- Format Panel Chooser should be smaller and less invasive. 
+- Format Panel Chooser should be smaller and less invasive.
 - VU Meter with Control level control.
 
 - EV Control only button should move to bottom.
@@ -397,10 +398,10 @@ Auto Focus + EV Lock covered by Teleprompter -
 
 - Set up Privacy Policy Page, Security Policy Page. (set up Sea Lion Media)
 - How to use apple analytics.
-- NEW ICON FOR APP - Anchor Man 
+- NEW ICON FOR APP - Anchor Man
 - Add guide Dog Icon for instructions.
 
 - Combine Header Display elements
 - Swap in Guide Dog - Build Instructions
 
-- Add Fixer Theming to Splash, Icon UI. Black/Purple Gradient 
+- Add Fixer Theming to Splash, Icon UI. Black/Purple Gradient

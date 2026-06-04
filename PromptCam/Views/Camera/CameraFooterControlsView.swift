@@ -1,5 +1,6 @@
 // PromptCam — Footer Controls
 // Extracted from CameraView.swift (refactor June 1, 2026)
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 5: add onTapAdjust button (camera.metering.none)
 import SwiftUI
 
 // MARK: - Bottom Footer Controls
@@ -13,6 +14,8 @@ struct CameraFooterControlsView: View {
     let onTapPhotoLibrary: () -> Void
     /// Action to open compose sheet.
     let onTapScriptAssist: () -> Void
+    /// Action to toggle the teleprompter adjustment panel.
+    let onTapAdjust: () -> Void
     /// Action to open settings sheet.
     let onTapSettings: () -> Void
 
@@ -28,6 +31,11 @@ struct CameraFooterControlsView: View {
 
             footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
                 .accessibilityLabel("Insert generated script")
+
+            Spacer()
+
+            footerIconButton(systemName: "camera.metering.none", action: onTapAdjust)
+                .accessibilityLabel("Teleprompter adjustments")
 
             Spacer()
 

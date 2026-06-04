@@ -73,6 +73,8 @@ final class CameraViewModel: ObservableObject {
     @Published var isPhotoPickerPresented = false
     @Published var activeSheet: CameraSheetRoute?
     @Published var cameraMode: CameraMode = .camera
+    /// Warning banner for format panel locked during recording.
+    @Published var showFormatLockedWarning = false
     /// Bumped to signal the overlay to reset position (zero manualOffset).
     @Published var teleprompterResetToken: Int = 0
     /// Current recording format (resolution + FPS). Persisted across launches.
@@ -89,6 +91,14 @@ final class CameraViewModel: ObservableObject {
     private var queuedPhotoPicker = false
     private var lastPresentedSheet: CameraSheetRoute?
 
+    // MARK: - Style Persistence Keys
+    private enum StyleKey {
+        static let fontSize   = "tp.fontSize"
+        static let speed      = "tp.speed"
+        static let textColor  = "tp.textColor"
+        static let bgOpacity  = "tp.bgOpacity"
+    }
+
     let cameraService: CameraService
     private let permissionService: PermissionService
 
@@ -99,7 +109,7 @@ final class CameraViewModel: ObservableObject {
         self.cameraService = cameraService
         self.permissionService = permissionService
         self.recordingFormat = RecordingFormat.loadSaved()
-
+        loadStylePreferences()
         bindCallbacks()
     }
 
@@ -158,6 +168,13 @@ final class CameraViewModel: ObservableObject {
     }
 
     func openFormatPanel() {
+        // Gate: Cannot change format while recording
+        guard !isRecording else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                showFormatLockedWarning = true
+            }
+            return
+        }
         presentSheet(.formatPanel)
     }
 
@@ -185,6 +202,43 @@ final class CameraViewModel: ObservableObject {
     func updateScriptText(_ text: String) {
         print("[uScriptText] VM updateScriptText len=\(text.count)")
         config.text = text
+    }
+
+    /// Applies and clamps new style settings, then persists them.
+    func updateTeleprompterStyle(_ updated: TeleprompterConfig) {
+        // Preserve the current script text — only style fields change here.
+        var next = updated.clamped
+        next.text = config.text
+        config = next
+        saveStylePreferences()
+        print("[TP] updateTeleprompterStyle fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+    }
+
+    // MARK: - Style Persistence
+
+    private func saveStylePreferences() {
+        let ud = UserDefaults.standard
+        ud.set(config.fontSize,                   forKey: StyleKey.fontSize)
+        ud.set(config.speedPointsPerSecond,        forKey: StyleKey.speed)
+        ud.set(config.textColor.rawValue,          forKey: StyleKey.textColor)
+        ud.set(config.backgroundOpacity,           forKey: StyleKey.bgOpacity)
+    }
+
+    private func loadStylePreferences() {
+        let ud = UserDefaults.standard
+        // Only override defaults if a value has actually been saved previously.
+        if ud.object(forKey: StyleKey.fontSize) != nil {
+            config.fontSize            = ud.double(forKey: StyleKey.fontSize)
+            config.speedPointsPerSecond = ud.double(forKey: StyleKey.speed)
+            config.backgroundOpacity   = ud.double(forKey: StyleKey.bgOpacity)
+            if let raw = ud.string(forKey: StyleKey.textColor),
+               let color = TeleprompterTextColor(rawValue: raw) {
+                config.textColor = color
+            }
+            config = config.clamped
+            config.text = TeleprompterConfig.default.text
+            print("[TP] loadStylePreferences restored fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+        }
     }
 
     /// Resets the teleprompter to its centered starting position.

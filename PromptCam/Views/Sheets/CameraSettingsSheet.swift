@@ -55,10 +55,13 @@ struct CameraSettingsSheet: View {
                     )
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onClose)
+                    Button("X", action: onClose)
                 }
             }
             .onAppear { refreshStatuses() }
@@ -66,6 +69,7 @@ struct CameraSettingsSheet: View {
                 if newPhase == .active { refreshStatuses() }
             }
         }
+        .presentationBackground(Theme.bgGrad)
     }
 
     /// Human-readable app version/build string shown in settings.

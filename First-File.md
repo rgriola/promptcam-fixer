@@ -189,13 +189,29 @@ I need one button placed mid-screen right where the manual scroll priviously was
 
 Read this back to me, create a plan to impliment this update and place it into a markdown file called teleprompter-fix.md
 
-
-.. 
-I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script.  I need options to get this so any size script will start center screeen and completely roll off screen.  My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review. 
+..
+I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script. I need options to get this so any size script will start center screeen and completely roll off screen. My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review.
 
 ... Jun 1 2026
 Evaluate the promptercam-fixer codebase. I am at a point of MVP, the next steps in the development arc is a feature branch then refactoring the codebase before further development in the Phased_Plan.md I am open to simplifying the exsisting codebase including the layouts, elminating duplications, creating and using functions for buttons and other reapeated blocks of code. Also Adding Comments to Make the Code More Readable.
 
-I know CameraView.swift is carrying a lot of responsibilities and needs to be separated out.  this is only a code review and refactor plan. Refer to Phased_Plan.md 
+I know CameraView.swift is carrying a lot of responsibilities and needs to be separated out. this is only a code review and refactor plan. Refer to Phased_Plan.md
 
-The first step is creating a feature branch then a code review. 
+The first step is creating a feature branch then a code review.
+
+... June 4
+
+Option A. Teleprompter controls Can be a Button to show an adjustment panel for each parameter - so we don't crowd the UI.
+The panel should span with the width of the screen up to the bottom of the Teleprompter - does not cover the script only the control portion of the screen.
+
+use SF Symbol: camera.metering.none
+
+The button opens a panel Speed, Font Size, Opacity, Color controls.
+
+Font Size [Slider 16–72, step 2, label shows current pt]
+Scroll Speed [Slider 5–150, label shows pts/sec]
+Text Color [segmented/swatch row — White/Yellow/Red/Blue/Black]
+Background [Slider 0–20%, label shows %]
+
+We should also be able to live adjust the script panel parameters.
+And save the last settings for the script controls. We can add a reset button to the panel.
