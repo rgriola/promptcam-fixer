@@ -215,3 +215,38 @@ Background [Slider 0–20%, label shows %]
 
 We should also be able to live adjust the script panel parameters.
 And save the last settings for the script controls. We can add a reset button to the panel.
+
+...
+**_ Task _**
+Add in CameraView CameraTopControlsView() a control slider to onTapEV.
+
+**_ Context _**
+The EV Button controls the exposure value for the camera. There is a control function in CameraViewModel > adjustExposure(), this is connected to the EV control in the AF/AE tap but could be used with the EV Button as well.
+
+** Instructions **
+
+- Plan to wire the Camera Header EV button to the EV control, this button should have a slider panel which slides down from the control button.
+- When I approve the plan we can code.
+
+** Task **
+Turn this into a Button to toggle Camera Auto focus and Auto Exposure and AF/AE Lock - CameraLockStatusBadgeView(status: lockStatus)
+
+**_ Context _**
+with the telprompter layer interferes with the the long press auto lock and exposure control and display of the similar yellow box indicator. Moving to a Toggle Auto/ AF/AE Lock status I think is a simple solution.
+
+** Instructions **
+
+- Plan to wire the CameraLockStatusBadgeView(status: lockStatus) as a toggle button.
+- Change the current Yellow AF/AE Box lock to temporary display to show the face of interest. It should be a thin yellow line similar to the iOS camera app, show for 3 seconds then fade out. This should activate when the camera opens and toggle of new Auto/ AF/AE Lock Button. Creators can control exposure with the EV bias control.
+
+- When I approve the plan we can code.
+
+** Task **
+Add an instruction page section for the guide formerly a grid button > Button(action: onTapGrid)
+** ConText **
+This section will show guides how to use the app. We can start with one page and I will add more later as swipe through tabs.
+
+first page:
+Title: Guide Dog
+Text : This is the instructions page to walk through how to use Prompter Cam Fixer.
+...

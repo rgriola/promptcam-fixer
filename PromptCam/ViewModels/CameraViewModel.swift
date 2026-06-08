@@ -159,6 +159,8 @@ final class CameraViewModel: ObservableObject {
         isPhotoPickerPresented = true
     }
 
+    
+
     func openCompose() {
         presentSheet(.composeScript)
     }
@@ -167,6 +169,8 @@ final class CameraViewModel: ObservableObject {
         presentSheet(.settings)
     }
 
+
+
     func openFormatPanel() {
         // Gate: Cannot change format while recording
         guard !isRecording else {
@@ -174,8 +178,12 @@ final class CameraViewModel: ObservableObject {
                 showFormatLockedWarning = true
             }
             return
-        }
+        }// Sheet to change format
         presentSheet(.formatPanel)
+    }
+
+    func openEVSlider (){
+        
     }
 
     func dismissActiveSheet() {

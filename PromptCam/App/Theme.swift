@@ -58,6 +58,7 @@ enum Theme {
     static let icon16 = fontFamily.font(size: 16)
     static let icon20 = fontFamily.font(size: 20)
     static let icon24 = fontFamily.font(size: 24)
+    static let icon28 = fontFamily.font(size: 28)
 
     // Display
     static let display24 = fontFamily.font(size: 24)

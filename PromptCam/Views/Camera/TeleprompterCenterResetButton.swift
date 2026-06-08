@@ -24,6 +24,6 @@ struct TeleprompterCenterResetButton: View {
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.4 : 1)
         .accessibilityLabel("Reset script position")
-        .accessibilityHint("Centers the first line of script in the teleprompter viewport.")
+        .accessibilityHint("Centers script to the teleprompter center.")
     }
 }

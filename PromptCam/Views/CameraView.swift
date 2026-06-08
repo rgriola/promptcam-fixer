@@ -2,6 +2,7 @@
 // Refactored June 1, 2026 — sub-views extracted into Views/Camera/ and Views/Sheets/
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 3: pass TeleprompterConfig object to TeleprompterOverlayView
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 5: add TeleprompterAdjustmentPanel toggle + persistence
+// June 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add EV adjustment panel with hash marks and Auto button
 //
 // Architecture:
 // CameraView is the root composition layer. It owns:
@@ -28,19 +29,11 @@ struct CameraView: View {
     @State private var focusIndicatorPoint: CGPoint?
     /// Controls visibility of the focus indicator.
     @State private var showFocusIndicator = false
-    /// Tracks latest EV drag translation to preserve drag baseline state.
-    @State private var lastExposureDrag: CGSize = .zero
     /// Work item used to hide focus indicator after inactivity.
     @State private var hideFocusWorkItem: DispatchWorkItem?
-    /// Current EV value shown in UI and used for camera exposure updates.
+    /// Current EV value shown in UI and used for camera exposure updates (via EV panel).
     @State private var exposureBias: Float = 0
-    /// Debounces camera exposure writes while dragging EV.
-    @State private var exposureDebounceWorkItem: DispatchWorkItem?
-    /// EV baseline captured at the start of a drag gesture.
-    @State private var exposureDragBaselineBias: Float = 0
-    /// Initial Y value captured when EV drag begins.
-    @State private var exposureDragBaselineY: CGFloat = 0
-    /// Last EV value sent to camera service to compute incremental deltas.
+    /// Last EV value sent to camera service to compute incremental deltas (via EV panel).
     @State private var lastAppliedExposureBias: Float = 0
 
     // MARK: - Sheet / Picker State
@@ -52,6 +45,14 @@ struct CameraView: View {
     @State private var lastCenteredScriptText: String?
     /// Controls visibility of the teleprompter adjustment panel.
     @State private var showAdjustmentPanel: Bool = false
+    
+    // MARK: - EV Panel State
+    /// Controls visibility of the EV adjustment panel.
+    @State private var showEVPanel: Bool = false
+    
+    // MARK: - Instructions Sheet State
+    /// Controls visibility of the instructions guide sheet.
+    @State private var showInstructions: Bool = false
 
     // MARK: - Body
 
@@ -74,20 +75,20 @@ struct CameraView: View {
 
             let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
 
+            // should set the location of the Teleprompter Center Reset
+            let resetTeleprompterBottomY = proxy.size.height - CameraLayout.teleprompterBottomInset
+
             let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraLayout.teleprompterResetEdgeInset
 
             let safeTopInset = proxy.safeAreaInsets.top
             let safeBottomInset = proxy.safeAreaInsets.bottom
 
             ZStack {
-                // Layer 1: Live camera preview with tap/long-press gesture hooks.
+                // Layer 1: Live camera preview with tap gesture (long-press removed - conflicts with teleprompter).
                 CameraPreviewView(
                     session: viewModel.session,
                     onTap: { devicePoint, viewPoint in
                         handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint, barHeight: barHeight)
-                    },
-                    onLongPress: { devicePoint, viewPoint in
-                        handlePreviewLongPress(devicePoint: devicePoint, viewPoint: viewPoint, barHeight: barHeight)
                     }
                 )
                 .frame(width: proxy.size.width, height: previewHeight)
@@ -96,12 +97,7 @@ struct CameraView: View {
                 // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
                 if showFocusIndicator, let focusIndicatorPoint {
                     FocusIndicatorView(
-                        exposureRange: exposureRange,
-                        exposureBias: exposureBias,
-                        showFocusIndicator: showFocusIndicator,
-                        onDragDelta: { translationHeight in
-                            handleExposureDrag(translationHeight: translationHeight)
-                        }
+                        showFocusIndicator: showFocusIndicator
                     )
                     .position(focusIndicatorPoint)
                 }
@@ -161,7 +157,8 @@ struct CameraView: View {
                 )
                 .frame(width: CameraLayout.teleprompterResetButtonSize,
                        height: CameraLayout.teleprompterResetButtonSize)
-                .position(x: teleprompterResetX, y: teleprompterCenterY)
+               // .position(x: teleprompterResetX, y: teleprompterCenterY)
+               .position(x: teleprompterResetX, y: resetTeleprompterBottomY)
 
                 // Layer 6: Teleprompter adjustment panel — slides up from below viewport.
                 if showAdjustmentPanel {
@@ -200,6 +197,50 @@ struct CameraView: View {
                     autoDismissAfter: 3.0,
                     isPresented: $viewModel.showFormatLockedWarning
                 )
+                
+                // Layer 8: EV adjustment panel — slides down from EV button.
+                if showEVPanel {
+                    VStack(spacing: 0) {
+                        // Panel container aligned to top-leading (below EV button)
+                        HStack {
+                            EVAdjustmentPanel(
+                                exposureBias: $exposureBias,
+                                exposureRange: exposureRange,
+                                onReset: {
+                                    exposureBias = 0
+                                    let delta = -lastAppliedExposureBias
+                                    viewModel.adjustExposure(by: delta)
+                                    lastAppliedExposureBias = 0
+                                    print("EV reset to 0 (Auto)")
+                                },
+                                onAdjust: { newBias in
+                                    let delta = newBias - lastAppliedExposureBias
+                                    viewModel.adjustExposure(by: delta)
+                                    lastAppliedExposureBias = newBias
+                                }
+                            )
+                            .frame(width: 240)
+                            .padding(.top, safeTopInset + Theme.space8)
+                            .padding(.leading, Theme.space12)
+                            
+                            Spacer()
+                        }
+                        
+                        Spacer()
+                        
+                        // Tap-off-screen dismiss area
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showEVPanel = false
+                                }
+                                print("EV panel dismissed via tap-outside")
+                            }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
             .background(Theme.bgGrad) // background for main view ZStack
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -225,8 +266,13 @@ struct CameraView: View {
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
         }
+        .sheet(isPresented: $showInstructions) {
+            InstructionsView()
+        }
         // MARK: - Lifecycle
-        .onAppear { viewModel.onAppear() }
+        .onAppear {
+            viewModel.onAppear()
+        }
         .onDisappear {
             viewModel.onDisappear()
             viewModel.unlockFocusExposure()
@@ -271,13 +317,24 @@ struct CameraView: View {
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             onTapEV: {
-                print("EV button tapped")
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showEVPanel.toggle()
+                    // Close teleprompter panel if open (mutual exclusion)
+                    if showEVPanel {
+                        showAdjustmentPanel = false
+                    }
+                }
+                print("EV panel toggled -> \(showEVPanel)")
             },
             onTapGrid: {
-                print("Grid button tapped")
+                showInstructions = true
+                print("Instructions sheet opened")
             },
             onTapFormat: {
                 viewModel.openFormatPanel()
+            },
+            onTapLock: {
+                toggleLockStatus()
             }
         )
     }
@@ -307,24 +364,11 @@ struct CameraView: View {
 
     // MARK: - Focus / Exposure Gesture Handlers
 
-    /// Handles single tap to focus and return to auto lock mode when needed.
+    /// Handles single tap to focus at the touched point.
     private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
-        if viewModel.lockStatus != .auto {
-            viewModel.unlockFocusExposure()
-            print("AE/AF lock released")
-        }
-
         viewModel.focus(at: devicePoint)
-        print("Touch Focus")
+        print("Touch Focus at point")
         updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
-        scheduleFocusHide()
-    }
-
-    /// Handles long press to attempt lock behavior at the touched camera point.
-    private func handlePreviewLongPress(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
-        print("Preview long press lock attempt")
-        updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
-        viewModel.lockFocusExposure(at: devicePoint)
         scheduleFocusHide()
     }
 
@@ -336,34 +380,6 @@ struct CameraView: View {
         }
     }
 
-    /// Processes EV drag gesture translation into exposure bias updates.
-    private func handleExposureDrag(translationHeight: CGFloat) {
-        if lastExposureDrag == .zero {
-            exposureDragBaselineBias = exposureBias
-            exposureDragBaselineY = translationHeight
-            lastAppliedExposureBias = exposureBias
-        }
-
-        let totalDeltaY = translationHeight - exposureDragBaselineY
-        let scalePerPoint: Float = (exposureRange * 2) / Float(CameraLayout.evFullRangePoints)
-        let newBias = min(max(exposureDragBaselineBias - Float(totalDeltaY) * scalePerPoint, -exposureRange), exposureRange)
-
-        exposureBias = newBias
-        showFocusIndicator = true
-        scheduleFocusHide()
-
-        let pending = newBias - lastAppliedExposureBias
-        exposureDebounceWorkItem?.cancel()
-        let work = DispatchWorkItem {
-            viewModel.adjustExposure(by: pending)
-            lastAppliedExposureBias = newBias
-        }
-        exposureDebounceWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
-
-        lastExposureDrag = CGSize(width: 0, height: translationHeight)
-    }
-
     /// Schedules reticle fade-out for non-locked focus states.
     private func scheduleFocusHide() {
         guard !viewModel.lockStatus.isLocked else { return }
@@ -372,24 +388,35 @@ struct CameraView: View {
         let workItem = DispatchWorkItem {
             withAnimation(.easeOut(duration: 1.15)) {
                 showFocusIndicator = false
-                lastExposureDrag = .zero
             }
         }
 
         hideFocusWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
-
+    
+    // MARK: - Lock Toggle Helpers
+    
+    /// Toggles AF/AE lock on/off. When locking, uses the last focus point
+    /// if available, otherwise uses screen center.
+    private func toggleLockStatus() {
+        if viewModel.lockStatus.isLocked {
+            // Unlock: return to continuous auto
+            viewModel.unlockFocusExposure()
+            print("AF/AE unlocked via button -> AUTO")
+        } else {
+            // Lock: lock at last focus point (or center if no prior focus)
+            // Note: We use center point (0.5, 0.5) in device coordinates for lock
+            viewModel.lockFocusExposure(at: CGPoint(x: 0.5, y: 0.5))
+            print("AF/AE lock attempted via button at center")
+        }
+    }
+    
     /// Cancels pending focus/exposure work items on view disappearance.
     private func cleanupFocusState() {
         hideFocusWorkItem?.cancel()
         hideFocusWorkItem = nil
-        exposureDebounceWorkItem?.cancel()
-        exposureDebounceWorkItem = nil
-        exposureDragBaselineY = 0
-        exposureDragBaselineBias = exposureBias
         lastAppliedExposureBias = exposureBias
-        lastExposureDrag = .zero
     }
 
     // MARK: - Sheet Router

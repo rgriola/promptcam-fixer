@@ -48,18 +48,21 @@ struct RecordButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().strokeBorder(Theme.white, lineWidth: 4)
-                Circle().fill(isRecording ? Theme.redRecordPreview : Theme.red)
+                Circle().fill(
+                    isRecording ? Theme.redRecordPreview : Theme.red)
+                Circle().strokeBorder(Theme.white, lineWidth: 2)
+
                 if isRecording {
                     Image(systemName: "square.fill")
-                        .font(Theme.icon16)
+                        .font(Theme.icon28)
                         .foregroundStyle(Theme.white)
                 }
             }
         }
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.55)
-        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+        .accessibilityLabel(
+            isRecording ? "Stop recording" : "Start recording")
         .accessibilityHint("Toggles video recording")
     }
 }

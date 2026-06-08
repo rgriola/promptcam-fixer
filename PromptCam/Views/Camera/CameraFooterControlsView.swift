@@ -34,7 +34,9 @@ struct CameraFooterControlsView: View {
 
             Spacer()
 
-            footerIconButton(systemName: "camera.metering.none", action: onTapAdjust)
+            footerIconButton(
+                systemName: "camera.metering.none", 
+                action: onTapAdjust)
                 .accessibilityLabel("Teleprompter adjustments")
 
             Spacer()
