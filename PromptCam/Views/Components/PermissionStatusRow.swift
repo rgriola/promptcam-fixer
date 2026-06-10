@@ -63,12 +63,13 @@ struct SettingStatusRow: View {
         HStack {
             Text(title)
                 .font(Theme.font16Medium)
+                .foregroundStyle(Theme.white)
 
             Spacer()
 
             Text(value)
-                .font(Theme.font12Medium)
-                .foregroundStyle(Theme.secondaryText)
+                .font(Theme.font16Medium)
+                .foregroundStyle(Theme.white)
         }
     }
 }

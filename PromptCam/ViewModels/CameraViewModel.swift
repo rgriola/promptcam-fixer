@@ -314,6 +314,11 @@ final class CameraViewModel: ObservableObject {
         cameraService.adjustExposure(by: delta)
     }
 
+    /// Sets exposure bias to an absolute value. Use for reset — avoids delta drift.
+    func setExposure(to value: Float) {
+        cameraService.setExposure(to: value)
+    }
+
     // MARK: - Recording Format
 
     /// Applies a new recording format to the camera. No-op if recording.

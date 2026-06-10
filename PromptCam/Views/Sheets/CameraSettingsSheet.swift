@@ -24,11 +24,20 @@ struct CameraSettingsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("PromptCam") {
-                    SettingStatusRow(title: "Version", value: appVersion)
-                }
 
+                Section("About") {
+                    SettingStatusRow(title: "Version", value: appVersion)
+                } // This needs work. 
+                .listRowBackground(Theme.black.opacity(0.1))
+                .overlay(
+                RoundedRectangle(cornerRadius: Theme.radiusMd)
+                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                    .padding(.horizontal, Theme.space16)
+                )
+                .foregroundStyle(Theme.white)
+                
                 Section("Permissions") {
+
                     PermissionStatusRow(
                         icon: "camera.fill",
                         iconColor: .blue,
@@ -37,6 +46,7 @@ struct CameraSettingsSheet: View {
                         statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                         isDenied: cameraStatus == .denied || cameraStatus == .restricted
                     )
+
                     PermissionStatusRow(
                         icon: "mic.fill",
                         iconColor: .orange,
@@ -45,6 +55,7 @@ struct CameraSettingsSheet: View {
                         statusColor: PermissionStatusDisplay.color(for: micStatus),
                         isDenied: micStatus == .denied || micStatus == .restricted
                     )
+
                     PermissionStatusRow(
                         icon: "photo.on.rectangle",
                         iconColor: .green,
@@ -54,6 +65,9 @@ struct CameraSettingsSheet: View {
                         isDenied: photoStatus == .denied || photoStatus == .restricted
                     )
                 }
+                .listRowBackground(Theme.black.opacity(0.1))
+                .foregroundStyle(Theme.white)
+                
             }
             .scrollContentBackground(.hidden)
             .navigationTitle("Settings")

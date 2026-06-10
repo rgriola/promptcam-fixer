@@ -1,4 +1,5 @@
 // May 30, 2026 - 4:23pm - GitHub Copilot
+// June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add setExposure(to:) for reliable absolute reset
 import AVFoundation
 import Photos
 
@@ -427,6 +428,22 @@ final class CameraService: NSObject {
                 device.unlockForConfiguration()
             } catch {
                 self.publishError("Failed to adjust exposure: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Sets exposure bias to an absolute value, bypassing delta accumulation.
+    /// Reliable for reset — reads device min/max to clamp, then sets directly.
+    func setExposure(to value: Float) {
+        sessionQueue.async {
+            guard let device = self.videoDevice else { return }
+            let clamped = min(max(value, device.minExposureTargetBias), device.maxExposureTargetBias)
+            do {
+                try device.lockForConfiguration()
+                device.setExposureTargetBias(clamped) { _ in }
+                device.unlockForConfiguration()
+            } catch {
+                self.publishError("Failed to set exposure: \(error.localizedDescription)")
             }
         }
     }

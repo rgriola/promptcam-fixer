@@ -40,15 +40,15 @@ struct PermissionsOnboardingView: View {
             VStack(spacing: Theme.space12) {
                 Image(systemName: "video.fill")
                     .font(Theme.display44)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.white)
 
                 Text("PromptCam")
                     .font(Theme.font28Bold)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Theme.white)
 
-                Text("To get started, PromptCam needs access to\nyour camera, microphone, and photo library.")
+                Text("Required access to camera, mic & photo library.")
                     .font(Theme.font16Regular)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.space32)
             }
@@ -61,7 +61,7 @@ struct PermissionsOnboardingView: View {
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
-                    description: "Record videos with your camera",
+                    description: "Need Video.",
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                     showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
@@ -71,7 +71,7 @@ struct PermissionsOnboardingView: View {
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
-                    description: "Capture audio with your recordings",
+                    description: "No Audio, No Bueno",
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
                     showSettingsLink: micStatus == .denied || micStatus == .restricted
@@ -81,7 +81,7 @@ struct PermissionsOnboardingView: View {
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
-                    description: "Save and review your recordings",
+                    description: "To Keep Safe the Recording",
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
@@ -108,7 +108,7 @@ struct PermissionsOnboardingView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(.blue)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .disabled(isRequesting)
@@ -130,7 +130,7 @@ struct PermissionsOnboardingView: View {
             .padding(.horizontal, Theme.space24)
             .padding(.bottom, 40)
         }
-        .background(Color(.systemBackground))
+        .background(Theme.bgGrad)
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshStatuses()
@@ -194,10 +194,10 @@ private struct OnboardingPermissionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(Theme.font16Semibold)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Theme.white)
                 Text(description)
                     .font(Theme.font12Regular)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.white)
             }
 
             Spacer()
@@ -219,8 +219,14 @@ private struct OnboardingPermissionRow: View {
             }
         }
         .padding(Theme.space16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMd))
+        .background(Theme.black.opacity(0.1),
+            in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusMd)
+                .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
+        )
+
+
     }
 }
 

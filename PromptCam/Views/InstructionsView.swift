@@ -10,7 +10,7 @@ struct InstructionsView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Theme.cameraBg.ignoresSafeArea()
+            Theme.bgGrad.ignoresSafeArea()
 
             TabView(selection: $currentPage) {
                 guideDogPage.tag(0)

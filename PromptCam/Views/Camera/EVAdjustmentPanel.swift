@@ -1,4 +1,5 @@
 // June 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - EV adjustment panel with hash marks
+// June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Fix reset: use absolute setExposure(to:) via onReset
 import SwiftUI
 
 /// Slide-down panel for live exposure value adjustment.
@@ -18,7 +19,11 @@ struct EVAdjustmentPanel: View {
                 onAdjust: onAdjust
             )
             
-            AutoButton(onReset: onReset)
+            AutoButton(onReset: {
+                // Reset slider binding to 0, then notify parent to set camera to absolute 0
+                exposureBias = 0
+                onReset()
+            })
         }
         .padding(Theme.space12)
         .background(.ultraThinMaterial)

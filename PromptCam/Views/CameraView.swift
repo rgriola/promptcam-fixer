@@ -31,10 +31,8 @@ struct CameraView: View {
     @State private var showFocusIndicator = false
     /// Work item used to hide focus indicator after inactivity.
     @State private var hideFocusWorkItem: DispatchWorkItem?
-    /// Current EV value shown in UI and used for camera exposure updates (via EV panel).
+    /// Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
-    /// Last EV value sent to camera service to compute incremental deltas (via EV panel).
-    @State private var lastAppliedExposureBias: Float = 0
 
     // MARK: - Sheet / Picker State
     /// Temporary media selection binding for PhotosPicker.
@@ -207,16 +205,13 @@ struct CameraView: View {
                                 exposureBias: $exposureBias,
                                 exposureRange: exposureRange,
                                 onReset: {
-                                    exposureBias = 0
-                                    let delta = -lastAppliedExposureBias
-                                    viewModel.adjustExposure(by: delta)
-                                    lastAppliedExposureBias = 0
+                                    // Set absolute 0 — bypasses delta drift entirely
+                                    viewModel.setExposure(to: 0)
                                     print("EV reset to 0 (Auto)")
                                 },
                                 onAdjust: { newBias in
-                                    let delta = newBias - lastAppliedExposureBias
-                                    viewModel.adjustExposure(by: delta)
-                                    lastAppliedExposureBias = newBias
+                                    // Absolute value — no delta tracking needed
+                                    viewModel.setExposure(to: newBias)
                                 }
                             )
                             .frame(width: 240)
@@ -416,7 +411,6 @@ struct CameraView: View {
     private func cleanupFocusState() {
         hideFocusWorkItem?.cancel()
         hideFocusWorkItem = nil
-        lastAppliedExposureBias = exposureBias
     }
 
     // MARK: - Sheet Router
