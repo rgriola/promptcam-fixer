@@ -60,36 +60,37 @@ enum CameraLockStatus: Equatable {
 /// "sheet not presented" bug that occurs with rapid modal switching.
 ///
 /// **Callback binding**: `bindCallbacks()` connects `CameraService` closures to
-/// published properties at init time, keeping the service layer protocol-free.
+/// observable properties at init time, keeping the service layer protocol-free.
 @MainActor
-final class CameraViewModel: ObservableObject {
-    @Published var config = TeleprompterConfig.default
-    @Published var isRecording = false
-    @Published var isScrolling = false
+@Observable
+final class CameraViewModel {
+    var config = TeleprompterConfig.default
+    var isRecording = false
+    var isScrolling = false
 
-    @Published var errorMessage: String?
-    @Published var lockStatus: CameraLockStatus = .auto
-    @Published var isCameraReady = false
-    @Published var isPhotoPickerPresented = false
-    @Published var activeSheet: CameraSheetRoute?
-    @Published var cameraMode: CameraMode = .camera
+    var errorMessage: String?
+    var lockStatus: CameraLockStatus = .auto
+    var isCameraReady = false
+    var isPhotoPickerPresented = false
+    var activeSheet: CameraSheetRoute?
+    var cameraMode: CameraMode = .camera
     /// Warning banner for format panel locked during recording.
-    @Published var showFormatLockedWarning = false
+    var showFormatLockedWarning = false
     /// Bumped to signal the overlay to reset position (zero manualOffset).
-    @Published var teleprompterResetToken: Int = 0
+    var teleprompterResetToken: Int = 0
     /// Current recording format (resolution + FPS). Persisted across launches.
-    @Published var recordingFormat: RecordingFormat
+    var recordingFormat: RecordingFormat
     /// Hardware-supported resolutions for the active camera.
-    @Published var supportedResolutions: [VideoResolution] = VideoResolution.allCases
+    var supportedResolutions: [VideoResolution] = VideoResolution.allCases
     /// Hardware-supported frame rates for the active camera.
-    @Published var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
+    var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
 
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
 
-    private var queuedSheet: CameraSheetRoute?
-    private var queuedPhotoPicker = false
-    private var lastPresentedSheet: CameraSheetRoute?
+    @ObservationIgnored private var queuedSheet: CameraSheetRoute?
+    @ObservationIgnored private var queuedPhotoPicker = false
+    @ObservationIgnored private var lastPresentedSheet: CameraSheetRoute?
 
     // MARK: - Style Persistence Keys
     private enum StyleKey {

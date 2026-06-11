@@ -20,7 +20,7 @@ import SwiftUI
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
     /// View model that owns camera state, routes, and actions.
-    @StateObject var viewModel: CameraViewModel
+    @State var viewModel: CameraViewModel
     /// Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
 
@@ -55,7 +55,8 @@ struct CameraView: View {
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { proxy in
+        @Bindable var viewModel = viewModel
+        return GeometryReader { proxy in
             // Shared geometry values for safe-area-aware camera composition.
             let (barHeight, previewHeight) = CameraLayout.barHeights(containerSize: proxy.size)
 
