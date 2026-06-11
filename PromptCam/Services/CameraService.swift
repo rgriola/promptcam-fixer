@@ -29,7 +29,11 @@ enum PreferredCameraSelection: Equatable {
 ///
 /// **Callback pattern**: The ViewModel binds closures in `bindCallbacks()` at init.
 /// This avoids Combine/async bridging complexity while keeping the service testable.
-final class CameraService: NSObject {
+///
+/// **Sendable invariant**: All mutable state is mutated exclusively from `sessionQueue`
+/// (a serial dispatch queue), so the type is safely `@unchecked Sendable`. Do not add
+/// mutable state that is touched from any other queue without updating this guarantee.
+final class CameraService: NSObject, @unchecked Sendable {
     let session = AVCaptureSession()
 
     private let sessionQueue = DispatchQueue(label: "com.rgriola.promptcam.session")
@@ -38,11 +42,11 @@ final class CameraService: NSObject {
     private var videoDevice: AVCaptureDevice?
     private var isSessionConfigured = false
 
-    var onRecordingStateChanged: ((Bool) -> Void)?
-    var onSessionRunningStateChanged: ((Bool) -> Void)?
-    var onFormatApplied: ((RecordingFormat) -> Void)?
-    var onSupportedFormatsQueried: (([VideoResolution], [VideoFrameRate]) -> Void)?
-    var onError: ((String) -> Void)?
+    var onRecordingStateChanged: (@MainActor @Sendable (Bool) -> Void)?
+    var onSessionRunningStateChanged: (@MainActor @Sendable (Bool) -> Void)?
+    var onFormatApplied: (@MainActor @Sendable (RecordingFormat) -> Void)?
+    var onSupportedFormatsQueried: (@MainActor @Sendable ([VideoResolution], [VideoFrameRate]) -> Void)?
+    var onError: (@MainActor @Sendable (String) -> Void)?
 
     static func preferredCameraSelection(frontAvailable: Bool, backAvailable: Bool) -> PreferredCameraSelection {
         if frontAvailable {
@@ -132,7 +136,7 @@ final class CameraService: NSObject {
 
                 // Query supported formats NOW — videoDevice and preset are set.
                 let supported = self.supportedFormats()
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.onSupportedFormatsQueried?(supported.resolutions, supported.frameRates)
                 }
             } catch {
@@ -191,7 +195,7 @@ final class CameraService: NSObject {
             // Report what was actually applied.
             let appliedResolution: VideoResolution = self.session.sessionPreset == .hd4K3840x2160 ? .uhd4K : .hd1080p
             let applied = RecordingFormat(resolution: appliedResolution, frameRate: appliedRate)
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.onFormatApplied?(applied)
             }
         }
@@ -349,7 +353,7 @@ final class CameraService: NSObject {
         return .unsupported
     }
 
-    func lockFocusExposure(at devicePoint: CGPoint, completion: ((FocusExposureLockOutcome) -> Void)? = nil) {
+    func lockFocusExposure(at devicePoint: CGPoint, completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)? = nil) {
         sessionQueue.async {
             guard let device = self.videoDevice else {
                 self.publishLockOutcome(.unsupported, completion: completion)
@@ -470,27 +474,27 @@ final class CameraService: NSObject {
     }
 
     private func publishRecordingState(_ isRecording: Bool) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.onRecordingStateChanged?(isRecording)
         }
     }
 
     private func publishError(_ message: String) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.onError?(message)
         }
     }
 
     private func publishSessionRunningState(_ isRunning: Bool) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.onSessionRunningStateChanged?(isRunning)
         }
     }
 
-    private func publishLockOutcome(_ outcome: FocusExposureLockOutcome, completion: ((FocusExposureLockOutcome) -> Void)?) {
+    private func publishLockOutcome(_ outcome: FocusExposureLockOutcome, completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)?) {
         guard let completion else { return }
 
-        DispatchQueue.main.async {
+        Task { @MainActor in
             completion(outcome)
         }
     }
