@@ -189,7 +189,97 @@ I need one button placed mid-screen right where the manual scroll priviously was
 
 Read this back to me, create a plan to impliment this update and place it into a markdown file called teleprompter-fix.md
 
+..
+I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script. I need options to get this so any size script will start center screeen and completely roll off screen. My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review.
 
-.. 
-I need a deep evaluation of these three files. I am having placement issues with the script overlay not accomodating any size script.  I need options to get this so any size script will start center screeen and completely roll off screen.  My first thought it to remove start and endpoint math and always use the Script first line and center screen as the coupled starting points with no enpoint - elminnating the math involved. No coding just a review. 
+... Jun 1 2026
+Evaluate the promptercam-fixer codebase. I am at a point of MVP, the next steps in the development arc is a feature branch then refactoring the codebase before further development in the Phased_Plan.md I am open to simplifying the exsisting codebase including the layouts, elminating duplications, creating and using functions for buttons and other reapeated blocks of code. Also Adding Comments to Make the Code More Readable.
 
+I know CameraView.swift is carrying a lot of responsibilities and needs to be separated out. this is only a code review and refactor plan. Refer to Phased_Plan.md
+
+The first step is creating a feature branch then a code review.
+
+... June 4
+
+Option A. Teleprompter controls Can be a Button to show an adjustment panel for each parameter - so we don't crowd the UI.
+The panel should span with the width of the screen up to the bottom of the Teleprompter - does not cover the script only the control portion of the screen.
+
+use SF Symbol: camera.metering.none
+
+The button opens a panel Speed, Font Size, Opacity, Color controls.
+
+Font Size [Slider 16–72, step 2, label shows current pt]
+Scroll Speed [Slider 5–150, label shows pts/sec]
+Text Color [segmented/swatch row — White/Yellow/Red/Blue/Black]
+Background [Slider 0–20%, label shows %]
+
+We should also be able to live adjust the script panel parameters.
+And save the last settings for the script controls. We can add a reset button to the panel.
+
+...
+**_ Task _**
+Add in CameraView CameraTopControlsView() a control slider to onTapEV.
+
+**_ Context _**
+The EV Button controls the exposure value for the camera. There is a control function in CameraViewModel > adjustExposure(), this is connected to the EV control in the AF/AE tap but could be used with the EV Button as well.
+
+** Instructions **
+
+- Plan to wire the Camera Header EV button to the EV control, this button should have a slider panel which slides down from the control button.
+- When I approve the plan we can code.
+
+** Task **
+Turn this into a Button to toggle Camera Auto focus and Auto Exposure and AF/AE Lock - CameraLockStatusBadgeView(status: lockStatus)
+
+**_ Context _**
+with the telprompter layer interferes with the the long press auto lock and exposure control and display of the similar yellow box indicator. Moving to a Toggle Auto/ AF/AE Lock status I think is a simple solution.
+
+** Instructions **
+
+- Plan to wire the CameraLockStatusBadgeView(status: lockStatus) as a toggle button.
+- Change the current Yellow AF/AE Box lock to temporary display to show the face of interest. It should be a thin yellow line similar to the iOS camera app, show for 3 seconds then fade out. This should activate when the camera opens and toggle of new Auto/ AF/AE Lock Button. Creators can control exposure with the EV bias control.
+
+- When I approve the plan we can code.
+
+** Task **
+Add an instruction page section for the guide formerly a grid button > Button(action: onTapGrid)
+** ConText **
+This section will show guides how to use the app. We can start with one page and I will add more later as swipe through tabs.
+
+first page:
+Title: Guide Dog
+Text : This is the instructions page to walk through how to use Prompter Cam Fixer.
+...
+
+To - Do
+
+- Camera View
+
+  replace ObservedObject with Observable, may mean needing to move up to iOS 18 + Swift 6.
+  Need to move up to Swift 6.
+
+  High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
+
+  Test DJI mics [X], Rode []
+  Med []Add VU Meter to left side.
+
+  {Below both go together}
+  High []Move Header to footer bellow Rec Button
+  High []Shift Camera View and Teleprompter up as far as possible.
+  High []Add Record Timer Display ie 00:01:34
+
+  [] Changee format button + panel to toggle record mode; Pair available quality with frame rate, change button to toggle to move through available HD 30fps, HD 24fps, 4K 30fps, 4k 24fps and Cinematic
+
+  [] Low Cinematic Mode
+
+- Script View
+  [] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
+  [] add a lightweight save for backup should creator lost the script
+
+- Custom Photo Picker to allow creators to review in app.
+  Video Only - show last 5 videos. Figure out What is possible from this view.
+
+- [] Add App Guide Pages. Think Handrails for Users
+  - Insert Images drawn from App with Correct Styles
+  - Change App Icon + Splash Screen
+  - Look at cleaner opening for Camera View.

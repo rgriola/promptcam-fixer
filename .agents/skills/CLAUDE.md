@@ -80,3 +80,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## 6. Apple iOS Swift documentation
+
+https://developer.apple.com/documentation/Swift
+https://developer.apple.com/documentation/SwiftData
+https://developer.apple.com/documentation/SwiftUI
+https://developer.apple.com/documentation/Testing

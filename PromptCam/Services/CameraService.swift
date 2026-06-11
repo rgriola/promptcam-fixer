@@ -1,4 +1,5 @@
 // May 30, 2026 - 4:23pm - GitHub Copilot
+// June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add setExposure(to:) for reliable absolute reset
 import AVFoundation
 import Photos
 
@@ -15,6 +16,19 @@ enum PreferredCameraSelection: Equatable {
     case unavailable
 }
 
+/// Manages the AVCaptureSession lifecycle, recording, and focus/exposure hardware.
+///
+/// **Threading model**: All camera configuration runs on `sessionQueue` (a serial
+/// dispatch queue) to avoid blocking the main thread. Results are relayed back to
+/// the main thread via callback closures (`onRecordingStateChanged`, `onError`, etc.)
+/// using `DispatchQueue.main.async`.
+///
+/// **Why NSObject**: Required for `AVCaptureFileOutputRecordingDelegate` conformance,
+/// which provides `fileOutput(_:didStartRecordingTo:from:)` and
+/// `fileOutput(_:didFinishRecordingTo:from:error:)` callbacks.
+///
+/// **Callback pattern**: The ViewModel binds closures in `bindCallbacks()` at init.
+/// This avoids Combine/async bridging complexity while keeping the service testable.
 final class CameraService: NSObject {
     let session = AVCaptureSession()
 
@@ -414,6 +428,22 @@ final class CameraService: NSObject {
                 device.unlockForConfiguration()
             } catch {
                 self.publishError("Failed to adjust exposure: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Sets exposure bias to an absolute value, bypassing delta accumulation.
+    /// Reliable for reset — reads device min/max to clamp, then sets directly.
+    func setExposure(to value: Float) {
+        sessionQueue.async {
+            guard let device = self.videoDevice else { return }
+            let clamped = min(max(value, device.minExposureTargetBias), device.maxExposureTargetBias)
+            do {
+                try device.lockForConfiguration()
+                device.setExposureTargetBias(clamped) { _ in }
+                device.unlockForConfiguration()
+            } catch {
+                self.publishError("Failed to set exposure: \(error.localizedDescription)")
             }
         }
     }

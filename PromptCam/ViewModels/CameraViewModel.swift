@@ -47,6 +47,20 @@ enum CameraLockStatus: Equatable {
     }
 }
 
+/// Central state owner for the camera screen.
+///
+/// **@MainActor**: All published properties drive SwiftUI views, so the entire
+/// class is main-actor-isolated. Camera hardware calls go through `CameraService`
+/// which runs them on its own serial queue.
+///
+/// **Modal queue pattern**: SwiftUI allows only one `.sheet` presenter at a time.
+/// If the user triggers a second modal while one is active, the request is queued
+/// in `queuedSheet` (or `queuedPhotoPicker`). When the active modal dismisses,
+/// `presentQueuedModalIfNeeded()` dequeues the next one. This prevents the
+/// "sheet not presented" bug that occurs with rapid modal switching.
+///
+/// **Callback binding**: `bindCallbacks()` connects `CameraService` closures to
+/// published properties at init time, keeping the service layer protocol-free.
 @MainActor
 final class CameraViewModel: ObservableObject {
     @Published var config = TeleprompterConfig.default
@@ -59,6 +73,8 @@ final class CameraViewModel: ObservableObject {
     @Published var isPhotoPickerPresented = false
     @Published var activeSheet: CameraSheetRoute?
     @Published var cameraMode: CameraMode = .camera
+    /// Warning banner for format panel locked during recording.
+    @Published var showFormatLockedWarning = false
     /// Bumped to signal the overlay to reset position (zero manualOffset).
     @Published var teleprompterResetToken: Int = 0
     /// Current recording format (resolution + FPS). Persisted across launches.
@@ -68,9 +84,20 @@ final class CameraViewModel: ObservableObject {
     /// Hardware-supported frame rates for the active camera.
     @Published var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
 
+    // MARK: - Modal Queue State
+    // See class-level doc for explanation of the queue pattern.
+
     private var queuedSheet: CameraSheetRoute?
     private var queuedPhotoPicker = false
     private var lastPresentedSheet: CameraSheetRoute?
+
+    // MARK: - Style Persistence Keys
+    private enum StyleKey {
+        static let fontSize   = "tp.fontSize"
+        static let speed      = "tp.speed"
+        static let textColor  = "tp.textColor"
+        static let bgOpacity  = "tp.bgOpacity"
+    }
 
     let cameraService: CameraService
     private let permissionService: PermissionService
@@ -82,7 +109,7 @@ final class CameraViewModel: ObservableObject {
         self.cameraService = cameraService
         self.permissionService = permissionService
         self.recordingFormat = RecordingFormat.loadSaved()
-
+        loadStylePreferences()
         bindCallbacks()
     }
 
@@ -107,14 +134,16 @@ final class CameraViewModel: ObservableObject {
 
         if isRecording {
             cameraService.stopRecording()
+            print("[r] VM toggleRecording -> stopped")
         } else {
             cameraService.startRecording()
+            print("[r] VM toggleRecording -> started")
         }
     }
 
     func toggleScrolling() {
         isScrolling.toggle()
-        print("[TP] VM toggleScrolling -> \(isScrolling)")
+        print("[tScroll] VM toggleScrolling -> \(isScrolling)")
     }
 
     func openPhotoLibrary() {
@@ -130,6 +159,8 @@ final class CameraViewModel: ObservableObject {
         isPhotoPickerPresented = true
     }
 
+    
+
     func openCompose() {
         presentSheet(.composeScript)
     }
@@ -138,8 +169,21 @@ final class CameraViewModel: ObservableObject {
         presentSheet(.settings)
     }
 
+
+
     func openFormatPanel() {
+        // Gate: Cannot change format while recording
+        guard !isRecording else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                showFormatLockedWarning = true
+            }
+            return
+        }// Sheet to change format
         presentSheet(.formatPanel)
+    }
+
+    func openEVSlider (){
+        
     }
 
     func dismissActiveSheet() {
@@ -164,8 +208,45 @@ final class CameraViewModel: ObservableObject {
     }
 
     func updateScriptText(_ text: String) {
-        print("[TP] VM updateScriptText len=\(text.count)")
+        print("[uScriptText] VM updateScriptText len=\(text.count)")
         config.text = text
+    }
+
+    /// Applies and clamps new style settings, then persists them.
+    func updateTeleprompterStyle(_ updated: TeleprompterConfig) {
+        // Preserve the current script text — only style fields change here.
+        var next = updated.clamped
+        next.text = config.text
+        config = next
+        saveStylePreferences()
+        print("[TP] updateTeleprompterStyle fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+    }
+
+    // MARK: - Style Persistence
+
+    private func saveStylePreferences() {
+        let ud = UserDefaults.standard
+        ud.set(config.fontSize,                   forKey: StyleKey.fontSize)
+        ud.set(config.speedPointsPerSecond,        forKey: StyleKey.speed)
+        ud.set(config.textColor.rawValue,          forKey: StyleKey.textColor)
+        ud.set(config.backgroundOpacity,           forKey: StyleKey.bgOpacity)
+    }
+
+    private func loadStylePreferences() {
+        let ud = UserDefaults.standard
+        // Only override defaults if a value has actually been saved previously.
+        if ud.object(forKey: StyleKey.fontSize) != nil {
+            config.fontSize            = ud.double(forKey: StyleKey.fontSize)
+            config.speedPointsPerSecond = ud.double(forKey: StyleKey.speed)
+            config.backgroundOpacity   = ud.double(forKey: StyleKey.bgOpacity)
+            if let raw = ud.string(forKey: StyleKey.textColor),
+               let color = TeleprompterTextColor(rawValue: raw) {
+                config.textColor = color
+            }
+            config = config.clamped
+            config.text = TeleprompterConfig.default.text
+            print("[TP] loadStylePreferences restored fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+        }
     }
 
     /// Resets the teleprompter to its centered starting position.
@@ -173,7 +254,7 @@ final class CameraViewModel: ObservableObject {
     func resetTeleprompterPosition() {
         if isScrolling {
             isScrolling = false
-            print("[TP] VM resetTeleprompterPosition paused scrolling")
+            print("[rTP] VM resetTeleprompterPosition paused scrolling")
         }
         teleprompterResetToken += 1
         print("[TP] VM resetTeleprompterPosition token=\(teleprompterResetToken)")
@@ -231,6 +312,11 @@ final class CameraViewModel: ObservableObject {
 
     func adjustExposure(by delta: Float) {
         cameraService.adjustExposure(by: delta)
+    }
+
+    /// Sets exposure bias to an absolute value. Use for reset — avoids delta drift.
+    func setExposure(to value: Float) {
+        cameraService.setExposure(to: value)
     }
 
     // MARK: - Recording Format

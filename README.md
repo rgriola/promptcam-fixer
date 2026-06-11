@@ -4,13 +4,14 @@ PromptCam is a SwiftUI iOS MVP camera app with a teleprompter overlay for record
 
 ## Tech stack
 
-- **Language/UI:** Swift + SwiftUI
+- **Language/UI:** Swift 6.0 + SwiftUI
 - **Architecture:** MVVM
 - **Camera/Video:** AVFoundation (`AVCaptureSession`, `AVCaptureMovieFileOutput`)
 - **Permissions:** AVFoundation + Photos framework
 - **Save/Export:** PhotoKit (`PHPhotoLibrary`)
 - **Teleprompter Overlay:** Native SwiftUI overlay (`ZStack`, `TimelineView`)
 - **Audio:** AVAudioSession-ready via audio capture input
+- **iOS** Verision 18.
 
 ## Project layout
 

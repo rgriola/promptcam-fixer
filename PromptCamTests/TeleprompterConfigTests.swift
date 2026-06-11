@@ -1,10 +1,15 @@
-// May 31, 2026 - 10:30pm - GitHub Copilot (Claude Opus 4.7)
+// PromptCam Unit Tests
+// Updated June 1, 2026 — aligned with current TeleprompterGeometry API
+// (progress-based pipeline was removed in Phase 5)
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textColor/backgroundOpacity to init calls after Phase 2 model expansion
 import XCTest
 @testable import PromptCam
 
+// MARK: - TeleprompterConfig Tests
+
 final class TeleprompterConfigTests: XCTestCase {
     func testClampedConfigLimitsFontAndSpeed() {
-        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8)
+        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15)
 
         let clamped = config.clamped
 
@@ -15,18 +20,38 @@ final class TeleprompterConfigTests: XCTestCase {
     func testDefaultConfigHasExpectedValues() {
         XCTAssertEqual(TeleprompterConfig.default.speedPointsPerSecond, 35)
         XCTAssertEqual(TeleprompterConfig.default.fontSize, 30)
-        XCTAssertEqual(TeleprompterConfig.default.startOffsetProgress, 1.0)
         XCTAssertFalse(TeleprompterConfig.default.text.isEmpty)
     }
 
-    func testClampedConfigLimitsStartOffsetProgressRange() {
-        let lowConfig = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 35, fontSize: 30, startOffsetProgress: -2)
-        let highConfig = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 35, fontSize: 30, startOffsetProgress: 2)
+    func testClampedConfigSnapsToEvenFontSize() {
+        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25, textColor: .white, backgroundOpacity: 0.15)
+        XCTAssertEqual(oddConfig.clamped.fontSize, 26) // rounds to nearest even
+    }
 
-        XCTAssertEqual(lowConfig.clamped.startOffsetProgress, 0)
-        XCTAssertEqual(highConfig.clamped.startOffsetProgress, 1)
+    func testClampedConfigClampsSpeedLowerBound() {
+        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30, textColor: .white, backgroundOpacity: 0.15)
+        XCTAssertEqual(lowSpeed.clamped.speedPointsPerSecond, 5)
+    }
+
+    func testClampedConfigClampsFontUpperBound() {
+        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100, textColor: .white, backgroundOpacity: 0.15)
+        XCTAssertEqual(bigFont.clamped.fontSize, 72)
+    }
+
+    func testDefaultConfigTextColorIsWhite() {
+        XCTAssertEqual(TeleprompterConfig.default.textColor, .white)
+    }
+
+    func testClampedConfigClampsBackgroundOpacity() {
+        let overOpaque = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 1.5)
+        XCTAssertEqual(overOpaque.clamped.backgroundOpacity, 0.85, accuracy: 0.001)
+
+        let negative = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: -0.5)
+        XCTAssertEqual(negative.clamped.backgroundOpacity, 0.0, accuracy: 0.001)
     }
 }
+
+// MARK: - TeleprompterGeometry Tests
 
 final class TeleprompterGeometryTests: XCTestCase {
     // Reference geometry: 500pt viewport, 2000pt text, 30pt font, 16pt padding.
@@ -34,78 +59,70 @@ final class TeleprompterGeometryTests: XCTestCase {
         TeleprompterGeometry(viewportHeight: 500, textHeight: textHeight, fontSize: 30, verticalPadding: 16)
     }
 
-    func testStartOffsetPlacesFirstLineFullyBelowViewport() {
+    func testLineHeightUsesScaleFactor() {
         let geometry = makeGeometry()
-        // startOffset = viewportHeight - padding = 500 - 16 = 484 (first line off-screen below)
-        XCTAssertEqual(geometry.startOffset, 484, accuracy: 0.001)
+        // lineHeight = fontSize * 1.4 = 30 * 1.4 = 42
+        XCTAssertEqual(geometry.lineHeight, 42, accuracy: 0.001)
     }
 
-    func testManualEndOffsetPlacesLastLineFullyAboveViewport_TallText() {
+    func testStartOffsetCentersFirstLineInViewport() {
         let geometry = makeGeometry()
-        // manualEndOffset = padding - textHeight = 16 - 2000 = -1984 (last line off-screen above)
-        XCTAssertEqual(geometry.manualEndOffset, -1984, accuracy: 0.001)
+        // startOffset = centerOffset = viewportH/2 - padding - lineH/2
+        // = 250 - 16 - 21 = 213
+        XCTAssertEqual(geometry.startOffset, 213, accuracy: 0.001)
     }
 
-    func testManualEndOffsetIsValidForShortText() {
-        // Short script (fits in viewport): travel must still be positive and start > end.
-        let geometry = makeGeometry(textHeight: 104)
-        // manualEndOffset = 16 - 104 = -88
-        XCTAssertEqual(geometry.manualEndOffset, -88, accuracy: 0.001)
-        XCTAssertGreaterThan(geometry.startOffset, geometry.manualEndOffset)
-        XCTAssertGreaterThan(geometry.manualTravel, 0)
-    }
-
-    func testCenterOffsetPlacesFirstLineAtViewportVerticalMidpoint() {
+    func testCenterOffsetMatchesStartOffset() {
         let geometry = makeGeometry()
-        // centerOffset = viewportHeight/2 - padding - lineHeight/2 = 250 - 16 - 21 = 213
-        XCTAssertEqual(geometry.centerOffset, 213, accuracy: 0.001)
+        XCTAssertEqual(geometry.centerOffset, geometry.startOffset, accuracy: 0.001)
     }
 
-    func testAutoScrollFloorMatchesManualEndOffset() {
+    func testScrollStopOffsetPlacesLastLineAboveViewport() {
         let geometry = makeGeometry()
-        // Autoplay stops at the same place manual swipe stops: last line at top.
-        XCTAssertEqual(geometry.autoScrollFloor, geometry.manualEndOffset, accuracy: 0.001)
+        // scrollStopOffset = -(textHeight + padding) = -(2000 + 16) = -2016
+        XCTAssertEqual(geometry.scrollStopOffset, -2016, accuracy: 0.001)
     }
 
-    func testOffsetForProgressEndpointsMatchBoundaries() {
+    func testDragCeilingPreventsFirstLineBelowViewport() {
         let geometry = makeGeometry()
-        XCTAssertEqual(geometry.offset(forProgress: 1), geometry.startOffset, accuracy: 0.001)
-        XCTAssertEqual(geometry.offset(forProgress: 0), geometry.manualEndOffset, accuracy: 0.001)
+        // dragCeiling = viewportHeight - lineHeight = 500 - 42 = 458
+        XCTAssertEqual(geometry.dragCeiling, 458, accuracy: 0.001)
     }
 
-    func testOffsetForProgressClampsOutOfRangeValues() {
+    func testStartOffsetIsAboveScrollStopOffset() {
         let geometry = makeGeometry()
-        XCTAssertEqual(geometry.offset(forProgress: 2), geometry.startOffset, accuracy: 0.001)
-        XCTAssertEqual(geometry.offset(forProgress: -1), geometry.manualEndOffset, accuracy: 0.001)
+        // The script starts at a positive offset (first line centered) and
+        // scrolls to a negative offset (last line exits top).
+        XCTAssertGreaterThan(geometry.startOffset, geometry.scrollStopOffset)
     }
 
-    func testProgressForOffsetRoundTrips() {
+    func testDragCeilingIsAboveStartOffset() {
         let geometry = makeGeometry()
-        let midOffset = geometry.offset(forProgress: 0.42)
-        XCTAssertEqual(geometry.progress(forOffset: midOffset), 0.42, accuracy: 0.0001)
+        // dragCeiling (458) should be above startOffset (213) — user can drag
+        // first line further down from center toward the bottom.
+        XCTAssertGreaterThan(geometry.dragCeiling, geometry.startOffset)
     }
 
-    func testCenterProgressFallsInsideManualRange_TallText() {
-        let geometry = makeGeometry()
-        XCTAssertGreaterThanOrEqual(geometry.centerProgress, 0)
-        XCTAssertLessThanOrEqual(geometry.centerProgress, 1)
-        XCTAssertEqual(geometry.offset(forProgress: geometry.centerProgress), geometry.centerOffset, accuracy: 0.001)
+    func testGeometryWithShortText() {
+        // Short script that fits within the viewport.
+        let geometry = makeGeometry(textHeight: 80)
+        // scrollStopOffset = -(80 + 16) = -96
+        XCTAssertEqual(geometry.scrollStopOffset, -96, accuracy: 0.001)
+        // startOffset unchanged (centers first line regardless of text length)
+        XCTAssertEqual(geometry.startOffset, 213, accuracy: 0.001)
+        // Scroll range still valid (start > stop)
+        XCTAssertGreaterThan(geometry.startOffset, geometry.scrollStopOffset)
     }
 
-    func testCenterProgressFallsInsideManualRange_ShortText() {
-        let geometry = makeGeometry(textHeight: 104)
-        // Round-trip must hold for short text too — this was the regression that
-        // caused the reset button to snap to progress 0 instead of center.
-        XCTAssertGreaterThan(geometry.centerProgress, 0)
-        XCTAssertLessThan(geometry.centerProgress, 1)
-        XCTAssertEqual(geometry.offset(forProgress: geometry.centerProgress), geometry.centerOffset, accuracy: 0.001)
-    }
-
-    func testManualTravelIsPositiveWhenTextExceedsViewport() {
-        let geometry = makeGeometry()
-        XCTAssertGreaterThan(geometry.manualTravel, 0)
+    func testGeometryWithMinimalText() {
+        // Edge case: text is only one line tall.
+        let geometry = makeGeometry(textHeight: 1)
+        XCTAssertEqual(geometry.scrollStopOffset, -17, accuracy: 0.001)
+        XCTAssertGreaterThan(geometry.dragCeiling, geometry.scrollStopOffset)
     }
 }
+
+// MARK: - CameraService Lock Outcome Tests
 
 final class CameraServiceLockOutcomeTests: XCTestCase {
     func testLockOutcomeReturnsFullLockWhenBothCapabilitiesExist() {
@@ -132,6 +149,8 @@ final class CameraServiceLockOutcomeTests: XCTestCase {
         XCTAssertEqual(outcome, .unsupported)
     }
 }
+
+// MARK: - CameraService Camera Selection Tests
 
 final class CameraServicePreferredCameraSelectionTests: XCTestCase {
     func testPreferredCameraSelectionDefaultsToFrontWhenAvailable() {

@@ -1,9 +1,12 @@
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 4: extract ScrollingTeleprompterText, TeleprompterMeasurement, TeleprompterDebugHUD
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add edge-fade mask and eyeline triangle indicator
 import SwiftUI
-import UIKit
 import os
 
 /// Diagnostic HUD overlay. Keep off for normal use; flip true while debugging offset math.
 private let kTeleprompterDebugHUD = false
+// Horizontal padding applied to both the SwiftUI render and the UIKit measurement.
+// Single lever — change Theme.teleprompterHPad to adjust text column width.
 
 private let tpLog = Logger(subsystem: "com.promptcam.fixer", category: "Teleprompter")
 
@@ -15,9 +18,7 @@ private func tp(_ msg: @autoclosure () -> String) {
 }
 
 struct TeleprompterOverlayView: View {
-    let text: String
-    let fontSize: Double
-    let speed: Double
+    let config: TeleprompterConfig
     let isScrolling: Bool
     /// Bumped by the ViewModel to signal a position reset (zero manualOffset).
     let resetToken: Int
@@ -39,19 +40,20 @@ struct TeleprompterOverlayView: View {
                     let geometry = TeleprompterGeometry(
                         viewportHeight: proxy.size.height,
                         textHeight: max(measuredTextHeight, 1),
-                        fontSize: CGFloat(fontSize),
+                        fontSize: CGFloat(config.fontSize),
                         verticalPadding: Theme.space16
                     )
                     let baseOffset = geometry.startOffset
-                    let autoOffset = (isScrolling && !isUserDragging) ? -elapsed * speed : 0
+                    let autoOffset = (isScrolling && !isUserDragging) ? -elapsed * config.speedPointsPerSecond : 0
                     let interim = baseOffset + manualOffset + dragTranslationY + autoOffset
                     // Floor: can't scroll past last line exiting top.
                     // Ceiling: can't drag first line below viewportH − lineH.
                     let totalY = min(max(interim, geometry.scrollStopOffset), geometry.dragCeiling)
 
                     ScrollingTeleprompterText(
-                        text: text,
-                        fontSize: fontSize,
+                        text: config.text,
+                        fontSize: config.fontSize,
+                        textColor: config.textColor.color,
                         offsetY: totalY
                     )
                 }
@@ -76,24 +78,56 @@ struct TeleprompterOverlayView: View {
                     }
             )
             .frame(width: proxy.size.width, height: proxy.size.height)
-            .background(Theme.overlayScrim.opacity(0.15))
+            .background(Theme.overlayScrim.opacity(config.backgroundOpacity))
             .clipped()
+            // Fade text at top and bottom edges so script blends in/out smoothly.
+            .mask(alignment: .center) {
+                VStack(spacing: 0) {
+                    // this is not used but keep it for now. RG June 4, 2026.
+                    LinearGradient(colors: [.clear, .black],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 0)
+                    Color.black
+                    LinearGradient(colors: [.black, .clear],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 48) // taller fade at bottom — text enters here
+                }
+            }
+            // Eyeline indicator — points talent where to focus their gaze.
+            // Height matches one line of text (fontSize × 1.4); width is half that.
+            .overlay(alignment: .topTrailing) {
+                let lineH = CGFloat(config.fontSize) * 1.4
+                EyelineTriangle()
+                    .fill(Theme.white.opacity(0.55))
+                    .frame(width: lineH * 0.5, height: lineH)
+                    .padding(.top, 36)
+                    .padding(.trailing, Theme.space8)
+                    .allowsHitTesting(false)
+            }
             .overlay(alignment: .topLeading) {
                 if kTeleprompterDebugHUD {
                     TimelineView(.animation(minimumInterval: 1 / 10)) { context in
-                        debugHUD(at: context.date, viewportH: proxy.size.height)
+                        TeleprompterDebugHUD(
+                            config: config,
+                            measuredTextHeight: measuredTextHeight,
+                            manualOffset: manualOffset,
+                            isScrolling: isScrolling,
+                            scrollStartTime: scrollStartTime,
+                            viewportH: proxy.size.height,
+                            date: context.date
+                        )
                     }
                     .allowsHitTesting(false)
                 }
             }
             .onAppear {
                 viewportHeight = proxy.size.height
-                tp("onAppear viewportH=\(Int(viewportHeight)) textLen=\(text.count)")
+                tp("onAppear viewportH=\(Int(viewportHeight)) textLen=\(config.text.count)")
                 remeasureText(width: proxy.size.width)
             }
             // .task(id:) is more reliable than .onChange for large strings & view re-creations.
-            .task(id: TextMeasureKey(text: text, fontSize: fontSize, width: proxy.size.width)) {
-                tp("task(id:) fired textLen=\(text.count) width=\(Int(proxy.size.width))")
+            .task(id: TextMeasureKey(text: config.text, fontSize: config.fontSize, width: proxy.size.width)) {
+                tp("task(id:) fired textLen=\(config.text.count) width=\(Int(proxy.size.width))")
                 remeasureText(width: proxy.size.width)
             }
             .onChange(of: proxy.size.height) { _, newValue in
@@ -105,7 +139,7 @@ struct TeleprompterOverlayView: View {
                 let geo = TeleprompterGeometry(
                     viewportHeight: viewportHeight,
                     textHeight: max(measuredTextHeight, 1),
-                    fontSize: CGFloat(fontSize),
+                    fontSize: CGFloat(config.fontSize),
                     verticalPadding: Theme.space16
                 )
                 tp("RESET manualOffset \(Int(manualOffset)) -> 0 | startOffset=\(Int(geo.startOffset)) floor=\(Int(geo.scrollStopOffset)) ceil=\(Int(geo.dragCeiling)) vpH=\(Int(viewportHeight)) textH=\(Int(measuredTextHeight)) lineH=\(Int(geo.lineHeight))")
@@ -119,50 +153,14 @@ struct TeleprompterOverlayView: View {
         }
     }
 
-    private struct ScrollingTeleprompterText: View {
-        let text: String
-        let fontSize: Double
-        let offsetY: CGFloat
-
-        var body: some View {
-            GeometryReader { geo in
-                Text(text)
-                    .font(Theme.fontFamily.rounded(size: fontSize, weight: .semibold))
-                    .foregroundStyle(Theme.primaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Theme.space24)
-                    .padding(.vertical, Theme.space16)
-                    .frame(width: geo.size.width, alignment: .top)
-                    .fixedSize(horizontal: false, vertical: true)
-                    // Position the text block so its top edge is at offsetY.
-                    // .position places the view's CENTER, so we shift by half the view's height.
-                    .offset(y: offsetY)
-                    // Anchor the text's top-left to the viewport's top-left,
-                    // then let .offset handle the scroll position.
-                    .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
-            }
-            .clipped()
-        }
-    }
-
     // MARK: - UIKit-based text measurement (reliable replacement for PreferenceKey path)
 
     private func remeasureText(width: CGFloat) {
-        guard width > 0 else { return }
-        let horizontalPadding = Theme.space24 * 2
-        let availableWidth = max(width - horizontalPadding, 1)
-        let uiFont = UIFont.systemFont(ofSize: CGFloat(fontSize), weight: .semibold)
-        let attributes: [NSAttributedString.Key: Any] = [.font: uiFont]
-        let bounding = (text as NSString).boundingRect(
-            with: CGSize(width: availableWidth, height: .greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: attributes,
-            context: nil
-        )
-        let verticalPadding = Theme.space16 * 2
-        let total = ceil(bounding.height) + verticalPadding
+        guard let total = measureTeleprompterTextHeight(
+            text: config.text, fontSize: config.fontSize, viewWidth: width
+        ) else { return }
         if abs(measuredTextHeight - total) > 0.5 {
-            tp("MEASURE width=\(Int(width)) availW=\(Int(availableWidth)) textLen=\(text.count) boundH=\(Int(bounding.height)) vPad=\(Int(verticalPadding)) -> textH=\(Int(total)) (was \(Int(measuredTextHeight)))")
+            tp("MEASURE width=\(Int(width)) textLen=\(config.text.count) -> textH=\(Int(total)) (was \(Int(measuredTextHeight)))")
             measuredTextHeight = total
             onTextHeightChanged(total)
             if !isScrolling { resetScrollPosition() }
@@ -181,63 +179,22 @@ struct TeleprompterOverlayView: View {
         } else {
             // When stopping, bake the current auto offset into manualOffset so the position sticks
             let elapsed = CGFloat(Date().timeIntervalSince(scrollStartTime))
-            let autoApplied = -elapsed * CGFloat(speed)
+            let autoApplied = -elapsed * CGFloat(config.speedPointsPerSecond)
             manualOffset += autoApplied
         }
     }
 
-    // MARK: - Debug HUD
-
-    @ViewBuilder
-    private func debugHUD(at date: Date, viewportH: CGFloat) -> some View {
-        let geo = TeleprompterGeometry(
-            viewportHeight: viewportH,
-            textHeight: max(measuredTextHeight, 1),
-            fontSize: CGFloat(fontSize),
-            verticalPadding: Theme.space16
-        )
-        let elapsed = date.timeIntervalSince(scrollStartTime)
-        let autoOff = isScrolling ? -elapsed * speed : 0
-        let rendered = min(max(geo.startOffset + manualOffset + autoOff, geo.scrollStopOffset), geo.dragCeiling)
-        VStack(alignment: .leading, spacing: 2) {
-            Text("TP-DEBUG").foregroundStyle(.red)
-            Text("viewportH: \(Int(viewportH))")
-            Text("textH:     \(Int(measuredTextHeight))")
-            Text("textLen:   \(text.count)")
-            Text("offset:    \(Int(rendered))")
-            Text("manual:    \(Int(manualOffset))")
-            Text("start:     \(Int(geo.startOffset))")
-            Text("floor:     \(Int(geo.scrollStopOffset))")
-            Text("ceiling:   \(Int(geo.dragCeiling))")
-            Text("scrolling: \(isScrolling ? "YES" : "no")")
-            Text("speed:     \(Int(speed))")
-        }
-        .font(.system(size: 11, weight: .bold, design: .monospaced))
-        .foregroundStyle(.yellow)
-        .padding(8)
-        .background(Color.black.opacity(0.85))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.red, lineWidth: 1)
-        )
-        .cornerRadius(6)
-        .padding(8)
-    }
 }
 
-/// Composite key used by `.task(id:)` to trigger re-measurement when the text,
-/// font size, or available width changes. Uses text length + a hash so giant
-/// strings don't get fully copied on every body eval.
-private struct TextMeasureKey: Hashable {
-    let length: Int
-    let hash: Int
-    let fontSize: Double
-    let width: CGFloat
-
-    init(text: String, fontSize: Double, width: CGFloat) {
-        self.length = text.count
-        self.hash = text.hashValue
-        self.fontSize = fontSize
-        self.width = width
+/// Arrow pointing left — indicates the talent's eyeline focus point
+/// at the top-right edge of the teleprompter viewport.
+private struct EyelineTriangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.maxX, y: rect.minY))  // top-right
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // bottom-right
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.midY)) // left point (arrow tip)
+        p.closeSubpath()
+        return p
     }
 }

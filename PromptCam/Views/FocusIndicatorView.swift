@@ -1,101 +1,21 @@
 // May 29, 2026 - 11:23pm - GitHub Copilot
+// June 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Simplify to thin yellow rectangle (iOS Camera style)
 import SwiftUI
 
+/// Simplified focus indicator: thin yellow rectangle (matches iOS Camera app).
+/// Shows briefly after focus tap or lock toggle, then fades after 3 seconds.
+/// Future enhancement: Could use face detection to dynamically size/position the frame.
 struct FocusIndicatorView: View {
-    let exposureRange: Float
-    let exposureBias: Float
     let showFocusIndicator: Bool
-    let onDragDelta: (CGFloat) -> Void
-
-    private var biasClamped: Float { min(max(exposureBias, -exposureRange), exposureRange) }
-
+    
     var body: some View {
-        let boxSize: CGFloat = 84
-        let cornerLength: CGFloat = 16
-        let lineWidth: CGFloat = 2
-        let sliderHeight: CGFloat = 110
-        let sliderOffsetX: CGFloat = (boxSize / 2) + 16
-        let sliderTravel = Float(sliderHeight / 2 - 8)
-        let sunOffsetY = CGFloat(-biasClamped / exposureRange * sliderTravel)
-        let evText = String(format: "%.1f", biasClamped)
-
-        return ZStack {
-            FocusCorners(size: boxSize, cornerLength: cornerLength, lineWidth: lineWidth)
-
-            if showFocusIndicator {
-                Rectangle()
-                    .fill(Theme.yellow)
-                    .frame(width: lineWidth, height: sliderHeight)
-                    .offset(x: sliderOffsetX, y: 0)
-            }
-
-            HStack(spacing: 6) {
-                Image(systemName: "sun.max.fill")
-                    .font(Theme.icon20)
-                    .foregroundStyle(Theme.yellow)
-
-                Text("EV \(evText)")
-                    .font(Theme.mono10Medium)
-                    .foregroundStyle(Theme.yellow)
-                    .frame(width: 52, alignment: .leading)
-            }
-            .offset(x: sliderOffsetX + 29, y: sunOffsetY)
-        }
-        .frame(width: boxSize, height: boxSize)
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    onDragDelta(value.translation.height)
-                }
-        )
-        .accessibilityLabel("Exposure and focus control")
-        .accessibilityHint("Drag up or down to adjust exposure.")
-    }
-}
-
-private struct FocusCorners: View {
-    let size: CGFloat
-    let cornerLength: CGFloat
-    let lineWidth: CGFloat
-
-    var body: some View {
-        let half = size / 2
-        ZStack {
+        if showFocusIndicator {
             Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: cornerLength, height: lineWidth)
-                .offset(x: -half + cornerLength / 2, y: -half + lineWidth / 2)
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: lineWidth, height: cornerLength)
-                .offset(x: -half + lineWidth / 2, y: -half + cornerLength / 2)
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: cornerLength, height: lineWidth)
-                .offset(x: half - cornerLength / 2, y: -half + lineWidth / 2)
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: lineWidth, height: cornerLength)
-                .offset(x: half - lineWidth / 2, y: -half + cornerLength / 2)
-
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: cornerLength, height: lineWidth)
-                .offset(x: -half + cornerLength / 2, y: half - lineWidth / 2)
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: lineWidth, height: cornerLength)
-                .offset(x: -half + lineWidth / 2, y: half - cornerLength / 2)
-
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: cornerLength, height: lineWidth)
-                .offset(x: half - cornerLength / 2, y: half - lineWidth / 2)
-            Rectangle()
-                .fill(Theme.yellow)
-                .frame(width: lineWidth, height: cornerLength)
-                .offset(x: half - lineWidth / 2, y: half - cornerLength / 2)
+                .strokeBorder(Theme.yellow, lineWidth: 2)
+                .frame(width: 80, height: 80)
+                .transition(.opacity)
+                .accessibilityLabel("Focus indicator")
+                .accessibilityHint("Shows current focus point")
         }
     }
 }
