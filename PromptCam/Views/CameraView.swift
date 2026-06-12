@@ -29,8 +29,8 @@ struct CameraView: View {
     @State private var focusIndicatorPoint: CGPoint?
     /// Controls visibility of the focus indicator.
     @State private var showFocusIndicator = false
-    /// Work item used to hide focus indicator after inactivity.
-    @State private var hideFocusWorkItem: DispatchWorkItem?
+    /// Task used to hide focus indicator after inactivity. Cancelled on re-tap or view disappear.
+    @State private var hideFocusTask: Task<Void, Never>?
     /// Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
 
@@ -94,12 +94,13 @@ struct CameraView: View {
                 .position(previewCenter)
 
                 // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
-                if showFocusIndicator, let focusIndicatorPoint {
+              /*  if showFocusIndicator, let focusIndicatorPoint {
                     FocusIndicatorView(
-                        showFocusIndicator: showFocusIndicator
+                        // turned off by Rod Griola June 11 keep for now. 
+                      showFocusIndicator: showFocusIndicator
                     )
                     .position(focusIndicatorPoint)
-                }
+                } */
 
                 // Layer 3: Header, record cluster, and footer chrome.
                 VStack(spacing: 0) {
@@ -289,9 +290,10 @@ struct CameraView: View {
         .onChange(of: viewModel.lockStatus) { _, newStatus in
             // Simplified: locked states keep reticle visible, unlocked states auto-hide.
             if newStatus.isLocked {
-                showFocusIndicator = true
-                hideFocusWorkItem?.cancel()
-                hideFocusWorkItem = nil
+                // turned off by Rod Griola jun 11 keep for now. 
+              //  showFocusIndicator = true
+                hideFocusTask?.cancel()
+                hideFocusTask = nil
             } else {
                 scheduleFocusHide()
             }
@@ -372,7 +374,8 @@ struct CameraView: View {
     private func updateFocusIndicatorPosition(viewPoint: CGPoint, barHeight: CGFloat) {
         withAnimation(.easeOut(duration: 0.15)) {
             focusIndicatorPoint = CGPoint(x: viewPoint.x, y: viewPoint.y + barHeight)
-            showFocusIndicator = true
+            // turned off by Rod Griola Jun 11 keep for now. 
+           // showFocusIndicator = true
         }
     }
 
@@ -380,15 +383,14 @@ struct CameraView: View {
     private func scheduleFocusHide() {
         guard !viewModel.lockStatus.isLocked else { return }
 
-        hideFocusWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
+        hideFocusTask?.cancel()
+        hideFocusTask = Task {
+            try? await Task.sleep(for: .seconds(2.0))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 1.15)) {
                 showFocusIndicator = false
             }
         }
-
-        hideFocusWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
     
     // MARK: - Lock Toggle Helpers
@@ -410,8 +412,8 @@ struct CameraView: View {
     
     /// Cancels pending focus/exposure work items on view disappearance.
     private func cleanupFocusState() {
-        hideFocusWorkItem?.cancel()
-        hideFocusWorkItem = nil
+        hideFocusTask?.cancel()
+        hideFocusTask = nil
     }
 
     // MARK: - Sheet Router
