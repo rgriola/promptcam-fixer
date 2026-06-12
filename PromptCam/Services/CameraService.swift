@@ -3,14 +3,14 @@
 import AVFoundation
 import Photos
 
-enum FocusExposureLockOutcome: Equatable {
+enum FocusExposureLockOutcome: Equatable, Sendable {
     case afAeLocked
     case aeLocked
     case afLocked
     case unsupported
 }
 
-enum PreferredCameraSelection: Equatable {
+enum PreferredCameraSelection: Equatable, Sendable {
     case front
     case back
     case unavailable

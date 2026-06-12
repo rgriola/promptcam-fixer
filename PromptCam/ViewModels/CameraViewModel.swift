@@ -2,7 +2,7 @@
 import AVFoundation
 import SwiftUI
 
-enum CameraSheetRoute: String, Identifiable {
+enum CameraSheetRoute: String, Identifiable, Sendable {
     case formatPanel
     case composeScript
     case settings
@@ -10,12 +10,12 @@ enum CameraSheetRoute: String, Identifiable {
     var id: String { rawValue }
 }
 
-enum CameraMode: Equatable {
+enum CameraMode: Equatable, Sendable {
     case camera
     case compose
 }
 
-enum CameraLockStatus: Equatable {
+enum CameraLockStatus: Equatable, Sendable {
     case auto
     case aeAfLocked
     case aeLocked
