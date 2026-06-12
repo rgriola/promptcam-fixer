@@ -8,13 +8,10 @@ private let kTeleprompterDebugHUD = false
 // Horizontal padding applied to both the SwiftUI render and the UIKit measurement.
 // Single lever — change Theme.teleprompterHPad to adjust text column width.
 
-private let tpLog = Logger(subsystem: "com.promptcam.fixer", category: "Teleprompter")
-
 @inline(__always)
 private func tp(_ msg: @autoclosure () -> String) {
     let m = msg()
-    tpLog.debug("\(m, privacy: .public)")
-    print("[TP] \(m)")
+    Log.teleprompter.debug("\(m, privacy: .public)")
 }
 
 struct TeleprompterOverlayView: View {

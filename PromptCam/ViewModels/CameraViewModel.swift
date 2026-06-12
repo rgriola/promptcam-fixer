@@ -135,16 +135,16 @@ final class CameraViewModel {
 
         if isRecording {
             cameraService.stopRecording()
-            print("[r] VM toggleRecording -> stopped")
+            Log.viewmodel.info("toggleRecording -> stopped")
         } else {
             cameraService.startRecording()
-            print("[r] VM toggleRecording -> started")
+            Log.viewmodel.info("toggleRecording -> started")
         }
     }
 
     func toggleScrolling() {
         isScrolling.toggle()
-        print("[tScroll] VM toggleScrolling -> \(isScrolling)")
+        Log.viewmodel.debug("toggleScrolling -> \(self.isScrolling, privacy: .public)")
     }
 
     func openPhotoLibrary() {
@@ -209,7 +209,7 @@ final class CameraViewModel {
     }
 
     func updateScriptText(_ text: String) {
-        print("[uScriptText] VM updateScriptText len=\(text.count)")
+        Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
         config.text = text
     }
 
@@ -220,7 +220,7 @@ final class CameraViewModel {
         next.text = config.text
         config = next
         saveStylePreferences()
-        print("[TP] updateTeleprompterStyle fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+        Log.viewmodel.debug("updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
     }
 
     // MARK: - Style Persistence
@@ -246,7 +246,7 @@ final class CameraViewModel {
             }
             config = config.clamped
             config.text = TeleprompterConfig.default.text
-            print("[TP] loadStylePreferences restored fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+            Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
         }
     }
 
@@ -255,10 +255,10 @@ final class CameraViewModel {
     func resetTeleprompterPosition() {
         if isScrolling {
             isScrolling = false
-            print("[rTP] VM resetTeleprompterPosition paused scrolling")
+            Log.viewmodel.debug("resetTeleprompterPosition paused scrolling")
         }
         teleprompterResetToken += 1
-        print("[TP] VM resetTeleprompterPosition token=\(teleprompterResetToken)")
+        Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public)")
     }
 
     private func presentSheet(_ route: CameraSheetRoute) {
@@ -325,7 +325,7 @@ final class CameraViewModel {
     /// Applies a new recording format to the camera. No-op if recording.
     func updateRecordingFormat(_ format: RecordingFormat) {
         guard !isRecording else { return }
-        print("[TP] VM updateRecordingFormat res=\(format.resolution.rawValue) fps=\(format.frameRate.rawValue)")
+        Log.viewmodel.info("updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) fps=\(format.frameRate.rawValue, privacy: .public)")
         cameraService.applyFormat(format)
     }
 
@@ -342,14 +342,14 @@ final class CameraViewModel {
             guard let self else { return }
             self.recordingFormat = applied
             applied.save()
-            print("[TP] VM format applied res=\(applied.resolution.rawValue) fps=\(applied.frameRate.rawValue)")
+            Log.viewmodel.info("format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)")
         }
 
         cameraService.onSupportedFormatsQueried = { [weak self] resolutions, frameRates in
             guard let self else { return }
             self.supportedResolutions = resolutions
             self.supportedFrameRates = frameRates
-            print("[TP] VM supported formats res=\(resolutions.map(\.rawValue)) fps=\(frameRates.map(\.rawValue))")
+            Log.viewmodel.debug("supported formats res=\(resolutions.map(\.rawValue), privacy: .public) fps=\(frameRates.map(\.rawValue), privacy: .public)")
 
             // If saved format isn't supported by this hardware, fall back.
             if !resolutions.contains(self.recordingFormat.resolution) ||
@@ -360,7 +360,7 @@ final class CameraViewModel {
                 )
                 self.recordingFormat = fallback
                 fallback.save()
-                print("[TP] VM format fell back to res=\(fallback.resolution.rawValue) fps=\(fallback.frameRate.rawValue)")
+                Log.viewmodel.notice("format fell back to res=\(fallback.resolution.rawValue, privacy: .public) fps=\(fallback.frameRate.rawValue, privacy: .public)")
             }
         }
 

@@ -2,7 +2,6 @@
 // June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add setExposure(to:) for reliable absolute reset
 import AVFoundation
 import Photos
-
 enum FocusExposureLockOutcome: Equatable, Sendable {
     case afAeLocked
     case aeLocked
@@ -251,7 +250,7 @@ final class CameraService: NSObject, @unchecked Sendable {
             targetRate = VideoFrameRate.allCases
                 .filter { Double($0.rawValue) <= maxSupported }
                 .max { $0.rawValue < $1.rawValue } ?? .fps30
-            print("[TP] FPS \(rate.rawValue) unsupported by active format, falling back to \(targetRate.rawValue)")
+            Log.camera.notice("FPS \(rate.rawValue, privacy: .public) unsupported by active format, falling back to \(targetRate.rawValue, privacy: .public)")
         }
 
         do {

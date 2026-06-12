@@ -169,7 +169,7 @@ struct CameraView: View {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     showAdjustmentPanel = false
                                 }
-                                print("[TP] adjustmentPanel dismissed via tap-outside")
+                                Log.ui.debug("adjustmentPanel dismissed via tap-outside")
                             }
                         TeleprompterAdjustmentPanel(
                             config: Binding(
@@ -208,7 +208,7 @@ struct CameraView: View {
                                 onReset: {
                                     // Set absolute 0 — bypasses delta drift entirely
                                     viewModel.setExposure(to: 0)
-                                    print("EV reset to 0 (Auto)")
+                                    Log.ui.debug("EV reset to 0 (Auto)")
                                 },
                                 onAdjust: { newBias in
                                     // Absolute value — no delta tracking needed
@@ -231,7 +231,7 @@ struct CameraView: View {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     showEVPanel = false
                                 }
-                                print("EV panel dismissed via tap-outside")
+                                Log.ui.debug("EV panel dismissed via tap-outside")
                             }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -277,7 +277,7 @@ struct CameraView: View {
         // MARK: - State Observers
         .onChange(of: selectedMediaItem) { _, newItem in
             guard newItem != nil else { return }
-            print("Media selected from library picker")
+            Log.ui.info("Media selected from library picker")
             selectedMediaItem = nil
         }
         .onChange(of: viewModel.activeSheet) { _, newValue in
@@ -320,11 +320,11 @@ struct CameraView: View {
                         showAdjustmentPanel = false
                     }
                 }
-                print("EV panel toggled -> \(showEVPanel)")
+                Log.ui.debug("EV panel toggled -> \(showEVPanel, privacy: .public)")
             },
             onTapGrid: {
                 showInstructions = true
-                print("Instructions sheet opened")
+                Log.ui.debug("Instructions sheet opened")
             },
             onTapFormat: {
                 viewModel.openFormatPanel()
@@ -350,7 +350,7 @@ struct CameraView: View {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showAdjustmentPanel.toggle()
                 }
-                print("[TP] adjustmentPanel toggled -> \(showAdjustmentPanel)")
+                Log.ui.debug("adjustmentPanel toggled -> \(showAdjustmentPanel, privacy: .public)")
             },
             onTapSettings: {
                 viewModel.openSettings()
@@ -363,7 +363,7 @@ struct CameraView: View {
     /// Handles single tap to focus at the touched point.
     private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
         viewModel.focus(at: devicePoint)
-        print("Touch Focus at point")
+        Log.ui.debug("Touch Focus at point")
         updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
         scheduleFocusHide()
     }
@@ -399,12 +399,12 @@ struct CameraView: View {
         if viewModel.lockStatus.isLocked {
             // Unlock: return to continuous auto
             viewModel.unlockFocusExposure()
-            print("AF/AE unlocked via button -> AUTO")
+            Log.ui.info("AF/AE unlocked via button -> AUTO")
         } else {
             // Lock: lock at last focus point (or center if no prior focus)
             // Note: We use center point (0.5, 0.5) in device coordinates for lock
             viewModel.lockFocusExposure(at: CGPoint(x: 0.5, y: 0.5))
-            print("AF/AE lock attempted via button at center")
+            Log.ui.info("AF/AE lock attempted via button at center")
         }
     }
     

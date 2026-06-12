@@ -16,6 +16,7 @@
 		32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
 		458BEE449E3C2807C04630BA /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */; };
+		48965C15F496BB1BD799A0E0 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6CF1CBDA28AF2C0D93B83A /* Log.swift */; };
 		5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */; };
 		66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */; };
 		6E57E6380D93D4F66E12341C /* CameraLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC8B5358879C7143A311C491 /* CameraLayout.swift */; };
@@ -74,6 +75,7 @@
 		463E5A1C4A78819AE4720942 /* PermissionsOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsOnboardingView.swift; sourceTree = "<group>"; };
 		47FD3AF655746777B570B885 /* RecordingClusterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingClusterView.swift; sourceTree = "<group>"; };
 		4B100BCA59583D5DCDF2920E /* TeleprompterAdjustmentPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterAdjustmentPanel.swift; sourceTree = "<group>"; };
+		4E6CF1CBDA28AF2C0D93B83A /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
 		5AA5E5344875D6CB4076D11F /* EVAdjustmentPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EVAdjustmentPanel.swift; sourceTree = "<group>"; };
 		62386ADCCFC7E9387894F205 /* TeleprompterCenterResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterCenterResetButton.swift; sourceTree = "<group>"; };
@@ -220,6 +222,7 @@
 		E2D2E1B89B90C7107C787B84 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				4E6CF1CBDA28AF2C0D93B83A /* Log.swift */,
 				B1E807D783DFBBE234865C83 /* PromptCamApp.swift */,
 				26EEA7971142FD517E1511C6 /* Theme.swift */,
 			);
@@ -372,6 +375,7 @@
 				8F4B6FC5DA69AA3A8975AC6C /* EVAdjustmentPanel.swift in Sources */,
 				E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */,
 				9262A40C7236311E5A13B761 /* InstructionsView.swift in Sources */,
+				48965C15F496BB1BD799A0E0 /* Log.swift in Sources */,
 				A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */,
 				EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */,
 				5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */,
