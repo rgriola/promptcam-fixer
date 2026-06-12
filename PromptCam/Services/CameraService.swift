@@ -135,8 +135,10 @@ final class CameraService: NSObject, @unchecked Sendable {
 
                 // Query supported formats NOW — videoDevice and preset are set.
                 let supported = self.supportedFormats()
-                Task { @MainActor in
-                    self.onSupportedFormatsQueried?(supported.resolutions, supported.frameRates)
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        self.onSupportedFormatsQueried?(supported.resolutions, supported.frameRates)
+                    }
                 }
             } catch {
                 self.publishError("Failed to configure camera: \(error.localizedDescription)")
@@ -194,8 +196,10 @@ final class CameraService: NSObject, @unchecked Sendable {
             // Report what was actually applied.
             let appliedResolution: VideoResolution = self.session.sessionPreset == .hd4K3840x2160 ? .uhd4K : .hd1080p
             let applied = RecordingFormat(resolution: appliedResolution, frameRate: appliedRate)
-            Task { @MainActor in
-                self.onFormatApplied?(applied)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    self.onFormatApplied?(applied)
+                }
             }
         }
     }
@@ -473,28 +477,36 @@ final class CameraService: NSObject, @unchecked Sendable {
     }
 
     private func publishRecordingState(_ isRecording: Bool) {
-        Task { @MainActor in
-            self.onRecordingStateChanged?(isRecording)
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                self.onRecordingStateChanged?(isRecording)
+            }
         }
     }
 
     private func publishError(_ message: String) {
-        Task { @MainActor in
-            self.onError?(message)
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                self.onError?(message)
+            }
         }
     }
 
     private func publishSessionRunningState(_ isRunning: Bool) {
-        Task { @MainActor in
-            self.onSessionRunningStateChanged?(isRunning)
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                self.onSessionRunningStateChanged?(isRunning)
+            }
         }
     }
 
     private func publishLockOutcome(_ outcome: FocusExposureLockOutcome, completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)?) {
         guard let completion else { return }
 
-        Task { @MainActor in
-            completion(outcome)
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                completion(outcome)
+            }
         }
     }
 }
