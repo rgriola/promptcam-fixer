@@ -53,11 +53,8 @@ struct PermissionService {
     }
 
     func requestPhotoLibraryAccess() async -> Bool {
-        await withCheckedContinuation { continuation in
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                continuation.resume(returning: status == .authorized || status == .limited)
-            }
-        }
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        return status == .authorized || status == .limited
     }
 
     // MARK: - Aggregate Request (legacy convenience)
