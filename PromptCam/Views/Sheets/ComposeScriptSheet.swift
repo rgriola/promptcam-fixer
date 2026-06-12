@@ -75,10 +75,10 @@ struct ComposeScriptSheet: View {
             .navigationTitle("Script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    isEditorFocused = true
-                }
+            .task {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
+                isEditorFocused = true
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
