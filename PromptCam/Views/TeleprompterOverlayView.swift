@@ -97,7 +97,7 @@ struct TeleprompterOverlayView: View {
                 EyelineTriangle()
                     .fill(Theme.white.opacity(0.55))
                     .frame(width: lineH * 0.5, height: lineH)
-                    .padding(.top, 36)
+                    .padding(.top, 60)
                     .padding(.trailing, Theme.space8)
                     .allowsHitTesting(false)
             }

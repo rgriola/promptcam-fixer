@@ -255,12 +255,12 @@ To - Do
 
 - Camera View
 
-  replace ObservedObject with Observable, may mean needing to move up to iOS 18 + Swift 6.
-  Need to move up to Swift 6.
+  [X] migrated to Swift 6 & iOS 18+
 
-  High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
+  [X ]High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
 
   Test DJI mics [X], Rode []
+
   Med []Add VU Meter to left side.
 
   {Below both go together}
@@ -283,3 +283,8 @@ To - Do
   - Insert Images drawn from App with Correct Styles
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
+
+... June 12 2026
+
+**_ Task _**
+Lets devise a plan to make these changes with some differences

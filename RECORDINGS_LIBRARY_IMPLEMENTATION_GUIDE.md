@@ -1,6 +1,11 @@
 # Custom Recordings Library Implementation Guide
 
-> **Goal:** Replace native PhotosPicker with a custom recordings library that allows users to review, share, and manage their video recordings with a custom background.
+> **Goal:** Replace native PhotosPicker with a custom recordings library to allow users to review their video recordings.
+
+> The most recent videos only grouped from the last 7 days.
+> Share feature to allow video to be sent via iMessage, Air Drop
+> Manage recording similar to the native iOS photo picker, creator should be able to watch, edit and/or delete video.
+> Styling should be consistent with app linear gradiant background.
 
 ---
 

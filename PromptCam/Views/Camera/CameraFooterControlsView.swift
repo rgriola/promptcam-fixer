@@ -31,7 +31,7 @@ struct CameraFooterControlsView: View {
 
             footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
                 .accessibilityLabel("Insert generated script")
-
+            
             Spacer()
 
             footerIconButton(

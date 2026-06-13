@@ -57,41 +57,23 @@ struct CameraView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
         return GeometryReader { proxy in
-            // Shared geometry values for safe-area-aware camera composition.
-            let (barHeight, previewHeight) = CameraLayout.barHeights(containerSize: proxy.size)
-
-            let previewCenter = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
-            let previewTopY = previewCenter.y - (previewHeight / 2)
-            let previewBottomY = previewCenter.y + (previewHeight / 2)
-
-            // Clamps prompter viewport height to a specic range. Max returns the larger of the two values. Min returns the smaller of the two values.
-            let teleprompterViewportHeight = min(max(CameraLayout.teleprompterViewportHeight, 0), previewHeight)
-
-            let minTeleprompterCenterY = previewTopY + (teleprompterViewportHeight / 2)
-            let maxTeleprompterCenterY = previewBottomY - (teleprompterViewportHeight / 2)
-
-            let requestedTeleprompterCenterY = previewBottomY - CameraLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
-
-            let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
-
-            // should set the location of the Teleprompter Center Reset
-            let resetTeleprompterBottomY = proxy.size.height - CameraLayout.teleprompterBottomInset
-
-            let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraLayout.teleprompterResetEdgeInset
-
-            let safeTopInset = proxy.safeAreaInsets.top
-            let safeBottomInset = proxy.safeAreaInsets.bottom
+            let layout = CameraScreenLayout(
+                containerSize: proxy.size,
+                safeAreaInsets: proxy.safeAreaInsets // pad for notch
+            )
 
             ZStack {
-                // Layer 1: Live camera preview with tap gesture (long-press removed - conflicts with teleprompter).
+                // Layer 1: Live camera preview, top-anchored and ignoring the top safe area
+                // so it extends under the status bar / Dynamic Island.
                 CameraPreviewView(
                     session: viewModel.session,
                     onTap: { devicePoint, viewPoint in
-                        handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint, barHeight: barHeight)
+                        handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
                     }
                 )
-                .frame(width: proxy.size.width, height: previewHeight)
-                .position(previewCenter)
+                .frame(width: layout.previewSize.width, height: layout.previewSize.height)
+                .position(x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2)
+                .ignoresSafeArea(.container, edges: .top)
 
                 // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
               /*  if showFocusIndicator, let focusIndicatorPoint {
@@ -102,34 +84,43 @@ struct CameraView: View {
                     .position(focusIndicatorPoint)
                 } */
 
-                // Layer 3: Header, record cluster, and footer chrome.
-                VStack(spacing: 0) {
+                // Layer 3: Recording cluster positioned at bottom of camera preview
+                RecordingClusterView(
+                    isRecording: viewModel.isRecording,
+                    isScrolling: viewModel.isScrolling,
+                    isRecordEnabled: viewModel.isCameraReady,
+                    onRecordTap: {
+                        viewModel.toggleRecording()
+                    },
+                    onScrollTap: {
+                        viewModel.toggleScrolling()
+                    }
+                )
+                .position(x: proxy.size.width / 2, 
+                          y: layout.previewSize.height - 125)
+                
+                // Layer 3.5: Recording timer positioned above record button
+                RecordingTimerPanel(
+                    duration: viewModel.recordingDuration,
+                    isRecording: viewModel.isRecording
+                )
+                .position(x: proxy.size.width / 2,
+                          y: layout.previewSize.height - 200)
+                
+                // Layer 4: Header and footer chrome stacked at bottom of screen
+                VStack(spacing: Theme.space12) {
                     cameraHeader()
-                    .frame(height: safeTopInset, alignment: .top)
-
-                    Spacer(minLength: 0)
-
-                    RecordingClusterView(
-                        isRecording: viewModel.isRecording,
-                        isScrolling: viewModel.isScrolling,
-                        isRecordEnabled: viewModel.isCameraReady,
-                        onRecordTap: {
-                            viewModel.toggleRecording()
-                        },
-                        onScrollTap: {
-                            viewModel.toggleScrolling()
-                        }
-                    )
-                    .padding(.bottom, CameraLayout.recordingBottomPadding)
-
-                   cameraFooter()
-                        //.frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                       // .frame(height: safeBottomInset, alignment: .bottom)
-                       .frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                       .offset(y: CameraLayout.footerVerticalOffset)
-
+                    .padding()
+                    .background(Theme.black.opacity(0.1))
+                    cameraFooter()
+                     //   .padding(.bottom, layout.safeBottomInset)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame( maxWidth: .infinity, 
+                        maxHeight: maxHeight: proxy.size.height - layout.previewSize.height, 
+                        alignment: .bottom)
+
+                // Screen height - camera preview height > remaninder 2000 - 1400 = 600 Or a ratio.   Subtracrt y = 1400, bottom of camera view Pin Record button to Camera View Bottom + 25 so it is pinned to the bottom of the camera view. 
+                // Vstack for Conrols. 
 
                 // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
@@ -145,20 +136,21 @@ struct CameraView: View {
                         }
                     }
                 )
-                .frame(width: proxy.size.width, height: teleprompterViewportHeight)
-                .position(x: previewCenter.x, y: teleprompterCenterY)
+                .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
+                .position(  x: layout.teleprompterCenter.x,
+                            y: layout.teleprompterCenter.y - 75 // the 75 is the top offset
+                            )
 
-                // Layer 5: Mid-screen reset button.
+                // Layer 5: Reset button anchored to the bottom edge of the teleprompter viewport.
                 TeleprompterCenterResetButton(
                     isDisabled: viewModel.isRecording,
                     action: {
                         viewModel.resetTeleprompterPosition()
                     }
                 )
-                .frame(width: CameraLayout.teleprompterResetButtonSize,
-                       height: CameraLayout.teleprompterResetButtonSize)
-               // .position(x: teleprompterResetX, y: teleprompterCenterY)
-               .position(x: teleprompterResetX, y: resetTeleprompterBottomY)
+                .frame(width: layout.teleprompterResetButtonSize,
+                       height: layout.teleprompterResetButtonSize)
+                .position(layout.teleprompterResetCenter)
 
                 // Layer 6: Teleprompter adjustment panel — slides up from below viewport.
                 if showAdjustmentPanel {
@@ -190,18 +182,20 @@ struct CameraView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
-                // Layer 7: Temporary warning banner (top center).
-                TemporaryWarningBanner(
-                    message: "Stop recording to change format.",
-                    systemImage: "exclamationmark.triangle.fill",
-                    autoDismissAfter: 3.0,
-                    isPresented: $viewModel.showFormatLockedWarning
-                )
-                
-                // Layer 8: EV adjustment panel — slides down from EV button.
+                // Layer 8: EV adjustment panel — slides up from bottom.
                 if showEVPanel {
                     VStack(spacing: 0) {
-                        // Panel container aligned to top-leading (below EV button)
+                        // Tap-off-screen dismiss area — covers everything above the panel
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showEVPanel = false
+                                }
+                                Log.ui.debug("EV panel dismissed via tap-outside")
+                            }
+                        
+                        // Panel container at bottom
                         HStack {
                             EVAdjustmentPanel(
                                 exposureBias: $exposureBias,
@@ -217,27 +211,23 @@ struct CameraView: View {
                                 }
                             )
                             .frame(width: 240)
-                            .padding(.top, safeTopInset + Theme.space8)
                             .padding(.leading, Theme.space12)
                             
-                            Spacer()
+                          //  Spacer()
                         }
-                        
-                        Spacer()
-                        
-                        // Tap-off-screen dismiss area
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showEVPanel = false
-                                }
-                                Log.ui.debug("EV panel dismissed via tap-outside")
-                            }
+                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+
+                // Layer 7: Temporary warning banner (top center).
+                TemporaryWarningBanner(
+                    message: "Stop recording to change format.",
+                    systemImage: "exclamationmark.triangle.fill",
+                    autoDismissAfter: 3.0,
+                    isPresented: $viewModel.showFormatLockedWarning
+                )
             }
             .background(Theme.bgGrad) // background for main view ZStack
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -363,17 +353,18 @@ struct CameraView: View {
     // MARK: - Focus / Exposure Gesture Handlers
 
     /// Handles single tap to focus at the touched point.
-    private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
+    private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint) {
         viewModel.focus(at: devicePoint)
         Log.ui.debug("Touch Focus at point")
-        updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
+        updateFocusIndicatorPosition(viewPoint: viewPoint)
         scheduleFocusHide()
     }
 
     /// Positions and shows the focus indicator using preview touch coordinates.
-    private func updateFocusIndicatorPosition(viewPoint: CGPoint, barHeight: CGFloat) {
+    /// Preview is top-anchored (y=0), so no extra Y offset is needed.
+    private func updateFocusIndicatorPosition(viewPoint: CGPoint) {
         withAnimation(.easeOut(duration: 0.15)) {
-            focusIndicatorPoint = CGPoint(x: viewPoint.x, y: viewPoint.y + barHeight)
+            focusIndicatorPoint = viewPoint
             // turned off by Rod Griola Jun 11 keep for now. 
            // showFocusIndicator = true
         }

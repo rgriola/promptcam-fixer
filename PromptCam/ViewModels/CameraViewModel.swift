@@ -1,5 +1,7 @@
 // May 31, 2026 - 2:30am - GitHub Copilot (Claude Opus 4.7)
+// June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
 import AVFoundation
+import Combine
 import SwiftUI
 
 enum CameraSheetRoute: String, Identifiable, Sendable {
@@ -67,6 +69,8 @@ final class CameraViewModel {
     var config = TeleprompterConfig.default
     var isRecording = false
     var isScrolling = false
+    /// Recording duration in seconds, updated every 0.1s while recording.
+    var recordingDuration: TimeInterval = 0
 
     var errorMessage: String?
     var lockStatus: CameraLockStatus = .auto
@@ -85,6 +89,10 @@ final class CameraViewModel {
     /// Hardware-supported frame rates for the active camera.
     var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
 
+    // MARK: - Timer State
+    
+    @ObservationIgnored private var timerCancellable: AnyCancellable?
+    
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
 
@@ -126,6 +134,7 @@ final class CameraViewModel {
     }
 
     func onDisappear() {
+        stopTimer()
         cameraService.stopSession()
         isCameraReady = false
     }
@@ -134,9 +143,11 @@ final class CameraViewModel {
         guard isCameraReady else { return }
 
         if isRecording {
+            stopTimer()
             cameraService.stopRecording()
             Log.viewmodel.info("toggleRecording -> stopped")
         } else {
+            startTimer()
             cameraService.startRecording()
             Log.viewmodel.info("toggleRecording -> started")
         }
@@ -318,6 +329,27 @@ final class CameraViewModel {
     /// Sets exposure bias to an absolute value. Use for reset — avoids delta drift.
     func setExposure(to value: Float) {
         cameraService.setExposure(to: value)
+    }
+    
+    // MARK: - Recording Timer
+    
+    /// Starts the recording timer using Combine. Increments duration every 0.1 seconds.
+    private func startTimer() {
+        recordingDuration = 0
+        timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.recordingDuration += 0.1
+            }
+        Log.viewmodel.debug("Recording timer started")
+    }
+    
+    /// Stops and resets the recording timer.
+    private func stopTimer() {
+        timerCancellable?.cancel()
+        timerCancellable = nil
+        recordingDuration = 0
+        Log.viewmodel.debug("Recording timer stopped")
     }
 
     // MARK: - Recording Format
