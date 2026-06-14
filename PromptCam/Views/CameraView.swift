@@ -383,10 +383,6 @@ struct CameraView: View {
                 }
                 Log.ui.debug("Aperture panel toggled -> \(showAperturePanel, privacy: .public)")
             },
-            onTapGrid: {
-                showInstructions = true
-                Log.ui.debug("Instructions sheet opened")
-            },
             onTapFormat: {
                 viewModel.openFormatPanel()
             },
@@ -415,6 +411,10 @@ struct CameraView: View {
             },
             onTapSettings: {
                 viewModel.openSettings()
+            },
+            onTapGuide: {
+                showInstructions = true
+                Log.ui.debug("Instructions sheet opened")
             }
         )
     }

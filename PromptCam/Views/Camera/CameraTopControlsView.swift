@@ -26,8 +26,6 @@ struct CameraTopControlsView: View {
     let onTapEV: () -> Void
     /// Action for tapping the aperture button (only active when apertureText != nil).
     let onTapAperture: () -> Void
-    /// Action for tapping the grid toggle button.
-    let onTapGrid: () -> Void
     /// Action for tapping the format quick panel.
     let onTapFormat: () -> Void
     /// Action for tapping the lock status badge to toggle lock state.
@@ -97,19 +95,6 @@ struct CameraTopControlsView: View {
                     status: lockStatus,
                     onToggle: onTapLock
                 )
-
-                Spacer()
-
-                // Guide Dog Icon / Button
-                Button(action: onTapGrid) {
-
-                    Image(systemName: "service.dog.fill")
-                        .scaleEffect(x: -1, y: 1)
-                        .font(Theme.icon20)
-                        .foregroundStyle(Theme.white)
-                        .accessibilityLabel("Guide")
-                        .accessibilityHint("Shows Creator Guide")
-                }
             }
             .padding(.horizontal, Theme.space12)
             .padding(.bottom, Theme.space8)
