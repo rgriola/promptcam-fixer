@@ -271,6 +271,17 @@ To - Do
   [x] Change format button + panel to toggle record mode; Pair available quality with frame rate, change button to toggle to move through available HD 30fps, HD 24fps, 4K 30fps, 4k 24fps and Cinematic.
 
   [x] Cinematic Mode
+  - Issues Not being recognized across devices (dynamic adjustments)
+  - Front Facing Cameras:
+    Standard Mode
+    [HD 1920x1080 - 24,30,60]
+    [4K - 24,30]
+    Cine Mode
+    [HD 1920x1080 - 24,30]
+    [4K - 24,30]
+
+  - Multiple Front Cameras need to initiallized
+  - 4K View is resetting in CameraView
 
 - Script View
   [] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.

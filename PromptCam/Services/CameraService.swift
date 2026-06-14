@@ -130,24 +130,61 @@ final class CameraService: NSObject, @unchecked Sendable {
 
     /// Returns the preferred physical device for a given video mode.
     /// Standard → front wide-angle. Cinematic → front TrueDepth (which has CINE formats).
-    /// Users pick HD/4K + mode; we silently route to the correct hardware.
-    private func preferredDevice(for mode: VideoMode) -> AVCaptureDevice? {
-        switch mode {
-        case .cinematic:
-            // TrueDepth carries the CINE-flagged formats (minSimulatedAperture != 0).
-            if let td = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front) {
-                return td
+    /// Finds the front-facing device whose CINE formats are closest to the requested
+    /// resolution's standard pixel count. Scans ALL front cameras (TrueDepth, UltraWide, etc.)
+    /// so whichever physical camera actually has the best HD or 4K CINE format is used.
+    /// e.g. iPhone 17 Pro: UltraWide has 1920x1080 CINE → use UltraWide for HD cinematic.
+    ///      iPhone 13:      TrueDepth has 1920x1080 CINE → use TrueDepth for HD cinematic.
+    private func bestCinematicDevice(for resolution: VideoResolution) -> AVCaptureDevice? {
+        let targetPixels: Int64
+        switch resolution {
+        case .hd1080p: targetPixels = 1920 * 1080   // 2,073,600
+        case .uhd4K:   targetPixels = 3840 * 2160   // 8,294,400
+        }
+
+        let discoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: allVideoDeviceTypes(),
+            mediaType: .video,
+            position: .front
+        )
+
+        var bestDevice: AVCaptureDevice? = nil
+        var bestDistance = Int64.max
+
+        for device in discoverySession.devices {
+            for fmt in device.formats {
+                let isCine: Bool
+                if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
+                else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
+                guard isCine else { continue }
+                let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
+                let distance = abs(Int64(dim.width) * Int64(dim.height) - targetPixels)
+                if distance < bestDistance {
+                    bestDistance = distance
+                    bestDevice = device
+                }
             }
-            // Fallback: wide-angle if TrueDepth not present.
-            return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+        }
+        Log.camera.info("bestCinematicDevice(\(resolution.rawValue, privacy: .public)) → \(bestDevice?.localizedName ?? "none", privacy: .public) (distance \(bestDistance, privacy: .public)px)")
+        return bestDevice
+    }
+
+    /// Returns the preferred physical device for a given video mode and resolution.
+    /// Standard → front wide-angle. Cinematic → front camera with the best matching CINE format.
+    private func preferredDevice(for mode: VideoMode, resolution: VideoResolution = .hd1080p) -> AVCaptureDevice? {
+        switch mode {
         case .standard:
             return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+        case .cinematic:
+            return bestCinematicDevice(for: resolution)
+                ?? AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front)
+                ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         }
     }
 
     /// Discovers the best available camera device for the requested format.
     private func discoverCamera(for format: RecordingFormat) -> AVCaptureDevice? {
-        preferredDevice(for: format.mode)
+        preferredDevice(for: format.mode, resolution: format.resolution)
     }
 
     func configureSession(format: RecordingFormat = .default) {
@@ -292,9 +329,9 @@ final class CameraService: NSObject, @unchecked Sendable {
             // Track whether cinematic mode was actually applied.
             var appliedMode = format.mode
 
-            // Swap the physical camera if the mode changed (Standard ↔ Cinematic).
-            // Standard → wide-angle, Cinematic → TrueDepth.
-            let targetDevice = self.preferredDevice(for: format.mode)
+            // Swap the physical camera if the mode or resolution changed.
+            // Routes to whichever front device has the best CINE format for the resolution.
+            let targetDevice = self.preferredDevice(for: format.mode, resolution: format.resolution)
             if let targetDevice = targetDevice,
                self.videoDevice?.uniqueID != targetDevice.uniqueID {
                 // Remove current video input.
@@ -322,6 +359,7 @@ final class CameraService: NSObject, @unchecked Sendable {
             }
 
             // Set cinematic format on TrueDepth device, or use session preset for standard.
+            var appliedCinematicFormat: AVCaptureDevice.Format? = nil
             if appliedMode == .cinematic, let device = self.videoDevice {
                 if let cinematicFormat = self.findCinematicFormat(
                     for: device, resolution: format.resolution, frameRate: format.frameRate
@@ -330,6 +368,7 @@ final class CameraService: NSObject, @unchecked Sendable {
                         try device.lockForConfiguration()
                         device.activeFormat = cinematicFormat
                         device.unlockForConfiguration()
+                        appliedCinematicFormat = cinematicFormat
                         if #available(iOS 26.0, *), let input = self.videoInput,
                            input.isCinematicVideoCaptureSupported {
                             self.enableCinematicCapture(on: input)
@@ -340,7 +379,7 @@ final class CameraService: NSObject, @unchecked Sendable {
                         self.disableCinematicCapture()
                     }
                 } else {
-                    self.publishError("No cinematic format for \(format.resolution.rawValue) @ \(format.frameRate.rawValue)fps.")
+                    self.publishError("No cinematic format available on this device.")
                     appliedMode = .standard
                     self.disableCinematicCapture()
                 }
@@ -367,7 +406,16 @@ final class CameraService: NSObject, @unchecked Sendable {
             self.session.commitConfiguration()
 
             // Report what was actually applied.
-            let appliedResolution: VideoResolution = self.session.sessionPreset == .hd4K3840x2160 ? .uhd4K : .hd1080p
+            // For cinematic, read resolution from the active format dimensions (session preset
+            // is not set in cinematic mode and would give the wrong answer).
+            // For standard, use the session preset as before.
+            let appliedResolution: VideoResolution
+            if appliedMode == .cinematic, let device = self.videoDevice {
+                let dim = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
+                appliedResolution = dim.height >= 2160 ? .uhd4K : .hd1080p
+            } else {
+                appliedResolution = self.session.sessionPreset == .hd4K3840x2160 ? .uhd4K : .hd1080p
+            }
             let applied = RecordingFormat(resolution: appliedResolution, frameRate: appliedRate, mode: appliedMode)
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
@@ -384,20 +432,58 @@ final class CameraService: NSObject, @unchecked Sendable {
         let wideAngle = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
             ?? videoDevice
 
-        // Cinematic capability: check if TrueDepth has any CINE formats (minSimulatedAperture != 0
-        // on iOS 26+, or depth data as a proxy on older OS).
-        // This is independent of which device is currently active.
-        let trueDepth = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front)
-        let supportsCinematic: Bool = {
-            guard let td = trueDepth else { return false }
-            if #available(iOS 26.0, *) {
-                let hasCineFormat = td.formats.contains(where: { $0.minSimulatedAperture != 0 })
-                Log.camera.info("TrueDepth CINE formats present=\(hasCineFormat, privacy: .public)")
-                return hasCineFormat
-            } else {
-                return td.formats.contains(where: { !$0.supportedDepthDataFormats.isEmpty })
+        // Scan ALL front-facing cameras for CINE formats — different devices carry CINE
+        // on different hardware generations (TrueDepth on iPhone 13, UltraWide on iPhone 17 Pro).
+        let frontDiscovery = AVCaptureDevice.DiscoverySession(
+            deviceTypes: allVideoDeviceTypes(),
+            mediaType: .video,
+            position: .front
+        )
+
+        // HD/4K threshold: midpoint between 1920x1080 (2.1MP) and 3840x2160 (8.3MP).
+        let hdThreshold: Int64 = 5_184_000
+        let hdTarget: Int64 = 1920 * 1080
+        let k4Target: Int64 = 3840 * 2160
+
+        var hasHDCine = false
+        var has4KCine = false
+        var cinematicFrameRates = Set<VideoFrameRate>()
+        var supportsCinematic = false
+
+        for device in frontDiscovery.devices {
+            for fmt in device.formats {
+                let isCine: Bool
+                if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
+                else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
+                guard isCine else { continue }
+
+                supportsCinematic = true
+                let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
+                let pixels = Int64(dim.width) * Int64(dim.height)
+
+                if pixels <= hdThreshold { hasHDCine = true } else { has4KCine = true }
+
+                for range in fmt.videoSupportedFrameRateRanges {
+                    for rate in VideoFrameRate.allCases {
+                        if Double(rate.rawValue) >= range.minFrameRate &&
+                           Double(rate.rawValue) <= range.maxFrameRate {
+                            cinematicFrameRates.insert(rate)
+                        }
+                    }
+                }
             }
-        }()
+        }
+
+        // If there are CINE formats but none fit the threshold cleanly (e.g. all large),
+        // fall back to treating the smallest as HD.
+        if supportsCinematic && !hasHDCine && !has4KCine { hasHDCine = true }
+
+        var cinematicResolutions: [VideoResolution] = []
+        if hasHDCine { cinematicResolutions.append(.hd1080p) }
+        if has4KCine { cinematicResolutions.append(.uhd4K) }
+
+        Log.camera.info("All-front CINE scan: HD=\(hasHDCine, privacy: .public) 4K=\(has4KCine, privacy: .public) FPS=\(cinematicFrameRates.map(\.rawValue).sorted(), privacy: .public)")
+        _ = hdTarget; _ = k4Target  // suppress unused warnings
 
         guard let device = wideAngle else {
             Log.camera.warning("No wide-angle device available for capability query")
@@ -405,8 +491,8 @@ final class CameraService: NSObject, @unchecked Sendable {
                 supportsCinematicMode: supportsCinematic,
                 standardResolutions: [.hd1080p],
                 standardFrameRates: [.fps30],
-                cinematicResolutions: supportsCinematic ? [.hd1080p] : [],
-                cinematicFrameRates: supportsCinematic ? [.fps24, .fps30] : []
+                cinematicResolutions: cinematicResolutions.isEmpty ? [.hd1080p] : cinematicResolutions,
+                cinematicFrameRates: cinematicFrameRates.isEmpty ? [.fps24, .fps30] : cinematicFrameRates.sorted { $0.rawValue < $1.rawValue }
             )
         }
 
@@ -431,36 +517,11 @@ final class CameraService: NSObject, @unchecked Sendable {
             }
         }
 
-        // Cinematic mode: scan TrueDepth CINE formats for available resolutions/fps.
-        var cinematicResolutions: [VideoResolution] = []
-        var cinematicFrameRates = Set<VideoFrameRate>()
-        if supportsCinematic, let td = trueDepth {
-            for fmt in td.formats {
-                let isCine: Bool
-                if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
-                else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
-                guard isCine else { continue }
-
-                let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
-                if dim.width == 1920 && dim.height == 1080, !cinematicResolutions.contains(.hd1080p) {
-                    cinematicResolutions.append(.hd1080p)
-                }
-                for range in fmt.videoSupportedFrameRateRanges {
-                    for rate in [VideoFrameRate.fps24, .fps30] {
-                        if Double(rate.rawValue) >= range.minFrameRate &&
-                           Double(rate.rawValue) <= range.maxFrameRate {
-                            cinematicFrameRates.insert(rate)
-                        }
-                    }
-                }
-            }
-        }
-        
         let capabilities = DeviceCapabilities(
             supportsCinematicMode: supportsCinematic,
             standardResolutions: standardResolutions,
             standardFrameRates: standardFrameRates.sorted { $0.rawValue < $1.rawValue },
-            cinematicResolutions: cinematicResolutions.isEmpty && supportsCinematic ? [.hd1080p] : cinematicResolutions,
+            cinematicResolutions: cinematicResolutions.isEmpty && supportsCinematic ? [.hd1080p] : cinematicResolutions.sorted { $0.rawValue < $1.rawValue },
             cinematicFrameRates: cinematicFrameRates.isEmpty && supportsCinematic
                 ? [.fps24, .fps30]
                 : cinematicFrameRates.sorted { $0.rawValue < $1.rawValue }
@@ -473,36 +534,82 @@ final class CameraService: NSObject, @unchecked Sendable {
 
     /// Finds a CINE-capable format on the given device matching the requested resolution and frame rate.
     /// Only searches the device's own formats — no companion-device lookup.
+    /// Finds the best CINE-capable format on the given device for the requested resolution and fps.
+    /// Uses a fixed pixel threshold (5.2MP) to split HD vs 4K size classes, then picks
+    /// the format closest to the standard target pixels (1920x1080 or 3840x2160) within that class.
     private func findCinematicFormat(
         for device: AVCaptureDevice,
         resolution: VideoResolution,
         frameRate: VideoFrameRate
     ) -> AVCaptureDevice.Format? {
         let desiredFPS = Double(frameRate.rawValue)
-        let targetWidth: Int32
-        let targetHeight: Int32
+        let targetPixels: Int64
         switch resolution {
-        case .hd1080p: targetWidth = 1920; targetHeight = 1080
-        case .uhd4K:   targetWidth = 3840; targetHeight = 2160
+        case .hd1080p: targetPixels = 1920 * 1080   // 2,073,600
+        case .uhd4K:   targetPixels = 3840 * 2160   // 8,294,400
         }
-        Log.camera.info("Looking for CINE format \(resolution.rawValue, privacy: .public) @ \(frameRate.rawValue, privacy: .public)fps on \(device.localizedName, privacy: .public)")
+        // Midpoint between HD and 4K target pixel counts.
+        let hdThreshold: Int64 = 5_184_000
 
-        for format in device.formats {
-            let dim = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-            guard dim.width == targetWidth && dim.height == targetHeight else { continue }
+        // Collect all CINE formats on this device.
+        var cineFormats: [(format: AVCaptureDevice.Format, pixels: Int64)] = []
+        for fmt in device.formats {
             let isCine: Bool
-            if #available(iOS 26.0, *) { isCine = format.minSimulatedAperture != 0 }
-            else { isCine = !format.supportedDepthDataFormats.isEmpty }
+            if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
+            else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
             guard isCine else { continue }
-            let supportsFPS = format.videoSupportedFrameRateRanges.contains {
+            let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
+            let pixels = Int64(dim.width) * Int64(dim.height)
+            let fpsStr = fmt.videoSupportedFrameRateRanges
+                .map { String(format: "%.0f-%.0ffps", $0.minFrameRate, $0.maxFrameRate) }
+                .joined(separator: "/")
+            Log.camera.info("  CINE candidate: \(dim.width, privacy: .public)x\(dim.height, privacy: .public) \(fpsStr, privacy: .public) on \(device.localizedName, privacy: .public)")
+            cineFormats.append((fmt, pixels))
+        }
+
+        guard !cineFormats.isEmpty else {
+            Log.camera.warning("No CINE formats on \(device.localizedName, privacy: .public)")
+            return nil
+        }
+
+        // Filter to the size class matching the requested resolution.
+        let sizeGroup: [(format: AVCaptureDevice.Format, pixels: Int64)]
+        switch resolution {
+        case .hd1080p:
+            let hdGroup = cineFormats.filter { $0.pixels <= hdThreshold }
+            sizeGroup = hdGroup.isEmpty ? cineFormats : hdGroup
+        case .uhd4K:
+            let k4Group = cineFormats.filter { $0.pixels > hdThreshold }
+            sizeGroup = k4Group.isEmpty ? cineFormats : k4Group
+        }
+
+        // Within the size class, sort by proximity to the standard target pixel count.
+        // Prefer format whose dimensions most closely match 1920x1080 or 3840x2160.
+        let sorted = sizeGroup.sorted { abs($0.pixels - targetPixels) < abs($1.pixels - targetPixels) }
+
+        // Pick the closest-dimension format that supports the desired fps.
+        if let match = sorted.first(where: { entry in
+            entry.format.videoSupportedFrameRateRanges.contains {
                 desiredFPS >= $0.minFrameRate && desiredFPS <= $0.maxFrameRate
             }
-            if supportsFPS {
-                Log.camera.info("Found CINE format: \(dim.width, privacy: .public)x\(dim.height, privacy: .public) @ \(desiredFPS, privacy: .public)fps")
-                return format
-            }
+        }) {
+            let dim = CMVideoFormatDescriptionGetDimensions(match.format.formatDescription)
+            Log.camera.info("CINE match (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public) @ \(desiredFPS, privacy: .public)fps")
+            return match.format
         }
-        Log.camera.warning("No CINE format found for \(resolution.rawValue, privacy: .public) @ \(frameRate.rawValue, privacy: .public)fps on \(device.localizedName, privacy: .public)")
+
+        // fps fallback: best-dimension format with max fps closest to desired.
+        if let fallback = sorted.min(by: { a, b in
+            let aMax = a.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
+            let bMax = b.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
+            return abs(aMax - desiredFPS) < abs(bMax - desiredFPS)
+        }) {
+            let dim = CMVideoFormatDescriptionGetDimensions(fallback.format.formatDescription)
+            Log.camera.notice("CINE fps fallback (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public)")
+            return fallback.format
+        }
+
+        Log.camera.warning("findCinematicFormat: no match for \(resolution.rawValue, privacy: .public) @ \(frameRate.rawValue, privacy: .public)fps on \(device.localizedName, privacy: .public)")
         return nil
     }
     
