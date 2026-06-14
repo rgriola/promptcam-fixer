@@ -69,6 +69,7 @@ enum Theme {
     // Colors
     static let black = Color(hex: "#111111")
     static let white = Color(hex: "#F5F5F5")
+    static let accent = Color(hex: "#e5de16") // Goldish for Oscar 
 
     static let blue = Color(hex: "#1E7AF0")
     static let blueScrollPreview = Color(hex: "#3C74BD")

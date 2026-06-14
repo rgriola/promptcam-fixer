@@ -48,6 +48,10 @@ struct CameraView: View {
     /// Controls visibility of the EV adjustment panel.
     @State private var showEVPanel: Bool = false
     
+    // MARK: - Aperture Panel State
+    /// Controls visibility of the cinematic aperture panel.
+    @State private var showAperturePanel: Bool = false
+    
     // MARK: - Instructions Sheet State
     /// Controls visibility of the instructions guide sheet.
     @State private var showInstructions: Bool = false
@@ -107,16 +111,18 @@ struct CameraView: View {
                 .position(x: proxy.size.width / 2,
                           y: layout.previewSize.height - 200)
                 
-                // Layer 4: Header and footer chrome stacked at bottom of screen
+                // Layer 4: Header and footer chrome constrained to space below preview
+                let bottomSpaceHeight = proxy.size.height - layout.previewSize.height
+                
                 VStack(spacing: Theme.space12) {
                     cameraHeader()
                     .padding()
                     .background(Theme.black.opacity(0.1))
                     cameraFooter()
-                     //   .padding(.bottom, layout.safeBottomInset)
+                     .padding(.bottom, -10) 
                 }
                 .frame( maxWidth: .infinity, 
-                        maxHeight: maxHeight: proxy.size.height - layout.previewSize.height, 
+                        maxHeight: layout.previewSize.height + 100,
                         alignment: .bottom)
 
                 // Screen height - camera preview height > remaninder 2000 - 1400 = 600 Or a ratio.   Subtracrt y = 1400, bottom of camera view Pin Record button to Camera View Bottom + 25 so it is pinned to the bottom of the camera view. 
@@ -127,7 +133,7 @@ struct CameraView: View {
                     config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
                     resetToken: viewModel.teleprompterResetToken,
-                    onTextHeightChanged: { measuredHeight in
+                    onTextHeightChanged: { measuredHeight in 
                         let currentText = viewModel.config.text
                         if lastCenteredScriptText != currentText,
                            measuredHeight > 0 {
@@ -221,6 +227,44 @@ struct CameraView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
+                // Layer 9: Cinematic aperture panel — mirrors EV panel layout.
+                // Only rendered when cinematicApertureRange is non-nil (cinematic + iOS 26+).
+                if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
+                    VStack(spacing: 0) {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showAperturePanel = false
+                                }
+                                Log.ui.debug("Aperture panel dismissed via tap-outside")
+                            }
+
+                        HStack {
+                            CinematicAperturePanel(
+                                aperture: $viewModel.cinematicSimulatedAperture,
+                                apertureRange: apertureRange,
+                                defaultAperture: apertureRange.lowerBound +
+                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
+                                onReset: {
+                                    let def = apertureRange.lowerBound +
+                                        (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
+                                    viewModel.setSimulatedAperture(def)
+                                    Log.ui.debug("Aperture reset to default")
+                                },
+                                onAdjust: { value in
+                                    viewModel.setSimulatedAperture(value)
+                                }
+                            )
+                            .frame(width: 260)
+                            .padding(.leading, Theme.space12)
+                        }
+                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
                 // Layer 7: Temporary warning banner (top center).
                 TemporaryWarningBanner(
                     message: "Stop recording to change format.",
@@ -277,11 +321,19 @@ struct CameraView: View {
         .onChange(of: viewModel.isPhotoPickerPresented) { _, newValue in
             viewModel.handlePhotoPickerStateChanged(newValue)
         }
+        .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
+            // Auto-dismiss aperture panel if cinematic mode is turned off.
+            if newRange == nil, showAperturePanel {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showAperturePanel = false
+                }
+            }
+        }
         .onChange(of: viewModel.lockStatus) { _, newStatus in
             // Simplified: locked states keep reticle visible, unlocked states auto-hide.
             if newStatus.isLocked {
-                // turned off by Rod Griola jun 11 keep for now. 
-              //  showFocusIndicator = true
+            //  turned off by Rod Griola jun 11 keep for now. 
+            //  showFocusIndicator = true
                 hideFocusTask?.cancel()
                 hideFocusTask = nil
             } else {
@@ -299,20 +351,37 @@ struct CameraView: View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
+        // Build aperture label when cinematicApertureRange is available.
+        let apertureText: String? = viewModel.cinematicApertureRange != nil
+            ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
+            : nil
+
         return CameraTopControlsView(
             evText: evText,
             lockStatus: viewModel.lockStatus,
+            videoMode: viewModel.recordingFormat.mode,
+            apertureText: apertureText,
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             onTapEV: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showEVPanel.toggle()
-                    // Close teleprompter panel if open (mutual exclusion)
                     if showEVPanel {
                         showAdjustmentPanel = false
+                        showAperturePanel = false
                     }
                 }
                 Log.ui.debug("EV panel toggled -> \(showEVPanel, privacy: .public)")
+            },
+            onTapAperture: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showAperturePanel.toggle()
+                    if showAperturePanel {
+                        showEVPanel = false
+                        showAdjustmentPanel = false
+                    }
+                }
+                Log.ui.debug("Aperture panel toggled -> \(showAperturePanel, privacy: .public)")
             },
             onTapGrid: {
                 showInstructions = true
@@ -418,8 +487,7 @@ struct CameraView: View {
         case .formatPanel:
             CameraFormatPanelSheet(
                 recordingFormat: viewModel.recordingFormat,
-                supportedResolutions: viewModel.supportedResolutions,
-                supportedFrameRates: viewModel.supportedFrameRates,
+                deviceCapabilities: viewModel.deviceCapabilities,
                 isRecording: viewModel.isRecording,
                 onFormatChanged: { format in
                     viewModel.updateRecordingFormat(format)

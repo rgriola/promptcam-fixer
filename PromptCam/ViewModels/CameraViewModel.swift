@@ -88,6 +88,19 @@ final class CameraViewModel {
     var supportedResolutions: [VideoResolution] = VideoResolution.allCases
     /// Hardware-supported frame rates for the active camera.
     var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
+    /// Device capabilities (mode support, resolution/fps per mode).
+    var deviceCapabilities: DeviceCapabilities = DeviceCapabilities(
+        supportsCinematicMode: false,
+        standardResolutions: [.hd1080p],
+        standardFrameRates: [.fps30],
+        cinematicResolutions: [],
+        cinematicFrameRates: []
+    )
+    /// Aperture range reported by the active cinematic format (iOS 26+ only).
+    /// Nil when cinematic mode is inactive or device/OS does not support it.
+    var cinematicApertureRange: ClosedRange<Float>? = nil
+    /// Current simulated aperture value shown in the aperture slider.
+    var cinematicSimulatedAperture: Float = 2.0
 
     // MARK: - Timer State
     
@@ -322,6 +335,11 @@ final class CameraViewModel {
         lockStatus = .auto
     }
 
+    func setSimulatedAperture(_ value: Float) {
+        cinematicSimulatedAperture = value
+        cameraService.setSimulatedAperture(value)
+    }
+
     func adjustExposure(by delta: Float) {
         cameraService.adjustExposure(by: delta)
     }
@@ -357,7 +375,7 @@ final class CameraViewModel {
     /// Applies a new recording format to the camera. No-op if recording.
     func updateRecordingFormat(_ format: RecordingFormat) {
         guard !isRecording else { return }
-        Log.viewmodel.info("updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) fps=\(format.frameRate.rawValue, privacy: .public)")
+        Log.viewmodel.info("updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) fps=\(format.frameRate.rawValue, privacy: .public) mode=\(format.mode.rawValue, privacy: .public)")
         cameraService.applyFormat(format)
     }
 
@@ -388,11 +406,38 @@ final class CameraViewModel {
                !frameRates.contains(self.recordingFormat.frameRate) {
                 let fallback = RecordingFormat(
                     resolution: resolutions.first ?? .hd1080p,
-                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30)
+                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30),
+                    mode: .standard
                 )
                 self.recordingFormat = fallback
                 fallback.save()
                 Log.viewmodel.notice("format fell back to res=\(fallback.resolution.rawValue, privacy: .public) fps=\(fallback.frameRate.rawValue, privacy: .public)")
+            }
+        }
+
+        cameraService.onDeviceCapabilitiesQueried = { [weak self] capabilities in
+            guard let self else { return }
+            self.deviceCapabilities = capabilities
+            Log.viewmodel.info("device capabilities cine=\(capabilities.supportsCinematicMode, privacy: .public)")
+            
+            // Auto-adjust format if current selection isn't supported.
+            if !capabilities.isSupported(self.recordingFormat) {
+                let adjusted = capabilities.adjusted(self.recordingFormat)
+                self.recordingFormat = adjusted
+                adjusted.save()
+                Log.viewmodel.notice("format auto-adjusted to res=\(adjusted.resolution.rawValue, privacy: .public) fps=\(adjusted.frameRate.rawValue, privacy: .public) mode=\(adjusted.mode.rawValue, privacy: .public)")
+            }
+        }
+
+        cameraService.onCinematicApertureAvailable = { [weak self] minAp, maxAp, defAp in
+            guard let self else { return }
+            if minAp == 0 {
+                self.cinematicApertureRange = nil
+                Log.viewmodel.info("Cinematic aperture: unavailable")
+            } else {
+                self.cinematicApertureRange = minAp...maxAp
+                self.cinematicSimulatedAperture = defAp
+                Log.viewmodel.info("Cinematic aperture range f/\(minAp, privacy: .public)–f/\(maxAp, privacy: .public) default f/\(defAp, privacy: .public)")
             }
         }
 

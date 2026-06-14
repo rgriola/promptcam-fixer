@@ -1,6 +1,16 @@
 import AVFoundation
 import Foundation
 
+// MARK: - Video Mode
+
+enum VideoMode: String, CaseIterable, Codable, Sendable {
+    case standard = "Standard"
+    case cinematic = "Cinematic"
+    
+    /// Display label for UI.
+    var displayLabel: String { rawValue }
+}
+
 // MARK: - Video Resolution
 
 enum VideoResolution: String, CaseIterable, Codable, Sendable {
@@ -30,8 +40,9 @@ enum VideoFrameRate: Int, CaseIterable, Codable, Sendable {
 struct RecordingFormat: Equatable, Codable, Sendable {
     var resolution: VideoResolution
     var frameRate: VideoFrameRate
+    var mode: VideoMode
 
-    static let `default` = RecordingFormat(resolution: .hd1080p, frameRate: .fps30)
+    static let `default` = RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)
 
     // MARK: - UserDefaults Persistence
 
