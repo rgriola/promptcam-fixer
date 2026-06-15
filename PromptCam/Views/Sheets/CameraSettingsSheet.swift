@@ -32,13 +32,13 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                Section("Camera Modes") {
-                    ForEach(availableCameraModes, id: \.self) { mode in
+                Section("Camera Formats") {
+                    ForEach(appRecordingFormats, id: \.self) { format in
                         HStack(spacing: Theme.space8) {
-                            Image(systemName: iconForMode(mode))
+                            Image(systemName: "video.fill")
                                 .foregroundStyle(Theme.purple)
                                 .frame(width: 20)
-                            Text(mode)
+                            Text(format)
                                 .font(Theme.font16Regular)
                                 .foregroundStyle(Theme.white)
                         }
@@ -112,44 +112,15 @@ struct CameraSettingsSheet: View {
         return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
-    /// Lists camera modes available on this device (e.g. Standard, Cinematic, Slo-mo).
-    private var availableCameraModes: [String] {
-        var modes: [String] = []
-
-        // Check back camera for standard + cinematic + slo-mo
-        if let backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-            modes.append("Standard")
-
-            // Check for high frame rate (slo-mo) support
-            let hasSloMo = backCamera.formats.contains { format in
-                format.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= 120 }
+    /// Recording formats the app supports, listed as resolution + frame rate.
+    private var appRecordingFormats: [String] {
+        var formats: [String] = []
+        for resolution in VideoResolution.allCases {
+            for frameRate in VideoFrameRate.allCases {
+                formats.append("\(resolution.rawValue) \(frameRate.rawValue)fps")
             }
-            if hasSloMo { modes.append("Slo-mo") }
         }
-
-        // Check for cinematic / depth
-        if AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back) != nil
-            || AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back) != nil {
-            modes.append("Cinematic")
-        }
-
-        // Front camera
-        if AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) != nil {
-            modes.append("Front Camera")
-        }
-
-        return modes
-    }
-
-    /// SF Symbol icon for each camera mode.
-    private func iconForMode(_ mode: String) -> String {
-        switch mode {
-        case "Standard":    return "video.fill"
-        case "Cinematic":   return "circle.dotted.and.circle"
-        case "Slo-mo":      return "slowmo"
-        case "Front Camera": return "person.fill"
-        default:            return "camera.fill"
-        }
+        return formats
     }
 
     private func refreshStatuses() {
