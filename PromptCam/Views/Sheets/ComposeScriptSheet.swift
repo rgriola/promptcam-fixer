@@ -13,6 +13,8 @@ struct ComposeScriptSheet: View {
     @State private var draftText: String
     /// Focus binding used to open the keyboard on sheet presentation.
     @FocusState private var isEditorFocused: Bool
+    /// Controls visibility of the script archive sheet.
+    @State private var showArchive = false
     /// Callback fired with latest text when user saves.
     let onSave: (String) -> Void
     /// Callback fired when user cancels editing.
@@ -39,68 +41,113 @@ struct ComposeScriptSheet: View {
         return String(String.UnicodeScalarView(filtered))
     }
 
+    /// Dismisses the keyboard and waits for it to animate down before
+    /// running the callback. This prevents the camera preview from being
+    /// visible in a "narrowed" state when the fullScreenCover closes.
+    private func dismissAndRun(_ action: @escaping () -> Void) {
+        isEditorFocused = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            action()
+        }
+    }
+
     /// Script editor UI with immediate keyboard focus.
     var body: some View {
         NavigationStack {
-            VStack(spacing: Theme.space12) {
-                TextEditor(text: $draftText)
-                    .font(Theme.font16Regular)
-                    .focused($isEditorFocused)
-                    .padding(Theme.space8)
-                    .background(
-                        Theme.panelBg.opacity(0.2), 
-                        in: RoundedRectangle(cornerRadius: Theme.radiusMd))
-                    .frame(minHeight: 200, maxHeight: .infinity)
-                    .onChange(of: draftText) { _, newValue in
-                        if newValue.count > Self.kMaxScriptLength {
-                            draftText = String(newValue.prefix(Self.kMaxScriptLength))
-                        }
+            GeometryReader { geo in
+                let editorHeight = geo.size.height * 0.45
+
+                VStack(spacing: Theme.space12) {
+                    // Info bar above editor
+                    HStack {
+                        Text("\(draftText.count) / \(Self.kMaxScriptLength)")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
+                            .monospacedDigit()
+
+                            Spacer()
+
+                        Text("Save to apply script updates.")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                        
+                    
                     }
 
-                HStack {
-                    // note at bitton 
-                    Text("Save to apply script updates.")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(Theme.primaryText)
-                    
+                    // Text editor
+                    TextEditor(text: $draftText)
+                        .font(Theme.font16Regular)
+                        .focused($isEditorFocused)
+                        .padding(Theme.space4)
+                        .background(
+                            Theme.panelBg.opacity(0.2), 
+                            in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+                        .frame(height: editorHeight)
+                        .onChange(of: draftText) { _, newValue in
+                            if newValue.count > Self.kMaxScriptLength {
+                                draftText = String(newValue.prefix(Self.kMaxScriptLength))
+                            }
+                        }
+
+                    // Clear button below editor
+                    Button {
+                        draftText = ""
+                    } label: {
+                        Label("Clear", systemImage: "xmark.circle.fill")
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white) // keep white
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .opacity(draftText.isEmpty ? 0.3 : 1.0)
+                    .disabled(draftText.isEmpty)
+
                     Spacer()
-                    // char count
-                    Text("\(draftText.count) / \(Self.kMaxScriptLength)")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
-                        .monospacedDigit()
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+                .padding(Theme.space16)
             }
-            .padding(Theme.space16)
-            .frame(maxHeight: .infinity)
+            .ignoresSafeArea(.keyboard)
             .navigationTitle("Script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
-            .onAppear {
-                // Focus immediately on appear - iOS handles the coordination
-                // between sheet animation and keyboard presentation smoothly
+            .task {
+                // Delay keyboard focus until the cover presentation animation
+                // completes (~0.5s). The text editor is pre-sized so the keyboard
+                // fills the space below without resizing anything.
+               // try? await Task.sleep(for: .milliseconds(500))
                 isEditorFocused = true
             }
             
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CloseToolbarButton { onCancel() }
+                    CloseToolbarButton { dismissAndRun { onCancel() } }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    SaveToolbarButton(
-                        action: {
-                            let sanitized = sanitizeScript(draftText)
-                            let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
-                            onSave(truncated)
-                        },
-                        isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    )
+                    HStack(spacing: Theme.space16) {
+                        Button {
+                            showArchive = true
+                        } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+
+                        SaveToolbarButton(
+                            action: {
+                                let sanitized = sanitizeScript(draftText)
+                                let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
+                                ScriptArchive.save(truncated)
+                                dismissAndRun { onSave(truncated) }
+                            },
+                            isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                    }
                 }
             }
         }
         .presentationBackground(Theme.bgGrad)
+        .sheet(isPresented: $showArchive) {
+            ScriptArchiveSheet { restoredText in
+                draftText = restoredText
+            }
+        }
     }
 }

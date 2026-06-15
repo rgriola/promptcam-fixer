@@ -19,7 +19,8 @@ struct RecordingPlayerView: View {
             if let videoURL {
                 VideoPlayer(player: player)
                     .ignoresSafeArea()
-                    .onAppear {
+                    .task(id: videoURL) {
+                        player?.pause()
                         let p = AVPlayer(url: videoURL)
                         player = p
                         p.play()

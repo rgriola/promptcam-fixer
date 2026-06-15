@@ -162,7 +162,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showAdjustmentPanel = false
                                 }
                                 Log.ui.debug("adjustmentPanel dismissed via tap-outside")
@@ -192,7 +192,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showEVPanel = false
                                 }
                                 Log.ui.debug("EV panel dismissed via tap-outside")
@@ -231,7 +231,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showAperturePanel = false
                                 }
                                 Log.ui.debug("Aperture panel dismissed via tap-outside")
@@ -276,18 +276,30 @@ struct CameraView: View {
         }
         // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
-            viewModel.errorMessage != nil
+            viewModel.cameraError != nil
         }, set: { _ in
-            viewModel.errorMessage = nil
+            viewModel.cameraError = nil
         })) {
             Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
+                viewModel.cameraError = nil
             }
         } message: {
-            Text(viewModel.errorMessage ?? "Unknown error")
+            Text(viewModel.cameraError?.localizedDescription ?? "Unknown error")
         }
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
+        }
+        .fullScreenCover(isPresented: $viewModel.showComposeSheet) {
+            ComposeScriptSheet(
+                initialText: viewModel.config.text,
+                onSave: { text in
+                    viewModel.updateScriptText(text)
+                    viewModel.dismissComposeSheet()
+                },
+                onCancel: {
+                    viewModel.dismissComposeSheet()
+                }
+            )
         }
         .sheet(isPresented: $showInstructions) {
             InstructionsView()
@@ -308,7 +320,7 @@ struct CameraView: View {
         .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
             // Auto-dismiss aperture panel if cinematic mode is turned off.
             if newRange == nil, showAperturePanel {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAperturePanel = false
                 }
             }
@@ -348,7 +360,7 @@ struct CameraView: View {
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             onTapEV: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showEVPanel.toggle()
                     if showEVPanel {
                         showAdjustmentPanel = false
@@ -358,7 +370,7 @@ struct CameraView: View {
                 Log.ui.debug("EV panel toggled -> \(showEVPanel, privacy: .public)")
             },
             onTapAperture: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAperturePanel.toggle()
                     if showAperturePanel {
                         showEVPanel = false
@@ -388,8 +400,12 @@ struct CameraView: View {
                 viewModel.openCompose()
             },
             onTapAdjust: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAdjustmentPanel.toggle()
+                    if showAdjustmentPanel {
+                        showEVPanel = false
+                        showAperturePanel = false
+                    }
                 }
                 Log.ui.debug("adjustmentPanel toggled -> \(showAdjustmentPanel, privacy: .public)")
             },
@@ -488,22 +504,14 @@ struct CameraView: View {
                 }
             )
         case .composeScript:
-            ComposeScriptSheet(
-                initialText: viewModel.config.text,
-                onSave: { text in
-                    viewModel.updateScriptText(text)
-                    viewModel.dismissActiveSheet()
-                },
-                onCancel: {
-                    viewModel.dismissActiveSheet()
-                }
-            )
+            // Routed via .fullScreenCover above — this case should not be reached.
+            EmptyView()
         case .settings:
-            CameraSettingsSheet {
+            CameraSettingsSheet(capabilities: viewModel.deviceCapabilities) {
                 viewModel.dismissActiveSheet()
             }
         case .recordingsLibrary:
-            RecordingsLibrarySheet()
+            RecordingsLibrarySheet(viewModel: viewModel.recordingsLibraryViewModel)
         }
     }
 }

@@ -11,22 +11,42 @@ final class RecordingsLibraryViewModel {
     private let service = RecordingsService()
     private let permissions = PermissionService()
 
+    /// Number of thumbnails to pre-warm (roughly one screenful of 3-column grid).
+    private static let prefetchThumbnailCount = 18
+    private static let thumbnailSize = CGSize(width: 300, height: 300)
+
     var hasAccess: Bool {
         let status = permissions.photoLibraryStatus
         return status == .authorized || status == .limited
     }
 
-    func load() async {
-        isLoading = true
-        defer { isLoading = false }
+    /// Pre-fetches recordings and pre-warms thumbnails in the background.
+    /// Called from CameraViewModel.onAppear so data is ready when the sheet opens.
+    func prefetch() async {
+        guard hasAccess, recordings.isEmpty else { return }
+        recordings = await service.fetchAllRecordings()
+        Log.recordings.info("Prefetched \(self.recordings.count, privacy: .public) recordings")
 
+        // Pre-warm the first screenful of thumbnails via PHCachingImageManager.
+        let prefetchIds = Array(recordings.prefix(Self.prefetchThumbnailCount).map(\.id))
+        if !prefetchIds.isEmpty {
+            service.startCaching(ids: prefetchIds, targetSize: Self.thumbnailSize)
+        }
+    }
+
+    /// Loads recordings for display. Skips fetch if already pre-populated.
+    func load() async {
         guard hasAccess else {
             recordings = []
             return
         }
 
-        recordings = await service.fetchAllRecordings()
-        Log.recordings.info("Loaded \(self.recordings.count, privacy: .public) recordings")
+        if recordings.isEmpty {
+            isLoading = true
+            defer { isLoading = false }
+            recordings = await service.fetchAllRecordings()
+            Log.recordings.info("Loaded \(self.recordings.count, privacy: .public) recordings")
+        }
     }
 
     func thumbnail(for r: Recording, size: CGSize) async -> UIImage? {

@@ -8,7 +8,7 @@ struct RecordingsService: Sendable {
     /// Shared caching image manager for grid thumbnails.
     static let cachingManager = PHCachingImageManager()
 
-    /// Fetches every video in the user's library, newest first.
+    /// Fetches videos from the user's library, newest first.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
@@ -20,6 +20,7 @@ struct RecordingsService: Sendable {
             let options = PHFetchOptions()
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
+            // mediaType: .video already excludes photos and Live Photo images.
             let fetch = PHAsset.fetchAssets(with: .video, options: options)
             var out: [Recording] = []
             out.reserveCapacity(fetch.count)
@@ -33,22 +34,23 @@ struct RecordingsService: Sendable {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
     }
 
-    /// Thumbnail via the shared caching manager. Skips the opportunistic
-    /// degraded delivery so the cell paints exactly once with the final image.
+    /// Thumbnail via the shared caching manager. Uses `.fastFormat` delivery
+    /// for responsive grid scrolling — returns a single callback (safe for
+    /// continuations) with a quick low-res decode. For a 300×300 grid cell,
+    /// the fast decode is visually indistinguishable from high-quality.
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .opportunistic
+            options.deliveryMode = .fastFormat
             options.isNetworkAccessAllowed = true
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, info in
-                let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                if !degraded { continuation.resume(returning: image) }
+            ) { image, _ in
+                continuation.resume(returning: image)
             }
         }
     }

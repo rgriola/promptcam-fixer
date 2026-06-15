@@ -253,15 +253,19 @@ Text : This is the instructions page to walk through how to use Prompter Cam Fix
 
 To - Do
 
+- Script View -
+  [ ] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
+  [ ] Add a lightweight save for backup should creator lost the script
+
 - Camera View
+
+  [ ]Add VU Meter to left side.
 
   [X] migrated to Swift 6 & iOS 18+
 
   [X]High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
 
   Test DJI mics [X], Rode []
-
-  Med []Add VU Meter to left side.
 
   {Below both go together}
   High [X] Move Header to footer bellow Rec Button
@@ -283,13 +287,11 @@ To - Do
   - Multiple Front Cameras need to initiallized
   - 4K View is resetting in CameraView
 
-- Script View
-  [] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
-  [] add a lightweight save for backup should creator lost the script
+- Script View -
 
 - [x] Added Camera Roll, Video Player with Share and Delete Controls.
 
-- [] Add App Guide Pages. Think Handrails for Users
+- [ ] Add App Guide Pages. Think Handrails for Users
   - Insert Images drawn from App with Correct Styles
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.

@@ -106,6 +106,10 @@ enum Theme {
     // Teleprompter
     static let teleprompterHPad: CGFloat = 24
 
+    // Animations
+    /// Standard spring for panel show/hide transitions (EV, aperture, adjustment).
+    static let panelSpring: Animation = .spring(response: 0.35, dampingFraction: 0.8)
+
     // Spacing
     static let space4: CGFloat = 4
     static let space8: CGFloat = 8
@@ -120,12 +124,6 @@ enum Theme {
     static let purple = Color(hex: "#8576EE")
 
     static let bgGrad = LinearGradient(
-        colors: [Theme.black, Theme.purple],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let prompterEdgeBlur = LinearGradient(
         colors: [Theme.black, Theme.purple],
         startPoint: .topLeading,
         endPoint: .bottomTrailing

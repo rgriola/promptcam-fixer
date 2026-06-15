@@ -28,30 +28,34 @@ struct TeleprompterOverlayView: View {
     @State private var manualOffset: CGFloat = 0
     @State private var isUserDragging: Bool = false
     @State private var scrollStartTime = Date()
+    /// Cached offset used for the static (non-animated) teleprompter snapshot.
+    /// Updated whenever scrolling stops or a drag ends while paused.
+    @State private var staticOffsetY: CGFloat = 0
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .top) {
-                TimelineView(.animation(minimumInterval: 1 / 60)) { context in
-                    let elapsed = context.date.timeIntervalSince(scrollStartTime)
-                    let geometry = TeleprompterGeometry(
-                        viewportHeight: proxy.size.height,
-                        textHeight: max(measuredTextHeight, 1),
-                        fontSize: CGFloat(config.fontSize),
-                        verticalPadding: Theme.space16
-                    )
-                    let baseOffset = geometry.startOffset
-                    let autoOffset = (isScrolling && !isUserDragging) ? -elapsed * config.speedPointsPerSecond : 0
-                    let interim = baseOffset + manualOffset + dragTranslationY + autoOffset
-                    // Floor: can't scroll past last line exiting top.
-                    // Ceiling: can't drag first line below viewportH − lineH.
-                    let totalY = min(max(interim, geometry.scrollStopOffset), geometry.dragCeiling)
-
+                // Only use the 60fps TimelineView when actively auto-scrolling or dragging.
+                // When paused, render a static snapshot to save CPU/GPU/battery.
+                if isScrolling || isUserDragging {
+                    TimelineView(.animation(minimumInterval: 1 / 60)) { context in
+                        let totalY = computeOffset(
+                            elapsed: context.date.timeIntervalSince(scrollStartTime),
+                            viewportHeight: proxy.size.height
+                        )
+                        ScrollingTeleprompterText(
+                            text: config.text,
+                            fontSize: config.fontSize,
+                            textColor: config.textColor.color,
+                            offsetY: totalY
+                        )
+                    }
+                } else {
                     ScrollingTeleprompterText(
                         text: config.text,
                         fontSize: config.fontSize,
                         textColor: config.textColor.color,
-                        offsetY: totalY
+                        offsetY: staticOffsetY
                     )
                 }
             }
@@ -72,6 +76,10 @@ struct TeleprompterOverlayView: View {
                         tp("DRAG ended delta=\(Int(delta)) manualOffset \(Int(manualOffset)) -> \(Int(manualOffset + delta))")
                         manualOffset += delta
                         isUserDragging = false
+                        // Update static snapshot so the paused branch shows correct position.
+                        if !isScrolling {
+                            staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
+                        }
                     }
             )
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -166,8 +174,29 @@ struct TeleprompterOverlayView: View {
 
     // MARK: - Scroll state
 
+    /// Computes the clamped offset for the teleprompter text position.
+    /// Extracted so both the animated TimelineView and static snapshot share the same formula.
+    private func computeOffset(elapsed: TimeInterval, viewportHeight: CGFloat) -> CGFloat {
+        let geometry = TeleprompterGeometry(
+            viewportHeight: viewportHeight,
+            textHeight: max(measuredTextHeight, 1),
+            fontSize: CGFloat(config.fontSize),
+            verticalPadding: Theme.space16
+        )
+        let baseOffset = geometry.startOffset
+        let autoOffset = (isScrolling && !isUserDragging) ? -elapsed * config.speedPointsPerSecond : 0
+        let interim = baseOffset + manualOffset + dragTranslationY + autoOffset
+        return min(max(interim, geometry.scrollStopOffset), geometry.dragCeiling)
+    }
+
+    /// Snapshots the current offset into `staticOffsetY` for the paused branch.
+    private func snapshotStaticOffset(viewportHeight: CGFloat) {
+        staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
+    }
+
     private func resetScrollPosition() {
         scrollStartTime = Date()
+        staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
     }
 
     private func handleScrollStateChanged(_ isNowScrolling: Bool) {
@@ -178,6 +207,8 @@ struct TeleprompterOverlayView: View {
             let elapsed = CGFloat(Date().timeIntervalSince(scrollStartTime))
             let autoApplied = -elapsed * CGFloat(config.speedPointsPerSecond)
             manualOffset += autoApplied
+            // Snapshot for the static branch so it renders at the correct position.
+            staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
         }
     }
 

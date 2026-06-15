@@ -73,10 +73,13 @@ final class CameraViewModel {
     /// Recording duration in seconds, updated every 0.1s while recording.
     var recordingDuration: TimeInterval = 0
 
-    var errorMessage: String?
+    var cameraError: CameraError?
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
     var activeSheet: CameraSheetRoute?
+    /// Compose sheet is presented as a fullScreenCover to prevent
+    /// iOS sheet presentation from rescaling the camera preview.
+    var showComposeSheet = false
     var cameraMode: CameraMode = .camera
     /// Warning banner for format panel locked during recording.
     var showFormatLockedWarning = false
@@ -105,6 +108,7 @@ final class CameraViewModel {
     // MARK: - Timer State
     
     @ObservationIgnored private var timerCancellable: AnyCancellable?
+    @ObservationIgnored private var recordingStartDate: Date?
     
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
@@ -120,11 +124,15 @@ final class CameraViewModel {
         static let bgOpacity  = "tp.bgOpacity"
     }
 
-    let cameraService: CameraService
+    let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
 
+    /// Shared with RecordingsLibrarySheet — pre-fetched on appear so the
+    /// Camera Roll opens instantly.
+    let recordingsLibraryViewModel = RecordingsLibraryViewModel()
+
     init(
-        cameraService: CameraService = CameraService(),
+        cameraService: CameraServiceProtocol = CameraService(),
         permissionService: PermissionService = PermissionService()
     ) {
         self.cameraService = cameraService
@@ -134,7 +142,7 @@ final class CameraViewModel {
         bindCallbacks()
     }
 
-    var session: AVCaptureSession { cameraService.session }
+    var session: AVCaptureSession { cameraService.previewSession }
 
     func onAppear() {
         isCameraReady = false
@@ -143,6 +151,10 @@ final class CameraViewModel {
         cameraService.startSession()
         // Supported formats are received via onSupportedFormatsQueried callback
         // after configureSession completes on the session queue.
+
+        // Pre-fetch recordings list + first page of thumbnails in the background
+        // so the Camera Roll sheet opens instantly.
+        Task { await recordingsLibraryViewModel.prefetch() }
     }
 
     func onDisappear() {
@@ -177,7 +189,13 @@ final class CameraViewModel {
     
 
     func openCompose() {
-        presentSheet(.composeScript)
+        cameraMode = .compose
+        showComposeSheet = true
+    }
+
+    func dismissComposeSheet() {
+        showComposeSheet = false
+        cameraMode = .camera
     }
 
     func openSettings() {
@@ -189,7 +207,7 @@ final class CameraViewModel {
     func openFormatPanel() {
         // Gate: Cannot change format while recording
         guard !isRecording else {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(Theme.panelSpring) {
                 showFormatLockedWarning = true
             }
             return
@@ -197,9 +215,7 @@ final class CameraViewModel {
         presentSheet(.formatPanel)
     }
 
-    func openEVSlider (){
-        
-    }
+
 
     func dismissActiveSheet() {
         activeSheet = nil
@@ -277,9 +293,8 @@ final class CameraViewModel {
             return
         }
 
-        if route == .composeScript {
-            cameraMode = .compose
-        }
+        // .composeScript is routed through showComposeSheet / fullScreenCover
+        // to prevent the camera preview from being rescaled.
 
         lastPresentedSheet = route
         activeSheet = route
@@ -322,13 +337,16 @@ final class CameraViewModel {
     
     // MARK: - Recording Timer
     
-    /// Starts the recording timer using Combine. Increments duration every 0.1 seconds.
+    /// Starts the recording timer using Combine. Computes duration from a start
+    /// date rather than accumulating increments, avoiding floating-point drift.
     private func startTimer() {
         recordingDuration = 0
+        recordingStartDate = Date()
         timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                self?.recordingDuration += 0.1
+                guard let self, let start = self.recordingStartDate else { return }
+                self.recordingDuration = Date().timeIntervalSince(start)
             }
         Log.viewmodel.debug("Recording timer started")
     }
@@ -337,6 +355,7 @@ final class CameraViewModel {
     private func stopTimer() {
         timerCancellable?.cancel()
         timerCancellable = nil
+        recordingStartDate = nil
         recordingDuration = 0
         Log.viewmodel.debug("Recording timer stopped")
     }
@@ -412,8 +431,8 @@ final class CameraViewModel {
             }
         }
 
-        cameraService.onError = { [weak self] message in
-            self?.errorMessage = message
+        cameraService.onError = { [weak self] error in
+            self?.cameraError = error
         }
     }
 }

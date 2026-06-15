@@ -1,5 +1,4 @@
 import Photos
-import UIKit
 
 /// Lightweight, Sendable view model of a video recording.
 /// Does NOT store the PHAsset reference — look it up on demand by localIdentifier

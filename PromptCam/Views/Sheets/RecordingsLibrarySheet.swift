@@ -3,10 +3,12 @@ import SwiftUI
 
 struct RecordingsLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = RecordingsLibraryViewModel()
+    var viewModel: RecordingsLibraryViewModel
 
-    // UI state
-    @State private var thumbnailCache: [String: UIImage] = [:]
+    // Thumbnail cache — must be @State (not NSCache) so SwiftUI observes insertions
+    // and re-renders cells when thumbnails arrive. LazyVGrid naturally bounds the
+    // number of concurrent .task calls to visible cells.
+    @State private var thumbnails: [String: UIImage] = [:]
     @State private var selectedRecording: Recording?
     @State private var videoURL: URL?
 
@@ -27,6 +29,7 @@ struct RecordingsLibrarySheet: View {
             }
             .navigationTitle("Camera Roll")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseToolbarButton { dismiss() }
@@ -65,15 +68,15 @@ struct RecordingsLibrarySheet: View {
                 ForEach(viewModel.recordings) { recording in
                     RecordingThumbnailView(
                         recording: recording,
-                        thumbnail: thumbnailCache[recording.id]
+                        thumbnail: thumbnails[recording.id]
                     ) {
                         selectedRecording = recording
                     }
                     .task(id: recording.id) {
-                        guard thumbnailCache[recording.id] == nil else { return }
+                        guard thumbnails[recording.id] == nil else { return }
                         let size = CGSize(width: 300, height: 300)
                         if let img = await viewModel.thumbnail(for: recording, size: size) {
-                            thumbnailCache[recording.id] = img
+                            thumbnails[recording.id] = img
                         }
                     }
                     .onAppear {
