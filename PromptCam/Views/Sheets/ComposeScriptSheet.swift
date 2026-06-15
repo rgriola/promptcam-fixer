@@ -13,6 +13,8 @@ struct ComposeScriptSheet: View {
     @State private var draftText: String
     /// Focus binding used to open the keyboard on sheet presentation.
     @FocusState private var isEditorFocused: Bool
+    /// Controls visibility of the script archive sheet.
+    @State private var showArchive = false
     /// Callback fired with latest text when user saves.
     let onSave: (String) -> Void
     /// Callback fired when user cancels editing.
@@ -58,23 +60,25 @@ struct ComposeScriptSheet: View {
                 VStack(spacing: Theme.space12) {
                     // Info bar above editor
                     HStack {
-                        Text("Save to apply script updates.")
-                            .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.primaryText)
-                        
-                        Spacer()
-
                         Text("\(draftText.count) / \(Self.kMaxScriptLength)")
                             .font(Theme.font12Regular)
                             .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
                             .monospacedDigit()
+
+                            Spacer()
+
+                        Text("Save to apply script updates.")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                        
+                    
                     }
 
                     // Text editor
                     TextEditor(text: $draftText)
                         .font(Theme.font16Regular)
                         .focused($isEditorFocused)
-                        .padding(Theme.space8)
+                        .padding(Theme.space4)
                         .background(
                             Theme.panelBg.opacity(0.2), 
                             in: RoundedRectangle(cornerRadius: Theme.radiusMd))
@@ -90,8 +94,8 @@ struct ComposeScriptSheet: View {
                         draftText = ""
                     } label: {
                         Label("Clear", systemImage: "xmark.circle.fill")
-                            .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.red)
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white) // keep white
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .opacity(draftText.isEmpty ? 0.3 : 1.0)
@@ -119,17 +123,31 @@ struct ComposeScriptSheet: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    SaveToolbarButton(
-                        action: {
-                            let sanitized = sanitizeScript(draftText)
-                            let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
-                            dismissAndRun { onSave(truncated) }
-                        },
-                        isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    )
+                    HStack(spacing: Theme.space16) {
+                        Button {
+                            showArchive = true
+                        } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+
+                        SaveToolbarButton(
+                            action: {
+                                let sanitized = sanitizeScript(draftText)
+                                let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
+                                ScriptArchive.save(truncated)
+                                dismissAndRun { onSave(truncated) }
+                            },
+                            isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                    }
                 }
             }
         }
         .presentationBackground(Theme.bgGrad)
+        .sheet(isPresented: $showArchive) {
+            ScriptArchiveSheet { restoredText in
+                draftText = restoredText
+            }
+        }
     }
 }

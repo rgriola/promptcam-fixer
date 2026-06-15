@@ -20,6 +20,7 @@
 		32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */; };
 		3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
+		443F7B66B1525C29D11615E3 /* ScriptArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF8EE3057D35E0F0E2460635 /* ScriptArchive.swift */; };
 		458BEE449E3C2807C04630BA /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */; };
 		4718DE5C64AD0E7571CC2AB1 /* SaveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525F4215FDEF56A0D72B7C58 /* SaveButton.swift */; };
 		48965C15F496BB1BD799A0E0 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6CF1CBDA28AF2C0D93B83A /* Log.swift */; };
@@ -42,6 +43,7 @@
 		919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7EEE9468E02324BB4E04FD /* VideoModeBadgeView.swift */; };
 		9262A40C7236311E5A13B761 /* InstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70874E673904C8E434BD20C /* InstructionsView.swift */; };
 		9CBF80AC47D52F451921F8BA /* CameraError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA93F6B0683EAD2D7B78DD4 /* CameraError.swift */; };
+		9DFDBC516BB4D6C52A2CCC00 /* ScriptArchiveSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3E5B9A27E09ADCA5C5B759 /* ScriptArchiveSheet.swift */; };
 		A23F1AAB79BEC4162246E355 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */; };
 		A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */; };
 		AB33FECF05CF97E9AFCA5EEB /* RecordingFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6602AD9D3CC7FCA71B5CCBC5 /* RecordingFormat.swift */; };
@@ -118,6 +120,7 @@
 		923418788547770366446818 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
 		946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraErrorTests.swift; sourceTree = "<group>"; };
 		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
+		9F3E5B9A27E09ADCA5C5B759 /* ScriptArchiveSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScriptArchiveSheet.swift; sourceTree = "<group>"; };
 		A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCameraService.swift; sourceTree = "<group>"; };
 		ABC9B16CA9F0DE0167C80C67 /* PermissionStatusHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusHelpers.swift; sourceTree = "<group>"; };
 		AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModelTests.swift; sourceTree = "<group>"; };
@@ -126,6 +129,7 @@
 		B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
 		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
+		BF8EE3057D35E0F0E2460635 /* ScriptArchive.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScriptArchive.swift; sourceTree = "<group>"; };
 		C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingTeleprompterText.swift; sourceTree = "<group>"; };
 		C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
 		C70874E673904C8E434BD20C /* InstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionsView.swift; sourceTree = "<group>"; };
@@ -268,6 +272,7 @@
 				6602AD9D3CC7FCA71B5CCBC5 /* RecordingFormat.swift */,
 				20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */,
 				D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */,
+				BF8EE3057D35E0F0E2460635 /* ScriptArchive.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -314,6 +319,7 @@
 				3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */,
 				923418788547770366446818 /* ComposeScriptSheet.swift */,
 				CB551B9997DF32815A820B3F /* RecordingsLibrarySheet.swift */,
+				9F3E5B9A27E09ADCA5C5B759 /* ScriptArchiveSheet.swift */,
 			);
 			path = Sheets;
 			sourceTree = "<group>";
@@ -333,8 +339,6 @@
 			dependencies = (
 			);
 			name = PromptCam;
-			packageProductDependencies = (
-			);
 			productName = PromptCam;
 			productReference = B860643BC28289FBEEAD4BEB /* PromptCam.app */;
 			productType = "com.apple.product-type.application";
@@ -351,8 +355,6 @@
 				8C14754B3224D8C1DA56D276 /* PBXTargetDependency */,
 			);
 			name = PromptCamTests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamTests;
 			productReference = B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -369,8 +371,6 @@
 				588AFCE987247FAA4211833B /* PBXTargetDependency */,
 			);
 			name = PromptCamUITests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamUITests;
 			productReference = 14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -474,6 +474,8 @@
 				32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */,
 				8822631F7E4FCED4165D036E /* Theme.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,
+				443F7B66B1525C29D11615E3 /* ScriptArchive.swift in Sources */,
+				9DFDBC516BB4D6C52A2CCC00 /* ScriptArchiveSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
