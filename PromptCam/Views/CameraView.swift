@@ -14,13 +14,12 @@
 // view-local animation timing and position — the ViewModel only owns the
 // camera-service-facing lock status.
 import AVFoundation
-import PhotosUI
 import SwiftUI
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
     /// View model that owns camera state, routes, and actions.
-    @StateObject var viewModel: CameraViewModel
+    @State var viewModel: CameraViewModel
     /// Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
 
@@ -29,14 +28,12 @@ struct CameraView: View {
     @State private var focusIndicatorPoint: CGPoint?
     /// Controls visibility of the focus indicator.
     @State private var showFocusIndicator = false
-    /// Work item used to hide focus indicator after inactivity.
-    @State private var hideFocusWorkItem: DispatchWorkItem?
+    /// Task used to hide focus indicator after inactivity. Cancelled on re-tap or view disappear.
+    @State private var hideFocusTask: Task<Void, Never>?
     /// Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
 
     // MARK: - Sheet / Picker State
-    /// Temporary media selection binding for PhotosPicker.
-    @State private var selectedMediaItem: PhotosPickerItem?
 
     // MARK: - Teleprompter State
     /// Script text we last auto-centered for. Re-center whenever the text changes.
@@ -48,6 +45,10 @@ struct CameraView: View {
     /// Controls visibility of the EV adjustment panel.
     @State private var showEVPanel: Bool = false
     
+    // MARK: - Aperture Panel State
+    /// Controls visibility of the cinematic aperture panel.
+    @State private var showAperturePanel: Bool = false
+    
     // MARK: - Instructions Sheet State
     /// Controls visibility of the instructions guide sheet.
     @State private var showInstructions: Bool = false
@@ -55,86 +56,80 @@ struct CameraView: View {
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { proxy in
-            // Shared geometry values for safe-area-aware camera composition.
-            let (barHeight, previewHeight) = CameraLayout.barHeights(containerSize: proxy.size)
-
-            let previewCenter = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
-            let previewTopY = previewCenter.y - (previewHeight / 2)
-            let previewBottomY = previewCenter.y + (previewHeight / 2)
-
-            // Clamps prompter viewport height to a specic range. Max returns the larger of the two values. Min returns the smaller of the two values.
-            let teleprompterViewportHeight = min(max(CameraLayout.teleprompterViewportHeight, 0), previewHeight)
-
-            let minTeleprompterCenterY = previewTopY + (teleprompterViewportHeight / 2)
-            let maxTeleprompterCenterY = previewBottomY - (teleprompterViewportHeight / 2)
-
-            let requestedTeleprompterCenterY = previewBottomY - CameraLayout.teleprompterBottomInset - (teleprompterViewportHeight / 2)
-
-            let teleprompterCenterY = min(max(requestedTeleprompterCenterY, minTeleprompterCenterY), maxTeleprompterCenterY)
-
-            // should set the location of the Teleprompter Center Reset
-            let resetTeleprompterBottomY = proxy.size.height - CameraLayout.teleprompterBottomInset
-
-            let teleprompterResetX = previewCenter.x + (proxy.size.width / 2) - CameraLayout.teleprompterResetEdgeInset
-
-            let safeTopInset = proxy.safeAreaInsets.top
-            let safeBottomInset = proxy.safeAreaInsets.bottom
+        @Bindable var viewModel = viewModel
+        return GeometryReader { proxy in
+            let layout = CameraScreenLayout(
+                containerSize: proxy.size,
+                safeAreaInsets: proxy.safeAreaInsets // pad for notch
+            )
 
             ZStack {
-                // Layer 1: Live camera preview with tap gesture (long-press removed - conflicts with teleprompter).
+                // Layer 1: Live camera preview, top-anchored and ignoring the top safe area
+                // so it extends under the status bar / Dynamic Island.
                 CameraPreviewView(
                     session: viewModel.session,
                     onTap: { devicePoint, viewPoint in
-                        handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint, barHeight: barHeight)
+                        handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
                     }
                 )
-                .frame(width: proxy.size.width, height: previewHeight)
-                .position(previewCenter)
+                .frame(width: layout.previewSize.width, height: layout.previewSize.height)
+                .position(x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2)
+                .ignoresSafeArea(.container, edges: .top)
+                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing camera preview
 
                 // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
-                if showFocusIndicator, let focusIndicatorPoint {
+              /*  if showFocusIndicator, let focusIndicatorPoint {
                     FocusIndicatorView(
-                        showFocusIndicator: showFocusIndicator
+                        // turned off by Rod Griola June 11 keep for now. 
+                      showFocusIndicator: showFocusIndicator
                     )
                     .position(focusIndicatorPoint)
-                }
+                } */
 
-                // Layer 3: Header, record cluster, and footer chrome.
-                VStack(spacing: 0) {
+                // Layer 3: Recording cluster positioned at bottom of camera preview
+                RecordingClusterView(
+                    isRecording: viewModel.isRecording,
+                    isScrolling: viewModel.isScrolling,
+                    isRecordEnabled: viewModel.isCameraReady,
+                    onRecordTap: {
+                        viewModel.toggleRecording()
+                    },
+                    onScrollTap: {
+                        viewModel.toggleScrolling()
+                    }
+                )
+                .position(x: proxy.size.width / 2, 
+                          y: layout.previewSize.height - 125)
+                
+                // Layer 3.5: Recording timer positioned above record button
+                RecordingTimerPanel(
+                    duration: viewModel.recordingDuration,
+                    isRecording: viewModel.isRecording
+                )
+                .position(x: proxy.size.width / 2,
+                          y: layout.previewSize.height - 200)
+                
+                // Layer 4: Header and footer chrome constrained to space below preview
+                VStack(spacing: Theme.space12) {
                     cameraHeader()
-                    .frame(height: safeTopInset, alignment: .top)
-
-                    Spacer(minLength: 0)
-
-                    RecordingClusterView(
-                        isRecording: viewModel.isRecording,
-                        isScrolling: viewModel.isScrolling,
-                        isRecordEnabled: viewModel.isCameraReady,
-                        onRecordTap: {
-                            viewModel.toggleRecording()
-                        },
-                        onScrollTap: {
-                            viewModel.toggleScrolling()
-                        }
-                    )
-                    .padding(.bottom, CameraLayout.recordingBottomPadding)
-
-                   cameraFooter()
-                        //.frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                       // .frame(height: safeBottomInset, alignment: .bottom)
-                       .frame(height: barHeight + safeBottomInset, alignment: .bottom)
-                       .offset(y: CameraLayout.footerVerticalOffset)
-
+                    .padding()
+                    .background(Theme.black.opacity(0.1))
+                    cameraFooter()
+                     .padding(.bottom, -10) 
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame( maxWidth: .infinity, 
+                        maxHeight: layout.previewSize.height + 100,
+                        alignment: .bottom)
+
+                // Screen height - camera preview height > remaninder 2000 - 1400 = 600 Or a ratio.   Subtracrt y = 1400, bottom of camera view Pin Record button to Camera View Bottom + 25 so it is pinned to the bottom of the camera view. 
+                // Vstack for Conrols. 
 
                 // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
                     resetToken: viewModel.teleprompterResetToken,
-                    onTextHeightChanged: { measuredHeight in
+                    onTextHeightChanged: { measuredHeight in 
                         let currentText = viewModel.config.text
                         if lastCenteredScriptText != currentText,
                            measuredHeight > 0 {
@@ -143,20 +138,22 @@ struct CameraView: View {
                         }
                     }
                 )
-                .frame(width: proxy.size.width, height: teleprompterViewportHeight)
-                .position(x: previewCenter.x, y: teleprompterCenterY)
+                .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
+                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing teleprompter viewport
+                .position(  x: layout.teleprompterCenter.x,
+                            y: layout.teleprompterCenter.y - 75 // the 75 is the top offset
+                            )
 
-                // Layer 5: Mid-screen reset button.
+                // Layer 5: Reset button anchored to the bottom edge of the teleprompter viewport.
                 TeleprompterCenterResetButton(
                     isDisabled: viewModel.isRecording,
                     action: {
                         viewModel.resetTeleprompterPosition()
                     }
                 )
-                .frame(width: CameraLayout.teleprompterResetButtonSize,
-                       height: CameraLayout.teleprompterResetButtonSize)
-               // .position(x: teleprompterResetX, y: teleprompterCenterY)
-               .position(x: teleprompterResetX, y: resetTeleprompterBottomY)
+                .frame(width: layout.teleprompterResetButtonSize,
+                       height: layout.teleprompterResetButtonSize)
+                .position(layout.teleprompterResetCenter)
 
                 // Layer 6: Teleprompter adjustment panel — slides up from below viewport.
                 if showAdjustmentPanel {
@@ -168,7 +165,7 @@ struct CameraView: View {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     showAdjustmentPanel = false
                                 }
-                                print("[TP] adjustmentPanel dismissed via tap-outside")
+                                Log.ui.debug("adjustmentPanel dismissed via tap-outside")
                             }
                         TeleprompterAdjustmentPanel(
                             config: Binding(
@@ -188,18 +185,20 @@ struct CameraView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
-                // Layer 7: Temporary warning banner (top center).
-                TemporaryWarningBanner(
-                    message: "Stop recording to change format.",
-                    systemImage: "exclamationmark.triangle.fill",
-                    autoDismissAfter: 3.0,
-                    isPresented: $viewModel.showFormatLockedWarning
-                )
-                
-                // Layer 8: EV adjustment panel — slides down from EV button.
+                // Layer 8: EV adjustment panel — slides up from bottom.
                 if showEVPanel {
                     VStack(spacing: 0) {
-                        // Panel container aligned to top-leading (below EV button)
+                        // Tap-off-screen dismiss area — covers everything above the panel
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showEVPanel = false
+                                }
+                                Log.ui.debug("EV panel dismissed via tap-outside")
+                            }
+                        
+                        // Panel container at bottom
                         HStack {
                             EVAdjustmentPanel(
                                 exposureBias: $exposureBias,
@@ -207,7 +206,7 @@ struct CameraView: View {
                                 onReset: {
                                     // Set absolute 0 — bypasses delta drift entirely
                                     viewModel.setExposure(to: 0)
-                                    print("EV reset to 0 (Auto)")
+                                    Log.ui.debug("EV reset to 0 (Auto)")
                                 },
                                 onAdjust: { newBias in
                                     // Absolute value — no delta tracking needed
@@ -215,29 +214,64 @@ struct CameraView: View {
                                 }
                             )
                             .frame(width: 240)
-                            .padding(.top, safeTopInset + Theme.space8)
                             .padding(.leading, Theme.space12)
                             
-                            Spacer()
+                          //  Spacer()
                         }
-                        
-                        Spacer()
-                        
-                        // Tap-off-screen dismiss area
+                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Layer 9: Cinematic aperture panel — mirrors EV panel layout.
+                // Only rendered when cinematicApertureRange is non-nil (cinematic + iOS 26+).
+                if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
+                    VStack(spacing: 0) {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showEVPanel = false
+                                    showAperturePanel = false
                                 }
-                                print("EV panel dismissed via tap-outside")
+                                Log.ui.debug("Aperture panel dismissed via tap-outside")
                             }
+
+                        HStack {
+                            CinematicAperturePanel(
+                                aperture: $viewModel.cinematicSimulatedAperture,
+                                apertureRange: apertureRange,
+                                defaultAperture: apertureRange.lowerBound +
+                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
+                                onReset: {
+                                    let def = apertureRange.lowerBound +
+                                        (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
+                                    viewModel.setSimulatedAperture(def)
+                                    Log.ui.debug("Aperture reset to default")
+                                },
+                                onAdjust: { value in
+                                    viewModel.setSimulatedAperture(value)
+                                }
+                            )
+                            .frame(width: 260)
+                            .padding(.leading, Theme.space12)
+                        }
+                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+
+                // Layer 7: Temporary warning banner (top center).
+                TemporaryWarningBanner(
+                    message: "Stop recording to change format.",
+                    systemImage: "exclamationmark.triangle.fill",
+                    autoDismissAfter: 3.0,
+                    isPresented: $viewModel.showFormatLockedWarning
+                )
             }
             .background(Theme.bgGrad) // background for main view ZStack
+            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         // MARK: - Alerts & Pickers
@@ -252,12 +286,6 @@ struct CameraView: View {
         } message: {
             Text(viewModel.errorMessage ?? "Unknown error")
         }
-        .photosPicker(
-            isPresented: $viewModel.isPhotoPickerPresented,
-            selection: $selectedMediaItem,
-            matching: .videos,
-            preferredItemEncoding: .automatic
-        )
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
         }
@@ -274,23 +302,24 @@ struct CameraView: View {
             cleanupFocusState()
         }
         // MARK: - State Observers
-        .onChange(of: selectedMediaItem) { _, newItem in
-            guard newItem != nil else { return }
-            print("Media selected from library picker")
-            selectedMediaItem = nil
-        }
         .onChange(of: viewModel.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
-        .onChange(of: viewModel.isPhotoPickerPresented) { _, newValue in
-            viewModel.handlePhotoPickerStateChanged(newValue)
+        .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
+            // Auto-dismiss aperture panel if cinematic mode is turned off.
+            if newRange == nil, showAperturePanel {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showAperturePanel = false
+                }
+            }
         }
         .onChange(of: viewModel.lockStatus) { _, newStatus in
             // Simplified: locked states keep reticle visible, unlocked states auto-hide.
             if newStatus.isLocked {
-                showFocusIndicator = true
-                hideFocusWorkItem?.cancel()
-                hideFocusWorkItem = nil
+            //  turned off by Rod Griola jun 11 keep for now. 
+            //  showFocusIndicator = true
+                hideFocusTask?.cancel()
+                hideFocusTask = nil
             } else {
                 scheduleFocusHide()
             }
@@ -306,24 +335,37 @@ struct CameraView: View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
+        // Build aperture label when cinematicApertureRange is available.
+        let apertureText: String? = viewModel.cinematicApertureRange != nil
+            ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
+            : nil
+
         return CameraTopControlsView(
             evText: evText,
             lockStatus: viewModel.lockStatus,
+            videoMode: viewModel.recordingFormat.mode,
+            apertureText: apertureText,
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             onTapEV: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showEVPanel.toggle()
-                    // Close teleprompter panel if open (mutual exclusion)
                     if showEVPanel {
+                        showAdjustmentPanel = false
+                        showAperturePanel = false
+                    }
+                }
+                Log.ui.debug("EV panel toggled -> \(showEVPanel, privacy: .public)")
+            },
+            onTapAperture: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showAperturePanel.toggle()
+                    if showAperturePanel {
+                        showEVPanel = false
                         showAdjustmentPanel = false
                     }
                 }
-                print("EV panel toggled -> \(showEVPanel)")
-            },
-            onTapGrid: {
-                showInstructions = true
-                print("Instructions sheet opened")
+                Log.ui.debug("Aperture panel toggled -> \(showAperturePanel, privacy: .public)")
             },
             onTapFormat: {
                 viewModel.openFormatPanel()
@@ -349,10 +391,14 @@ struct CameraView: View {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showAdjustmentPanel.toggle()
                 }
-                print("[TP] adjustmentPanel toggled -> \(showAdjustmentPanel)")
+                Log.ui.debug("adjustmentPanel toggled -> \(showAdjustmentPanel, privacy: .public)")
             },
             onTapSettings: {
                 viewModel.openSettings()
+            },
+            onTapGuide: {
+                showInstructions = true
+                Log.ui.debug("Instructions sheet opened")
             }
         )
     }
@@ -360,18 +406,20 @@ struct CameraView: View {
     // MARK: - Focus / Exposure Gesture Handlers
 
     /// Handles single tap to focus at the touched point.
-    private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint, barHeight: CGFloat) {
+    private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint) {
         viewModel.focus(at: devicePoint)
-        print("Touch Focus at point")
-        updateFocusIndicatorPosition(viewPoint: viewPoint, barHeight: barHeight)
+        Log.ui.debug("Touch Focus at point")
+        updateFocusIndicatorPosition(viewPoint: viewPoint)
         scheduleFocusHide()
     }
 
     /// Positions and shows the focus indicator using preview touch coordinates.
-    private func updateFocusIndicatorPosition(viewPoint: CGPoint, barHeight: CGFloat) {
+    /// Preview is top-anchored (y=0), so no extra Y offset is needed.
+    private func updateFocusIndicatorPosition(viewPoint: CGPoint) {
         withAnimation(.easeOut(duration: 0.15)) {
-            focusIndicatorPoint = CGPoint(x: viewPoint.x, y: viewPoint.y + barHeight)
-            showFocusIndicator = true
+            focusIndicatorPoint = viewPoint
+            // turned off by Rod Griola Jun 11 keep for now. 
+           // showFocusIndicator = true
         }
     }
 
@@ -379,38 +427,44 @@ struct CameraView: View {
     private func scheduleFocusHide() {
         guard !viewModel.lockStatus.isLocked else { return }
 
-        hideFocusWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
+        hideFocusTask?.cancel()
+        hideFocusTask = Task {
+            try? await Task.sleep(for: .seconds(2.0))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 1.15)) {
                 showFocusIndicator = false
             }
         }
-
-        hideFocusWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
     
     // MARK: - Lock Toggle Helpers
     
     /// Toggles AF/AE lock on/off. When locking, uses the last focus point
     /// if available, otherwise uses screen center.
+    /// Cinematic mode only supports continuous autofocus, so lock is disabled.
     private func toggleLockStatus() {
+        // Cinematic video requires continuous autofocus — lock not supported
+        guard viewModel.recordingFormat.mode != .cinematic else {
+            Log.ui.info("AF/AE lock blocked — cinematic mode requires continuous autofocus")
+            return
+        }
+        
         if viewModel.lockStatus.isLocked {
             // Unlock: return to continuous auto
             viewModel.unlockFocusExposure()
-            print("AF/AE unlocked via button -> AUTO")
+            Log.ui.info("AF/AE unlocked via button -> AUTO")
         } else {
             // Lock: lock at last focus point (or center if no prior focus)
             // Note: We use center point (0.5, 0.5) in device coordinates for lock
             viewModel.lockFocusExposure(at: CGPoint(x: 0.5, y: 0.5))
-            print("AF/AE lock attempted via button at center")
+            Log.ui.info("AF/AE lock attempted via button at center")
         }
     }
     
     /// Cancels pending focus/exposure work items on view disappearance.
     private func cleanupFocusState() {
-        hideFocusWorkItem?.cancel()
-        hideFocusWorkItem = nil
+        hideFocusTask?.cancel()
+        hideFocusTask = nil
     }
 
     // MARK: - Sheet Router
@@ -424,8 +478,7 @@ struct CameraView: View {
         case .formatPanel:
             CameraFormatPanelSheet(
                 recordingFormat: viewModel.recordingFormat,
-                supportedResolutions: viewModel.supportedResolutions,
-                supportedFrameRates: viewModel.supportedFrameRates,
+                deviceCapabilities: viewModel.deviceCapabilities,
                 isRecording: viewModel.isRecording,
                 onFormatChanged: { format in
                     viewModel.updateRecordingFormat(format)
@@ -449,6 +502,8 @@ struct CameraView: View {
             CameraSettingsSheet {
                 viewModel.dismissActiveSheet()
             }
+        case .recordingsLibrary:
+            RecordingsLibrarySheet()
         }
     }
 }

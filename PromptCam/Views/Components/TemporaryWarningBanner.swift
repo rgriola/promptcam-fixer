@@ -28,11 +28,12 @@ struct TemporaryWarningBanner: View {
                         .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + autoDismissAfter) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isPresented = false
-                        }
+                .task(id: isPresented) {
+                    guard isPresented else { return }
+                    try? await Task.sleep(for: .seconds(autoDismissAfter))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isPresented = false
                     }
                 }
             }

@@ -58,7 +58,7 @@ struct TeleprompterAdjustmentPanel: View {
                             isSelected: config.textColor == preset,
                             onTap: {
                                 config.textColor = preset
-                                print("[TP] textColor -> \(preset.rawValue)")
+                                Log.teleprompter.debug("textColor -> \(preset.rawValue, privacy: .public)")
                             }
                         )
                     }
@@ -70,7 +70,7 @@ struct TeleprompterAdjustmentPanel: View {
                 Spacer()
                 Button(action: {
                     onReset()
-                    print("[TP] AdjustmentPanel reset tapped")
+                    Log.teleprompter.debug("AdjustmentPanel reset tapped")
                 }) {
                     Text("Reset")
                         .font(Theme.font16Medium)

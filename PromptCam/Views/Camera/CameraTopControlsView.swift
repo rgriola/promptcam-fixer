@@ -12,6 +12,11 @@ struct CameraTopControlsView: View {
     let evText: String
     /// Current focus/exposure lock state shown in the center badge.
     let lockStatus: CameraLockStatus
+    /// Current video mode (standard or cinematic).
+    let videoMode: VideoMode
+    /// Formatted simulated aperture label shown when cinematic mode is active, e.g. "f/2.0".
+    /// Nil when cinematic is not active or the device/OS does not support aperture control.
+    let apertureText: String?
     /// Resolution label for the format pill (e.g. "HD", "4K").
     let resolutionLabel: String
     /// FPS label for the format pill (e.g. "30", "60").
@@ -19,8 +24,8 @@ struct CameraTopControlsView: View {
 
     /// Action for tapping the EV pill.
     let onTapEV: () -> Void
-    /// Action for tapping the grid toggle button.
-    let onTapGrid: () -> Void
+    /// Action for tapping the aperture button (only active when apertureText != nil).
+    let onTapAperture: () -> Void
     /// Action for tapping the format quick panel.
     let onTapFormat: () -> Void
     /// Action for tapping the lock status badge to toggle lock state.
@@ -36,12 +41,13 @@ struct CameraTopControlsView: View {
                     HStack(spacing: 0){
                         Text(resolutionLabel)
                             .font(Theme.font16Semibold)
-                            .padding(.trailing, 2)
-        
+                            .padding(.trailing, 4)
+                        /*
                         Text("res")
                             .font(Theme.font12Medium)
                             .foregroundStyle(Theme.secondaryText)
                             .padding(.trailing, 4)
+                        */
 
                         Text(fpsLabel)
                             .font(Theme.font16Semibold)
@@ -57,6 +63,24 @@ struct CameraTopControlsView: View {
                 .accessibilityHint("Opens camera record format settings")
 
                 Spacer()
+
+                // Video Mode Badge (shows STD or CINE)
+                VideoModeBadgeView(mode: videoMode)
+
+                // Cinematic aperture button — only visible when cinematic mode + iOS 26+ aperture available.
+                if let apertureText {
+                    // removed spacer to being elements closer
+                    Button(action: onTapAperture) {
+                        Text(apertureText)
+                            .font(Theme.mono16Medium)
+                            .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Simulated aperture")
+                            .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
+                    }
+                }
+
+
+                Spacer()
                 // Move to Bottom to Control EV with Dial
                 Button(action: onTapEV) {
                     Text("EV \(evText)")
@@ -66,26 +90,16 @@ struct CameraTopControlsView: View {
                         .accessibilityHint("Shows current exposure")
                 }
 
+                
+
                 Spacer()
 
                 // Change to Toggle Lock and Auto
                 CameraLockStatusBadgeView(
                     status: lockStatus,
-                    onToggle: onTapLock
+                    onToggle: onTapLock,
+                    isDisabled: videoMode == .cinematic
                 )
-
-                Spacer()
-
-                // Guide Dog Icon / Button
-                Button(action: onTapGrid) {
-
-                    Image(systemName: "service.dog.fill")
-                        .scaleEffect(x: -1, y: 1)
-                        .font(Theme.icon20)
-                        .foregroundStyle(Theme.white)
-                        .accessibilityLabel("Guide")
-                        .accessibilityHint("Shows Creator Guide")
-                }
             }
             .padding(.horizontal, Theme.space12)
             .padding(.bottom, Theme.space8)

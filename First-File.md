@@ -255,31 +255,46 @@ To - Do
 
 - Camera View
 
-  replace ObservedObject with Observable, may mean needing to move up to iOS 18 + Swift 6.
-  Need to move up to Swift 6.
+  [X] migrated to Swift 6 & iOS 18+
 
-  High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
+  [X]High Remove Auto Focus Box. \*\*\* Issue Cannont be removed if tapped outside teleprompter area.
 
   Test DJI mics [X], Rode []
+
   Med []Add VU Meter to left side.
 
   {Below both go together}
-  High []Move Header to footer bellow Rec Button
-  High []Shift Camera View and Teleprompter up as far as possible.
-  High []Add Record Timer Display ie 00:01:34
+  High [X] Move Header to footer bellow Rec Button
+  High [X]Shift Camera View and Teleprompter up as far as possible.
+  High [X]Add Record Timer Display ie 00:01:34
 
-  [] Changee format button + panel to toggle record mode; Pair available quality with frame rate, change button to toggle to move through available HD 30fps, HD 24fps, 4K 30fps, 4k 24fps and Cinematic
+  [x] Change format button + panel to toggle record mode; Pair available quality with frame rate, change button to toggle to move through available HD 30fps, HD 24fps, 4K 30fps, 4k 24fps and Cinematic.
 
-  [] Low Cinematic Mode
+  [x] Cinematic Mode
+  - Issues Not being recognized across devices (dynamic adjustments)
+  - Front Facing Cameras:
+    Standard Mode
+    [HD 1920x1080 - 24,30,60]
+    [4K - 24,30]
+    Cine Mode
+    [HD 1920x1080 - 24,30]
+    [4K - 24,30]
+
+  - Multiple Front Cameras need to initiallized
+  - 4K View is resetting in CameraView
 
 - Script View
   [] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
   [] add a lightweight save for backup should creator lost the script
 
-- Custom Photo Picker to allow creators to review in app.
-  Video Only - show last 5 videos. Figure out What is possible from this view.
+- [x] Added Camera Roll, Video Player with Share and Delete Controls.
 
 - [] Add App Guide Pages. Think Handrails for Users
   - Insert Images drawn from App with Correct Styles
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
+
+... June 12 2026
+
+**_ Task _**
+Lets devise a plan to make these changes with some differences

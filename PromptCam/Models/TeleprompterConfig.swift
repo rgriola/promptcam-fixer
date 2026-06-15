@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Preset text colors for the teleprompter overlay.
 /// `rawValue` is a plain string so values can be round-tripped through UserDefaults without extra work.
-enum TeleprompterTextColor: String, CaseIterable, Equatable {
+enum TeleprompterTextColor: String, CaseIterable, Equatable, Sendable {
     case white
     case yellow
     case red
@@ -24,7 +24,7 @@ enum TeleprompterTextColor: String, CaseIterable, Equatable {
     var label: String { rawValue.capitalized }
 }
 
-struct TeleprompterConfig: Equatable {
+struct TeleprompterConfig: Equatable, Sendable {
     var text: String
     var speedPointsPerSecond: Double
     var fontSize: Double

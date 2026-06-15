@@ -18,6 +18,8 @@ struct CameraFooterControlsView: View {
     let onTapAdjust: () -> Void
     /// Action to open settings sheet.
     let onTapSettings: () -> Void
+    /// Action to open the creator guide.
+    let onTapGuide: () -> Void
 
     /// Footer control row for media import and utility actions.
     var body: some View {
@@ -31,7 +33,7 @@ struct CameraFooterControlsView: View {
 
             footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
                 .accessibilityLabel("Insert generated script")
-
+            
             Spacer()
 
             footerIconButton(
@@ -43,6 +45,18 @@ struct CameraFooterControlsView: View {
 
             footerIconButton(systemName: "gear", action: onTapSettings)
                 .accessibilityLabel("Open camera settings")
+            
+            Spacer()
+
+            Button(action: onTapGuide) {
+                Image(systemName: "service.dog.fill")
+                    .scaleEffect(x: -1, y: 1)
+                    .font(Theme.icon24)
+                    .foregroundStyle(Theme.white)
+                    .frame(width: CameraLayout.footerIconSize, height: CameraLayout.footerIconSize)
+            }
+            .accessibilityLabel("Guide")
+            .accessibilityHint("Shows Creator Guide")
             
             Spacer()
         }

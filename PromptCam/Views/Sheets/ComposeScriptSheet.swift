@@ -47,7 +47,9 @@ struct ComposeScriptSheet: View {
                     .font(Theme.font16Regular)
                     .focused($isEditorFocused)
                     .padding(Theme.space8)
-                    .background(Theme.panelBg.opacity(0.2), in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+                    .background(
+                        Theme.panelBg.opacity(0.2), 
+                        in: RoundedRectangle(cornerRadius: Theme.radiusMd))
                     .frame(minHeight: 200, maxHeight: .infinity)
                     .onChange(of: draftText) { _, newValue in
                         if newValue.count > Self.kMaxScriptLength {
@@ -56,12 +58,13 @@ struct ComposeScriptSheet: View {
                     }
 
                 HStack {
+                    // note at bitton 
                     Text("Save to apply script updates.")
                         .font(Theme.font12Regular)
                         .foregroundStyle(Theme.primaryText)
                     
                     Spacer()
-                    
+                    // char count
                     Text("\(draftText.count) / \(Self.kMaxScriptLength)")
                         .font(Theme.font12Regular)
                         .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
@@ -76,22 +79,25 @@ struct ComposeScriptSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    isEditorFocused = true
-                }
+                // Focus immediately on appear - iOS handles the coordination
+                // between sheet animation and keyboard presentation smoothly
+                isEditorFocused = true
             }
+            
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("X", action: onCancel)
+                    CloseToolbarButton { onCancel() }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        let sanitized = sanitizeScript(draftText)
-                        let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
-                        onSave(truncated)
-                    }
-                    .disabled(draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    SaveToolbarButton(
+                        action: {
+                            let sanitized = sanitizeScript(draftText)
+                            let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
+                            onSave(truncated)
+                        },
+                        isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
                 }
             }
         }

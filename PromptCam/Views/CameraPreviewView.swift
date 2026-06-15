@@ -35,6 +35,7 @@ struct CameraPreviewView: UIViewRepresentable {
         Coordinator(parent: self)
     }
 
+    @MainActor
     final class Coordinator: NSObject {
         var parent: CameraPreviewView
 

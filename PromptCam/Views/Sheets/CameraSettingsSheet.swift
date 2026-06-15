@@ -74,8 +74,8 @@ struct CameraSettingsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("X", action: onClose)
+                ToolbarItem(placement: .topBarLeading) {
+                    CloseToolbarButton { onClose() }
                 }
             }
             .onAppear { refreshStatuses() }

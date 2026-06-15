@@ -6,7 +6,7 @@ import CoreGraphics
 /// until the last line exits the top (`scrollStopOffset`). Manual drag is
 /// bounded by `dragCeiling` (can't push text below viewport) and
 /// `scrollStopOffset` (can't pull past the end).
-struct TeleprompterGeometry: Equatable {
+struct TeleprompterGeometry: Equatable, Sendable {
     let viewportHeight: CGFloat
     let textHeight: CGFloat
     let fontSize: CGFloat

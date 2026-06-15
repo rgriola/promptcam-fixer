@@ -1,21 +1,24 @@
 // May 31, 2026 - 2:30am - GitHub Copilot (Claude Opus 4.7)
+// June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
 import AVFoundation
+import Combine
 import SwiftUI
 
-enum CameraSheetRoute: String, Identifiable {
+enum CameraSheetRoute: String, Identifiable, Sendable {
     case formatPanel
     case composeScript
     case settings
+    case recordingsLibrary
 
     var id: String { rawValue }
 }
 
-enum CameraMode: Equatable {
+enum CameraMode: Equatable, Sendable {
     case camera
     case compose
 }
 
-enum CameraLockStatus: Equatable {
+enum CameraLockStatus: Equatable, Sendable {
     case auto
     case aeAfLocked
     case aeLocked
@@ -60,36 +63,54 @@ enum CameraLockStatus: Equatable {
 /// "sheet not presented" bug that occurs with rapid modal switching.
 ///
 /// **Callback binding**: `bindCallbacks()` connects `CameraService` closures to
-/// published properties at init time, keeping the service layer protocol-free.
+/// observable properties at init time, keeping the service layer protocol-free.
 @MainActor
-final class CameraViewModel: ObservableObject {
-    @Published var config = TeleprompterConfig.default
-    @Published var isRecording = false
-    @Published var isScrolling = false
+@Observable
+final class CameraViewModel {
+    var config = TeleprompterConfig.default
+    var isRecording = false
+    var isScrolling = false
+    /// Recording duration in seconds, updated every 0.1s while recording.
+    var recordingDuration: TimeInterval = 0
 
-    @Published var errorMessage: String?
-    @Published var lockStatus: CameraLockStatus = .auto
-    @Published var isCameraReady = false
-    @Published var isPhotoPickerPresented = false
-    @Published var activeSheet: CameraSheetRoute?
-    @Published var cameraMode: CameraMode = .camera
+    var errorMessage: String?
+    var lockStatus: CameraLockStatus = .auto
+    var isCameraReady = false
+    var activeSheet: CameraSheetRoute?
+    var cameraMode: CameraMode = .camera
     /// Warning banner for format panel locked during recording.
-    @Published var showFormatLockedWarning = false
+    var showFormatLockedWarning = false
     /// Bumped to signal the overlay to reset position (zero manualOffset).
-    @Published var teleprompterResetToken: Int = 0
+    var teleprompterResetToken: Int = 0
     /// Current recording format (resolution + FPS). Persisted across launches.
-    @Published var recordingFormat: RecordingFormat
+    var recordingFormat: RecordingFormat
     /// Hardware-supported resolutions for the active camera.
-    @Published var supportedResolutions: [VideoResolution] = VideoResolution.allCases
+    var supportedResolutions: [VideoResolution] = VideoResolution.allCases
     /// Hardware-supported frame rates for the active camera.
-    @Published var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
+    var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
+    /// Device capabilities (mode support, resolution/fps per mode).
+    var deviceCapabilities: DeviceCapabilities = DeviceCapabilities(
+        supportsCinematicMode: false,
+        standardResolutions: [.hd1080p],
+        standardFrameRates: [.fps30],
+        cinematicResolutions: [],
+        cinematicFrameRates: []
+    )
+    /// Aperture range reported by the active cinematic format (iOS 26+ only).
+    /// Nil when cinematic mode is inactive or device/OS does not support it.
+    var cinematicApertureRange: ClosedRange<Float>? = nil
+    /// Current simulated aperture value shown in the aperture slider.
+    var cinematicSimulatedAperture: Float = 2.0
 
+    // MARK: - Timer State
+    
+    @ObservationIgnored private var timerCancellable: AnyCancellable?
+    
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
 
-    private var queuedSheet: CameraSheetRoute?
-    private var queuedPhotoPicker = false
-    private var lastPresentedSheet: CameraSheetRoute?
+    @ObservationIgnored private var queuedSheet: CameraSheetRoute?
+    @ObservationIgnored private var lastPresentedSheet: CameraSheetRoute?
 
     // MARK: - Style Persistence Keys
     private enum StyleKey {
@@ -125,6 +146,7 @@ final class CameraViewModel: ObservableObject {
     }
 
     func onDisappear() {
+        stopTimer()
         cameraService.stopSession()
         isCameraReady = false
     }
@@ -133,30 +155,23 @@ final class CameraViewModel: ObservableObject {
         guard isCameraReady else { return }
 
         if isRecording {
+            stopTimer()
             cameraService.stopRecording()
-            print("[r] VM toggleRecording -> stopped")
+            Log.viewmodel.info("toggleRecording -> stopped")
         } else {
+            startTimer()
             cameraService.startRecording()
-            print("[r] VM toggleRecording -> started")
+            Log.viewmodel.info("toggleRecording -> started")
         }
     }
 
     func toggleScrolling() {
         isScrolling.toggle()
-        print("[tScroll] VM toggleScrolling -> \(isScrolling)")
+        Log.viewmodel.debug("toggleScrolling -> \(self.isScrolling, privacy: .public)")
     }
 
     func openPhotoLibrary() {
-        // Only one modal presenter can be active at a time in SwiftUI.
-        guard !isPhotoPickerPresented else { return }
-
-        if activeSheet != nil {
-            queuedPhotoPicker = true
-            dismissActiveSheet()
-            return
-        }
-
-        isPhotoPickerPresented = true
+        presentSheet(.recordingsLibrary)
     }
 
     
@@ -201,14 +216,10 @@ final class CameraViewModel: ObservableObject {
         presentQueuedModalIfNeeded()
     }
 
-    func handlePhotoPickerStateChanged(_ newValue: Bool) {
-        guard !newValue else { return }
 
-        presentQueuedModalIfNeeded()
-    }
 
     func updateScriptText(_ text: String) {
-        print("[uScriptText] VM updateScriptText len=\(text.count)")
+        Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
         config.text = text
     }
 
@@ -219,7 +230,7 @@ final class CameraViewModel: ObservableObject {
         next.text = config.text
         config = next
         saveStylePreferences()
-        print("[TP] updateTeleprompterStyle fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+        Log.viewmodel.debug("updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
     }
 
     // MARK: - Style Persistence
@@ -245,7 +256,7 @@ final class CameraViewModel: ObservableObject {
             }
             config = config.clamped
             config.text = TeleprompterConfig.default.text
-            print("[TP] loadStylePreferences restored fontSize=\(Int(config.fontSize)) speed=\(Int(config.speedPointsPerSecond)) color=\(config.textColor.rawValue) bgOpacity=\(config.backgroundOpacity)")
+            Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
         }
     }
 
@@ -254,19 +265,13 @@ final class CameraViewModel: ObservableObject {
     func resetTeleprompterPosition() {
         if isScrolling {
             isScrolling = false
-            print("[rTP] VM resetTeleprompterPosition paused scrolling")
+            Log.viewmodel.debug("resetTeleprompterPosition paused scrolling")
         }
         teleprompterResetToken += 1
-        print("[TP] VM resetTeleprompterPosition token=\(teleprompterResetToken)")
+        Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public)")
     }
 
     private func presentSheet(_ route: CameraSheetRoute) {
-        if isPhotoPickerPresented {
-            queuedSheet = route
-            isPhotoPickerPresented = false
-            return
-        }
-
         guard activeSheet == nil else {
             queuedSheet = route
             return
@@ -281,18 +286,9 @@ final class CameraViewModel: ObservableObject {
     }
 
     private func presentQueuedModalIfNeeded() {
-        guard activeSheet == nil else { return }
-
-        if queuedPhotoPicker {
-            queuedPhotoPicker = false
-            isPhotoPickerPresented = true
-            return
-        }
-
-        if let route = queuedSheet {
-            queuedSheet = nil
-            presentSheet(route)
-        }
+        guard activeSheet == nil, let route = queuedSheet else { return }
+        queuedSheet = nil
+        presentSheet(route)
     }
 
     func focus(at devicePoint: CGPoint) {
@@ -310,6 +306,11 @@ final class CameraViewModel: ObservableObject {
         lockStatus = .auto
     }
 
+    func setSimulatedAperture(_ value: Float) {
+        cinematicSimulatedAperture = value
+        cameraService.setSimulatedAperture(value)
+    }
+
     func adjustExposure(by delta: Float) {
         cameraService.adjustExposure(by: delta)
     }
@@ -318,13 +319,34 @@ final class CameraViewModel: ObservableObject {
     func setExposure(to value: Float) {
         cameraService.setExposure(to: value)
     }
+    
+    // MARK: - Recording Timer
+    
+    /// Starts the recording timer using Combine. Increments duration every 0.1 seconds.
+    private func startTimer() {
+        recordingDuration = 0
+        timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.recordingDuration += 0.1
+            }
+        Log.viewmodel.debug("Recording timer started")
+    }
+    
+    /// Stops and resets the recording timer.
+    private func stopTimer() {
+        timerCancellable?.cancel()
+        timerCancellable = nil
+        recordingDuration = 0
+        Log.viewmodel.debug("Recording timer stopped")
+    }
 
     // MARK: - Recording Format
 
     /// Applies a new recording format to the camera. No-op if recording.
     func updateRecordingFormat(_ format: RecordingFormat) {
         guard !isRecording else { return }
-        print("[TP] VM updateRecordingFormat res=\(format.resolution.rawValue) fps=\(format.frameRate.rawValue)")
+        Log.viewmodel.info("updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) fps=\(format.frameRate.rawValue, privacy: .public) mode=\(format.mode.rawValue, privacy: .public)")
         cameraService.applyFormat(format)
     }
 
@@ -341,25 +363,52 @@ final class CameraViewModel: ObservableObject {
             guard let self else { return }
             self.recordingFormat = applied
             applied.save()
-            print("[TP] VM format applied res=\(applied.resolution.rawValue) fps=\(applied.frameRate.rawValue)")
+            Log.viewmodel.info("format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)")
         }
 
         cameraService.onSupportedFormatsQueried = { [weak self] resolutions, frameRates in
             guard let self else { return }
             self.supportedResolutions = resolutions
             self.supportedFrameRates = frameRates
-            print("[TP] VM supported formats res=\(resolutions.map(\.rawValue)) fps=\(frameRates.map(\.rawValue))")
+            Log.viewmodel.debug("supported formats res=\(resolutions.map(\.rawValue), privacy: .public) fps=\(frameRates.map(\.rawValue), privacy: .public)")
 
             // If saved format isn't supported by this hardware, fall back.
             if !resolutions.contains(self.recordingFormat.resolution) ||
                !frameRates.contains(self.recordingFormat.frameRate) {
                 let fallback = RecordingFormat(
                     resolution: resolutions.first ?? .hd1080p,
-                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30)
+                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30),
+                    mode: .standard
                 )
                 self.recordingFormat = fallback
                 fallback.save()
-                print("[TP] VM format fell back to res=\(fallback.resolution.rawValue) fps=\(fallback.frameRate.rawValue)")
+                Log.viewmodel.notice("format fell back to res=\(fallback.resolution.rawValue, privacy: .public) fps=\(fallback.frameRate.rawValue, privacy: .public)")
+            }
+        }
+
+        cameraService.onDeviceCapabilitiesQueried = { [weak self] capabilities in
+            guard let self else { return }
+            self.deviceCapabilities = capabilities
+            Log.viewmodel.info("device capabilities cine=\(capabilities.supportsCinematicMode, privacy: .public)")
+            
+            // Auto-adjust format if current selection isn't supported.
+            if !capabilities.isSupported(self.recordingFormat) {
+                let adjusted = capabilities.adjusted(self.recordingFormat)
+                self.recordingFormat = adjusted
+                adjusted.save()
+                Log.viewmodel.notice("format auto-adjusted to res=\(adjusted.resolution.rawValue, privacy: .public) fps=\(adjusted.frameRate.rawValue, privacy: .public) mode=\(adjusted.mode.rawValue, privacy: .public)")
+            }
+        }
+
+        cameraService.onCinematicApertureAvailable = { [weak self] minAp, maxAp, defAp in
+            guard let self else { return }
+            if minAp == 0 {
+                self.cinematicApertureRange = nil
+                Log.viewmodel.info("Cinematic aperture: unavailable")
+            } else {
+                self.cinematicApertureRange = minAp...maxAp
+                self.cinematicSimulatedAperture = defAp
+                Log.viewmodel.info("Cinematic aperture range f/\(minAp, privacy: .public)–f/\(maxAp, privacy: .public) default f/\(defAp, privacy: .public)")
             }
         }
 
