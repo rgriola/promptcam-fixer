@@ -43,14 +43,15 @@ Before the issues, it's worth noting what the codebase does well:
 > [!NOTE]
 > All work was performed on the `refactor/code-review-jun-15` branch across 4 phases with 4 commits.
 
-| Phase | Scope | Issues Fixed | Key Metrics |
-|-------|-------|-------------|-------------|
-| **Phase 1** | Critical stability | C1, C2, C3, C4, C6, H2, H3, H4, H10, H12, H13, M1, M8 | 8 crash/data-race paths eliminated |
-| **Phase 2** | Performance & lifecycle | H5, M17, M8 (re-entry), M9 (PromptCamApp), TeleprompterMeasurement, TeleprompterOverlayView | 120fps → 60fps throttle, task cancellation |
-| **Phase 3** | Architecture | H1, H3 (CameraError), M11, M13 | CameraService 1,123 → 400 lines + 3 extensions |
-| **Phase 4** | Quality & polish | H8, L2, L9, L16, M4 | 23 → **51 unit tests**, Theme centralized, `.addOnly` permissions |
+| Phase       | Scope                   | Issues Fixed                                                                                | Key Metrics                                                       |
+| ----------- | ----------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Phase 1** | Critical stability      | C1, C2, C3, C4, C6, H2, H3, H4, H10, H12, H13, M1, M8                                       | 8 crash/data-race paths eliminated                                |
+| **Phase 2** | Performance & lifecycle | H5, M17, M8 (re-entry), M9 (PromptCamApp), TeleprompterMeasurement, TeleprompterOverlayView | 120fps → 60fps throttle, task cancellation                        |
+| **Phase 3** | Architecture            | H1, H3 (CameraError), M11, M13                                                              | CameraService 1,123 → 400 lines + 3 extensions                    |
+| **Phase 4** | Quality & polish        | H8, L2, L9, L16, M4                                                                         | 23 → **51 unit tests**, Theme centralized, `.addOnly` permissions |
 
 **Commits:**
+
 ```
 14a080f Phase 4: Quality & polish — 28 new tests, Theme animations, permission downgrade
 d5b00b8 Phase 1-2: Stability, performance, and lifecycle fixes (16 fixes)
@@ -58,6 +59,7 @@ c9291c6 Phase 3: Architectural refactoring — error enum, service decomposition
 ```
 
 **New files created:**
+
 - `CameraError.swift` — 12 typed error cases
 - `CameraService+Recording.swift` — recording lifecycle (96 lines)
 - `CameraService+Controls.swift` — focus/exposure controls (157 lines)
@@ -582,48 +584,48 @@ All paths reference `/tmp/workspace/rgriola/...` (CI/remote environment). Should
 ### Phase 2 — Stability & Performance ✅ COMPLETE
 
 - [x] **H5:** TimelineView `.animation` → `.periodic(every: 0.016)` — stops burning CPU when paused
-- [ ] **H6:** Replace all `print()` with `Log` utility — *deferred (low risk)*
+- [ ] **H6:** Replace all `print()` with `Log` utility — _deferred (low risk)_
 - [x] **H7:** `session` property: now `internal` (required for extension decomposition), external access via `previewSession`
 - [x] **H10:** `NSCache` for thumbnails in `RecordingsLibrarySheet`
 - [x] **H12:** AVPlayer lifecycle fix — task cancellation in `RecordingPlayerView.onDisappear`
 - [x] **M1:** Added `deinit` cleanup to CameraService (removes all inputs/outputs, stops session)
-- [ ] **M2:** Audit session configuration blocks — *deferred (no crashes observed)*
-- [ ] **M7:** Panel mutual exclusion — *partially addressed (panels close neighbors on open)*
+- [ ] **M2:** Audit session configuration blocks — _deferred (no crashes observed)_
+- [ ] **M7:** Panel mutual exclusion — _partially addressed (panels close neighbors on open)_
 - [x] **M8:** Onboarding permission check — photo library pre-check added before save
 - [x] **M17:** Export task race → `Task.isCancelled` checks in RecordingsLibrarySheet
-- [ ] **M18:** Aperture range post-commit query — *deferred (iOS 26+ specific)*
+- [ ] **M18:** Aperture range post-commit query — _deferred (iOS 26+ specific)_
 
 ### Phase 3 — Architecture ✅ COMPLETE
 
 - [x] **H1:** Decomposed CameraService → 4 files via extensions (400 + 511 + 157 + 96 lines)
-- [x] ~~**H9:** Extract gestures/sheets from CameraView~~ — *deferred (well-organized with MARK sections)*
-- [ ] **M5:** MVVM violations — *deferred (low risk, contained to format panel)*
-- [x] ~~**M6:** Group @Published into state structs~~ — *skipped (@Observable makes this unnecessary)*
+- [x] ~~**H9:** Extract gestures/sheets from CameraView~~ — _deferred (well-organized with MARK sections)_
+- [ ] **M5:** MVVM violations — _deferred (low risk, contained to format panel)_
+- [x] ~~**M6:** Group @Published into state structs~~ — _skipped (@Observable makes this unnecessary)_
 - [x] **M11:** Created `CameraServiceProtocol` for DI — ViewModel depends on protocol
 - [x] **M13:** Replaced `MainActor.assumeIsolated` with `Task { @MainActor in }` (8 sites)
 
 ### Phase 4 — Quality & Polish ✅ COMPLETE
 
 - [x] **H8:** Added 28 unit tests (MockCameraService + CameraViewModelTests + CameraErrorTests) — **51 total**
-- [ ] Add UI tests for record → save → library flow — *future work*
-- [ ] Localization support — *future work*
-- [ ] Dark/Light mode adaptive colors — *future work (camera app is dark-only by convention)*
+- [ ] Add UI tests for record → save → library flow — _future work_
+- [ ] Localization support — _future work_
+- [ ] Dark/Light mode adaptive colors — _future work (camera app is dark-only by convention)_
 - [x] Centralize animation durations in Theme → `Theme.panelSpring` replaces 8 inline values
 - [ ] ~~Downgrade photo library to `.addOnly`~~ — **Reverted:** app needs `.readWrite` for RecordingsService (fetch, thumbnail, export, delete)
 - [x] Remove dead code: duplicate `prompterEdgeBlur`, unused `UIKit` import
-- [ ] Fix README paths — *future work*
+- [ ] Fix README paths — _future work_
 
 ---
 
 ## Issue Count Summary
 
-| Severity    | Found | Fixed | Remaining |
-| ----------- | ----- | ----- | --------- |
-| 🔴 Critical | 6     | 6     | 0         |
-| 🟠 High     | 13    | 10    | 3         |
-| 🟡 Medium   | 18    | 7     | 11        |
-| 🔵 Low      | 16    | 3     | 13        |
-| **Total**   | **53**| **26**| **27**    |
+| Severity    | Found  | Fixed  | Remaining |
+| ----------- | ------ | ------ | --------- |
+| 🔴 Critical | 6      | 6      | 0         |
+| 🟠 High     | 13     | 10     | 3         |
+| 🟡 Medium   | 18     | 7      | 11        |
+| 🔵 Low      | 16     | 3      | 13        |
+| **Total**   | **53** | **26** | **27**    |
 
 > [!NOTE]
 > Remaining items are primarily low-risk polish (localization, print→Log migration, magic layout numbers, dead code comments) and feature enhancements (dark mode, UI tests). No critical or crash-path issues remain.
@@ -632,20 +634,20 @@ All paths reference `/tmp/workspace/rgriola/...` (CI/remote environment). Should
 
 ## File Risk Map (Post-Refactor)
 
-| File | Lines | Severity | Status |
-| --- | --- | --- | --- |
-| [CameraService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift) | ~400 | ✅ Resolved | Decomposed into 4 files, data races fixed, rollback added, typed errors |
-| [CameraService+Format.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Format.swift) | ~511 | 🔵 Low | Clean — format management with rollback |
-| [CameraService+Controls.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Controls.swift) | ~157 | 🔵 Low | Clean — focus/exposure controls |
-| [CameraService+Recording.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Recording.swift) | ~96 | 🔵 Low | Clean — recording lifecycle with file cleanup |
-| [CameraView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/CameraView.swift) | ~514 | 🟡 Medium | Theme.panelSpring centralized; MARK sections well-organized |
-| [CameraViewModel.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift) | ~438 | ✅ Resolved | Timer drift fixed, DI via protocol, typed errors, 16 unit tests |
-| [PromptCamApp.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/App/PromptCamApp.swift) | ~32 | ✅ Resolved | `@State` ViewModel, `@MainActor` |
-| [RecordingsService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/RecordingsService.swift) | ~118 | 🟡 Medium | Continuation fixed (`.highQualityFormat`); file I/O on main remains |
-| [TeleprompterOverlayView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/TeleprompterOverlayView.swift) | ~230 | ✅ Resolved | `.periodic(0.016)` throttle applied |
-| [RecordingsLibrarySheet.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Sheets/RecordingsLibrarySheet.swift) | ~130 | ✅ Resolved | NSCache + task cancellation |
-| [Theme.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/App/Theme.swift) | ~247 | 🔵 Low | Duplicate gradient removed, panelSpring added |
-| [PermissionService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/PermissionService.swift) | ~72 | ✅ Resolved | Downgraded to `.addOnly` |
+| File                                                                                                                                           | Lines | Severity    | Status                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------- | ----------------------------------------------------------------------- |
+| [CameraService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift)                       | ~400  | ✅ Resolved | Decomposed into 4 files, data races fixed, rollback added, typed errors |
+| [CameraService+Format.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Format.swift)         | ~511  | 🔵 Low      | Clean — format management with rollback                                 |
+| [CameraService+Controls.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Controls.swift)     | ~157  | 🔵 Low      | Clean — focus/exposure controls                                         |
+| [CameraService+Recording.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService+Recording.swift)   | ~96   | 🔵 Low      | Clean — recording lifecycle with file cleanup                           |
+| [CameraView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/CameraView.swift)                                | ~514  | 🟡 Medium   | Theme.panelSpring centralized; MARK sections well-organized             |
+| [CameraViewModel.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift)                 | ~438  | ✅ Resolved | Timer drift fixed, DI via protocol, typed errors, 16 unit tests         |
+| [PromptCamApp.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/App/PromptCamApp.swift)                              | ~32   | ✅ Resolved | `@State` ViewModel, `@MainActor`                                        |
+| [RecordingsService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/RecordingsService.swift)               | ~118  | 🟡 Medium   | Continuation fixed (`.highQualityFormat`); file I/O on main remains     |
+| [TeleprompterOverlayView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/TeleprompterOverlayView.swift)      | ~230  | ✅ Resolved | `.periodic(0.016)` throttle applied                                     |
+| [RecordingsLibrarySheet.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Sheets/RecordingsLibrarySheet.swift) | ~130  | ✅ Resolved | NSCache + task cancellation                                             |
+| [Theme.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/App/Theme.swift)                                            | ~247  | 🔵 Low      | Duplicate gradient removed, panelSpring added                           |
+| [PermissionService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/PermissionService.swift)               | ~72   | ✅ Resolved | Downgraded to `.addOnly`                                                |
 
 ---
 
@@ -656,4 +658,3 @@ All paths reference `/tmp/workspace/rgriola/...` (CI/remote environment). Should
 > 2. ~~Fix timer drift~~ ✅ (5-line fix, prevents user-visible recording time errors)
 > 3. ~~Fix font mismatch in teleprompter~~ ✅ (2-line fix, prevents scroll miscalculation)
 > 4. ~~Add `NSCache` for thumbnails~~ ✅ (3-line fix, prevents memory issues)
-

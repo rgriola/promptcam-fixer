@@ -29,6 +29,7 @@ struct RecordingsLibrarySheet: View {
             }
             .navigationTitle("Camera Roll")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     CloseToolbarButton { dismiss() }

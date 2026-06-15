@@ -155,8 +155,10 @@ final class CameraViewModelTests: XCTestCase {
     func testOpenComposeSetsActiveSheet() {
         sut.openCompose()
 
-        XCTAssertEqual(sut.activeSheet, .composeScript,
-                       "activeSheet should be .composeScript after openCompose")
+        XCTAssertTrue(sut.showComposeSheet,
+                      "showComposeSheet should be true after openCompose")
+        XCTAssertEqual(sut.cameraMode, .compose,
+                       "cameraMode should be .compose after openCompose")
     }
 
     func testOpenFormatPanelBlockedWhileRecording() {

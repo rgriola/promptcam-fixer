@@ -77,6 +77,9 @@ final class CameraViewModel {
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
     var activeSheet: CameraSheetRoute?
+    /// Compose sheet is presented as a fullScreenCover to prevent
+    /// iOS sheet presentation from rescaling the camera preview.
+    var showComposeSheet = false
     var cameraMode: CameraMode = .camera
     /// Warning banner for format panel locked during recording.
     var showFormatLockedWarning = false
@@ -186,7 +189,13 @@ final class CameraViewModel {
     
 
     func openCompose() {
-        presentSheet(.composeScript)
+        cameraMode = .compose
+        showComposeSheet = true
+    }
+
+    func dismissComposeSheet() {
+        showComposeSheet = false
+        cameraMode = .camera
     }
 
     func openSettings() {
@@ -284,9 +293,8 @@ final class CameraViewModel {
             return
         }
 
-        if route == .composeScript {
-            cameraMode = .compose
-        }
+        // .composeScript is routed through showComposeSheet / fullScreenCover
+        // to prevent the camera preview from being rescaled.
 
         lastPresentedSheet = route
         activeSheet = route

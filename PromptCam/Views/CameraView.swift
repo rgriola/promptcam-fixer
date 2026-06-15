@@ -289,6 +289,18 @@ struct CameraView: View {
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
         }
+        .fullScreenCover(isPresented: $viewModel.showComposeSheet) {
+            ComposeScriptSheet(
+                initialText: viewModel.config.text,
+                onSave: { text in
+                    viewModel.updateScriptText(text)
+                    viewModel.dismissComposeSheet()
+                },
+                onCancel: {
+                    viewModel.dismissComposeSheet()
+                }
+            )
+        }
         .sheet(isPresented: $showInstructions) {
             InstructionsView()
         }
@@ -492,16 +504,8 @@ struct CameraView: View {
                 }
             )
         case .composeScript:
-            ComposeScriptSheet(
-                initialText: viewModel.config.text,
-                onSave: { text in
-                    viewModel.updateScriptText(text)
-                    viewModel.dismissActiveSheet()
-                },
-                onCancel: {
-                    viewModel.dismissActiveSheet()
-                }
-            )
+            // Routed via .fullScreenCover above — this case should not be reached.
+            EmptyView()
         case .settings:
             CameraSettingsSheet {
                 viewModel.dismissActiveSheet()
