@@ -27,13 +27,24 @@ struct CameraSettingsSheet: View {
 
                 Section("About") {
                     SettingStatusRow(title: "Version", value: appVersion)
-                } // This needs work. 
+                    SettingStatusRow(title: "Device", value: deviceInfo)
+                }
                 .listRowBackground(Theme.black.opacity(0.1))
-                .overlay(
-                RoundedRectangle(cornerRadius: Theme.radiusMd)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
-                    .padding(.horizontal, Theme.space16)
-                )
+                .foregroundStyle(Theme.white)
+
+                Section("Camera Modes") {
+                    ForEach(availableCameraModes, id: \.self) { mode in
+                        HStack(spacing: Theme.space8) {
+                            Image(systemName: iconForMode(mode))
+                                .foregroundStyle(Theme.purple)
+                                .frame(width: 20)
+                            Text(mode)
+                                .font(Theme.font16Regular)
+                                .foregroundStyle(Theme.white)
+                        }
+                    }
+                }
+                .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
                 
                 Section("Permissions") {
@@ -86,11 +97,59 @@ struct CameraSettingsSheet: View {
         .presentationBackground(Theme.bgGrad)
     }
 
+    // MARK: - Computed Properties
+
     /// Human-readable app version/build string shown in settings.
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    /// Device model + OS version, e.g. "iPhone 17 Pro · iOS 26.0"
+    private var deviceInfo: String {
+        let device = UIDevice.current
+        return "\(device.name) · \(device.systemName) \(device.systemVersion)"
+    }
+
+    /// Lists camera modes available on this device (e.g. Standard, Cinematic, Slo-mo).
+    private var availableCameraModes: [String] {
+        var modes: [String] = []
+
+        // Check back camera for standard + cinematic + slo-mo
+        if let backCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
+            modes.append("Standard")
+
+            // Check for high frame rate (slo-mo) support
+            let hasSloMo = backCamera.formats.contains { format in
+                format.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= 120 }
+            }
+            if hasSloMo { modes.append("Slo-mo") }
+        }
+
+        // Check for cinematic / depth
+        if AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back) != nil
+            || AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back) != nil {
+            modes.append("Cinematic")
+        }
+
+        // Front camera
+        if AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) != nil {
+            modes.append("Front Camera")
+        }
+
+        return modes
+    }
+
+    /// SF Symbol icon for each camera mode.
+    private func iconForMode(_ mode: String) -> String {
+        switch mode {
+        case "Standard":    return "video.fill"
+        case "Cinematic":   return "circle.dotted.and.circle"
+        case "Slo-mo":      return "slowmo"
+        case "Front Camera": return "person.fill"
+        default:            return "camera.fill"
+        }
     }
 
     private func refreshStatuses() {
