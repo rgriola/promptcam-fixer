@@ -9,7 +9,6 @@ struct RecordingsService: Sendable {
     static let cachingManager = PHCachingImageManager()
 
     /// Fetches videos from the user's library, newest first.
-    /// Excludes Live Photo video components.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
@@ -21,12 +20,7 @@ struct RecordingsService: Sendable {
             let options = PHFetchOptions()
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
-            // Exclude Live Photo video components at the database level.
-            options.predicate = NSPredicate(
-                format: "(mediaSubtypes & %d) == 0",
-                PHAssetMediaSubtype.photoLive.rawValue
-            )
-
+            // mediaType: .video already excludes photos and Live Photo images.
             let fetch = PHAsset.fetchAssets(with: .video, options: options)
             var out: [Recording] = []
             out.reserveCapacity(fetch.count)
