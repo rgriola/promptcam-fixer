@@ -162,7 +162,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showAdjustmentPanel = false
                                 }
                                 Log.ui.debug("adjustmentPanel dismissed via tap-outside")
@@ -192,7 +192,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showEVPanel = false
                                 }
                                 Log.ui.debug("EV panel dismissed via tap-outside")
@@ -231,7 +231,7 @@ struct CameraView: View {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                withAnimation(Theme.panelSpring) {
                                     showAperturePanel = false
                                 }
                                 Log.ui.debug("Aperture panel dismissed via tap-outside")
@@ -308,7 +308,7 @@ struct CameraView: View {
         .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
             // Auto-dismiss aperture panel if cinematic mode is turned off.
             if newRange == nil, showAperturePanel {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAperturePanel = false
                 }
             }
@@ -348,7 +348,7 @@ struct CameraView: View {
             resolutionLabel: viewModel.recordingFormat.resolution.rawValue,
             fpsLabel: viewModel.recordingFormat.frameRate.displayLabel,
             onTapEV: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showEVPanel.toggle()
                     if showEVPanel {
                         showAdjustmentPanel = false
@@ -358,7 +358,7 @@ struct CameraView: View {
                 Log.ui.debug("EV panel toggled -> \(showEVPanel, privacy: .public)")
             },
             onTapAperture: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAperturePanel.toggle()
                     if showAperturePanel {
                         showEVPanel = false
@@ -388,7 +388,7 @@ struct CameraView: View {
                 viewModel.openCompose()
             },
             onTapAdjust: {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(Theme.panelSpring) {
                     showAdjustmentPanel.toggle()
                     if showAdjustmentPanel {
                         showEVPanel = false

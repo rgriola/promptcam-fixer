@@ -13,7 +13,7 @@ struct PermissionService {
     }
 
     var photoLibraryStatus: PHAuthorizationStatus {
-        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        PHPhotoLibrary.authorizationStatus(for: .addOnly)
     }
 
     /// Returns `true` only when camera, mic, and photo library are all authorized.
@@ -53,7 +53,7 @@ struct PermissionService {
     }
 
     func requestPhotoLibraryAccess() async -> Bool {
-        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         return status == .authorized || status == .limited
     }
 

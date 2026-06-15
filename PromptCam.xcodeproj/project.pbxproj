@@ -18,10 +18,12 @@
 		315EB17E07A1DE5E04BA8963 /* CameraService+Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */; };
 		32027F533DD7867B0C6F4A7B /* RecordingPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */; };
 		32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */; };
+		3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
 		458BEE449E3C2807C04630BA /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */; };
 		4718DE5C64AD0E7571CC2AB1 /* SaveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525F4215FDEF56A0D72B7C58 /* SaveButton.swift */; };
 		48965C15F496BB1BD799A0E0 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6CF1CBDA28AF2C0D93B83A /* Log.swift */; };
+		565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */; };
 		5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */; };
 		5FC7FAA3D5F5AAC2866BBD59 /* CinematicAperturePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 439A02F5797E4C147A1FC37D /* CinematicAperturePanel.swift */; };
 		66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */; };
@@ -58,6 +60,7 @@
 		F244F28988A5C9C7CDEEB02C /* ScrollingTeleprompterText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */; };
 		F37829BDDD7CEB5D68FC52FA /* CameraFooterControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FD5F32937ED7BA3903AF66 /* CameraFooterControlsView.swift */; };
 		F4D8F9747DF90D06C2538DBB /* TeleprompterAdjustmentPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B100BCA59583D5DCDF2920E /* TeleprompterAdjustmentPanel.swift */; };
+		F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -113,8 +116,11 @@
 		8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
 		8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusRow.swift; sourceTree = "<group>"; };
 		923418788547770366446818 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
+		946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraErrorTests.swift; sourceTree = "<group>"; };
 		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
+		A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCameraService.swift; sourceTree = "<group>"; };
 		ABC9B16CA9F0DE0167C80C67 /* PermissionStatusHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusHelpers.swift; sourceTree = "<group>"; };
+		AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModelTests.swift; sourceTree = "<group>"; };
 		B1E807D783DFBBE234865C83 /* PromptCamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamApp.swift; sourceTree = "<group>"; };
 		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
@@ -139,6 +145,9 @@
 		0D8D623EFAD52403360EEEA7 /* PromptCamTests */ = {
 			isa = PBXGroup;
 			children = (
+				946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */,
+				AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */,
+				A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */,
 				0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */,
 			);
 			path = PromptCamTests;
@@ -480,6 +489,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */,
+				565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */,
+				F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */,
 				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

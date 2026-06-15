@@ -190,7 +190,7 @@ final class CameraViewModel {
     func openFormatPanel() {
         // Gate: Cannot change format while recording
         guard !isRecording else {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(Theme.panelSpring) {
                 showFormatLockedWarning = true
             }
             return
