@@ -56,6 +56,21 @@ struct ComposeScriptSheet: View {
                 let editorHeight = geo.size.height * 0.45
 
                 VStack(spacing: Theme.space12) {
+                    // Info bar above editor
+                    HStack {
+                        Text("Save to apply script updates.")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                        
+                        Spacer()
+
+                        Text("\(draftText.count) / \(Self.kMaxScriptLength)")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
+                            .monospacedDigit()
+                    }
+
+                    // Text editor
                     TextEditor(text: $draftText)
                         .font(Theme.font16Regular)
                         .focused($isEditorFocused)
@@ -70,33 +85,17 @@ struct ComposeScriptSheet: View {
                             }
                         }
 
-                    HStack {
-                        // note at bottom 
-                        Text("Save to apply script updates.")
+                    // Clear button below editor
+                    Button {
+                        draftText = ""
+                    } label: {
+                        Label("Clear", systemImage: "xmark.circle.fill")
                             .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.primaryText)
-                        
-                        Spacer()
-
-                        // clear button
-                        Button {
-                            draftText = ""
-                        } label: {
-                            Label("Clear", systemImage: "xmark.circle.fill")
-                                .font(Theme.font12Regular)
-                                .foregroundStyle(Theme.red)
-                        }
-                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
-                        .disabled(draftText.isEmpty)
-
-                        // char count
-                        Text("\(draftText.count) / \(Self.kMaxScriptLength)")
-                            .font(Theme.font12Regular)
-                            .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
-                            .monospacedDigit()
+                            .foregroundStyle(Theme.red)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .opacity(draftText.isEmpty ? 0.3 : 1.0)
+                    .disabled(draftText.isEmpty)
 
                     Spacer()
                 }
