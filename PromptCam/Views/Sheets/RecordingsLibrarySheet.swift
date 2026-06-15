@@ -42,10 +42,11 @@ struct RecordingsLibrarySheet: View {
                     onDelete: { Task { await viewModel.delete(recording) } }
                 )
             }
-            .task(id: selectedRecording) {
+            .onChange(of: selectedRecording) { _, newRec in
                 videoURL = nil
-                guard let rec = selectedRecording else { return }
-                videoURL = await viewModel.exportForSharing(rec)
+                if let newRec {
+                    Task { videoURL = await viewModel.exportForSharing(newRec) }
+                }
             }
         }
         .onDisappear {
