@@ -8,12 +8,8 @@ struct RecordingsService: Sendable {
     /// Shared caching image manager for grid thumbnails.
     static let cachingManager = PHCachingImageManager()
 
-    /// Minimum duration (seconds) for a video to appear in the Camera Roll.
-    /// Filters out Live Photo video components and accidental short clips.
-    private static let minimumDuration: TimeInterval = 5
-
     /// Fetches videos from the user's library, newest first.
-    /// Excludes Live Photos and any video shorter than `minimumDuration`.
+    /// Excludes Live Photo video components.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
@@ -26,11 +22,9 @@ struct RecordingsService: Sendable {
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
             // Exclude Live Photo video components at the database level.
-            // mediaSubtypes bit 8 (value 2) = PHAssetMediaSubtype.photoLive
             options.predicate = NSPredicate(
-                format: "(mediaSubtypes & %d) == 0 AND duration >= %f",
-                PHAssetMediaSubtype.photoLive.rawValue,
-                Self.minimumDuration
+                format: "(mediaSubtypes & %d) == 0",
+                PHAssetMediaSubtype.photoLive.rawValue
             )
 
             let fetch = PHAsset.fetchAssets(with: .video, options: options)
