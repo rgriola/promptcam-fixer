@@ -39,6 +39,16 @@ struct ComposeScriptSheet: View {
         return String(String.UnicodeScalarView(filtered))
     }
 
+    /// Dismisses the keyboard and waits for it to animate down before
+    /// running the callback. This prevents the camera preview from being
+    /// visible in a "narrowed" state when the fullScreenCover closes.
+    private func dismissAndRun(_ action: @escaping () -> Void) {
+        isEditorFocused = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            action()
+        }
+    }
+
     /// Script editor UI with immediate keyboard focus.
     var body: some View {
         NavigationStack {
@@ -89,7 +99,7 @@ struct ComposeScriptSheet: View {
             
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CloseToolbarButton { onCancel() }
+                    CloseToolbarButton { dismissAndRun { onCancel() } }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -97,7 +107,7 @@ struct ComposeScriptSheet: View {
                         action: {
                             let sanitized = sanitizeScript(draftText)
                             let truncated = String(sanitized.prefix(Self.kMaxScriptLength))
-                            onSave(truncated)
+                            dismissAndRun { onSave(truncated) }
                         },
                         isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     )
