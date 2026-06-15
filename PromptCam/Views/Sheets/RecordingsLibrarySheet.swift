@@ -5,8 +5,8 @@ struct RecordingsLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = RecordingsLibraryViewModel()
 
-    // UI state
-    @State private var thumbnailCache: [String: UIImage] = [:]
+    // UI state — NSCache auto-evicts under memory pressure, preventing unbounded growth.
+    @State private var thumbnailCache = NSCache<NSString, UIImage>()
     @State private var selectedRecording: Recording?
     @State private var videoURL: URL?
 
@@ -40,11 +40,10 @@ struct RecordingsLibrarySheet: View {
                     onDelete: { Task { await viewModel.delete(recording) } }
                 )
             }
-            .onChange(of: selectedRecording) { _, newRec in
+            .task(id: selectedRecording) {
                 videoURL = nil
-                if let newRec {
-                    Task { videoURL = await viewModel.exportForSharing(newRec) }
-                }
+                guard let rec = selectedRecording else { return }
+                videoURL = await viewModel.exportForSharing(rec)
             }
         }
         .onDisappear {
@@ -65,15 +64,16 @@ struct RecordingsLibrarySheet: View {
                 ForEach(viewModel.recordings) { recording in
                     RecordingThumbnailView(
                         recording: recording,
-                        thumbnail: thumbnailCache[recording.id]
+                        thumbnail: thumbnailCache.object(forKey: recording.id as NSString)
                     ) {
                         selectedRecording = recording
                     }
                     .task(id: recording.id) {
-                        guard thumbnailCache[recording.id] == nil else { return }
+                        let key = recording.id as NSString
+                        guard thumbnailCache.object(forKey: key) == nil else { return }
                         let size = CGSize(width: 300, height: 300)
                         if let img = await viewModel.thumbnail(for: recording, size: size) {
-                            thumbnailCache[recording.id] = img
+                            thumbnailCache.setObject(img, forKey: key)
                         }
                     }
                     .onAppear {

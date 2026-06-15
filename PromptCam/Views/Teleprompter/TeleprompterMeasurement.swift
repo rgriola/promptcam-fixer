@@ -8,7 +8,15 @@ import UIKit
 func measureTeleprompterTextHeight(text: String, fontSize: Double, viewWidth: CGFloat) -> CGFloat? {
     guard viewWidth > 0 else { return nil }
     let availableWidth = max(viewWidth - Theme.teleprompterHPad * 2, 1)
-    let uiFont = UIFont.systemFont(ofSize: CGFloat(fontSize), weight: .semibold)
+    // Use .rounded design to match ScrollingTeleprompterText's
+    // Theme.fontFamily.rounded(size:weight:) rendering.
+    let baseFont = UIFont.systemFont(ofSize: CGFloat(fontSize), weight: .semibold)
+    let uiFont: UIFont
+    if let roundedDescriptor = baseFont.fontDescriptor.withDesign(.rounded) {
+        uiFont = UIFont(descriptor: roundedDescriptor, size: 0)
+    } else {
+        uiFont = baseFont  // Fallback if rounded unavailable
+    }
     let attributes: [NSAttributedString.Key: Any] = [.font: uiFont]
     let bounding = (text as NSString).boundingRect(
         with: CGSize(width: availableWidth, height: .greatestFiniteMagnitude),

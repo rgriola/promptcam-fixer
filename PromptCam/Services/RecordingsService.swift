@@ -33,22 +33,22 @@ struct RecordingsService: Sendable {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
     }
 
-    /// Thumbnail via the shared caching manager. Skips the opportunistic
-    /// degraded delivery so the cell paints exactly once with the final image.
+    /// Thumbnail via the shared caching manager. Uses `.highQualityFormat`
+    /// delivery to guarantee exactly one callback — avoiding a potential
+    /// continuation hang with `.opportunistic` (which fires twice).
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .opportunistic
+            options.deliveryMode = .highQualityFormat
             options.isNetworkAccessAllowed = true
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, info in
-                let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                if !degraded { continuation.resume(returning: image) }
+            ) { image, _ in
+                continuation.resume(returning: image)
             }
         }
     }
