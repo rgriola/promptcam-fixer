@@ -58,7 +58,7 @@ struct ComposeScriptSheet: View {
                     }
 
                 HStack {
-                    // note at bitton 
+                    // note at bottom 
                     Text("Save to apply script updates.")
                         .font(Theme.font12Regular)
                         .foregroundStyle(Theme.primaryText)
@@ -78,9 +78,12 @@ struct ComposeScriptSheet: View {
             .navigationTitle("Script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
-            .onAppear {
-                // Focus immediately on appear - iOS handles the coordination
-                // between sheet animation and keyboard presentation smoothly
+            .task {
+                // Delay keyboard focus until the sheet presentation animation
+                // completes (~0.5s). Focusing immediately causes the keyboard
+                // to animate simultaneously with the sheet, triggering a
+                // second layout pass that rescales the camera preview behind it.
+                try? await Task.sleep(for: .milliseconds(500))
                 isEditorFocused = true
             }
             
@@ -102,5 +105,6 @@ struct ComposeScriptSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
+        .presentationBackgroundInteraction(.enabled)
     }
 }
