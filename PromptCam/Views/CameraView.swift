@@ -75,6 +75,7 @@ struct CameraView: View {
                 .frame(width: layout.previewSize.width, height: layout.previewSize.height)
                 .position(x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2)
                 .ignoresSafeArea(.container, edges: .top)
+                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing camera preview
 
                 // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
               /*  if showFocusIndicator, let focusIndicatorPoint {
@@ -138,6 +139,7 @@ struct CameraView: View {
                     }
                 )
                 .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
+                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing teleprompter viewport
                 .position(  x: layout.teleprompterCenter.x,
                             y: layout.teleprompterCenter.y - 75 // the 75 is the top offset
                             )
@@ -269,6 +271,7 @@ struct CameraView: View {
                 )
             }
             .background(Theme.bgGrad) // background for main view ZStack
+            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         // MARK: - Alerts & Pickers

@@ -109,7 +109,7 @@
 		B1E807D783DFBBE234865C83 /* PromptCamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamApp.swift; sourceTree = "<group>"; };
 		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
-		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingTeleprompterText.swift; sourceTree = "<group>"; };
 		C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
@@ -485,8 +485,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tele - Fixer";
 				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PromptCam needs photo library access to save and review your recordings.";
@@ -497,9 +499,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -667,8 +674,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tele - Fixer";
 				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PromptCam needs photo library access to save and review your recordings.";
@@ -679,9 +688,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
