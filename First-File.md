@@ -287,8 +287,7 @@ To - Do
   [] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
   [] add a lightweight save for backup should creator lost the script
 
-- Custom Photo Picker to allow creators to review in app.
-  Video Only - show last 5 videos. Figure out What is possible from this view.
+- [x] Added Camera Roll, Video Player with Share and Delete Controls.
 
 - [] Add App Guide Pages. Think Handrails for Users
   - Insert Images drawn from App with Correct Styles

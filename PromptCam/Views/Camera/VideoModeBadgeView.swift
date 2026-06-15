@@ -14,7 +14,7 @@ struct VideoModeBadgeView: View {
     private var modeColor: Color {
         switch mode {
         case .standard:
-            return Theme.primaryText.opacity(0.6)
+            return Theme.primaryText
         case .cinematic:
             return Theme.accent
         }

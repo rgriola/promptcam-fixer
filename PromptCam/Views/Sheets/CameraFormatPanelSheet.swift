@@ -138,7 +138,9 @@ struct CameraFormatPanelSheet: View {
             .toolbarColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("X", action: onClose)
+                  //  CloseToolbarButton(action: "Done") { onClose() }
+
+                  CloseToolbarButton { onClose() }
                 }
             }
         }

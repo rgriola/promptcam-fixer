@@ -29,8 +29,7 @@ struct RecordingsLibrarySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                        .foregroundStyle(Theme.accent)
+                    CloseToolbarButton { dismiss() }
                 }
             }
             .task { await viewModel.load() }

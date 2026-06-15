@@ -246,7 +246,6 @@ final class CameraService: NSObject, @unchecked Sendable {
 
                 // Set cinematic format explicitly when using TrueDepth camera.
                 // For standard mode, the session preset handles resolution.
-                var initialMode = format.mode
                 if format.mode == .cinematic {
                     if let cinematicFormat = self.findCinematicFormat(
                         for: videoDevice, resolution: format.resolution, frameRate: format.frameRate
@@ -260,12 +259,10 @@ final class CameraService: NSObject, @unchecked Sendable {
                             }
                         } catch {
                             self.publishError("Failed to set cinematic format: \(error.localizedDescription)")
-                            initialMode = .standard
                             self.disableCinematicCapture()
                         }
                     } else {
                         Log.camera.info("No cinematic format found, falling back to standard.")
-                        initialMode = .standard
                         self.disableCinematicCapture()
                     }
                 } else {
@@ -359,7 +356,6 @@ final class CameraService: NSObject, @unchecked Sendable {
             }
 
             // Set cinematic format on TrueDepth device, or use session preset for standard.
-            var appliedCinematicFormat: AVCaptureDevice.Format? = nil
             if appliedMode == .cinematic, let device = self.videoDevice {
                 if let cinematicFormat = self.findCinematicFormat(
                     for: device, resolution: format.resolution, frameRate: format.frameRate
@@ -368,7 +364,6 @@ final class CameraService: NSObject, @unchecked Sendable {
                         try device.lockForConfiguration()
                         device.activeFormat = cinematicFormat
                         device.unlockForConfiguration()
-                        appliedCinematicFormat = cinematicFormat
                         if #available(iOS 26.0, *), let input = self.videoInput,
                            input.isCinematicVideoCaptureSupported {
                             self.enableCinematicCapture(on: input)

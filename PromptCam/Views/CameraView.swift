@@ -109,8 +109,6 @@ struct CameraView: View {
                           y: layout.previewSize.height - 200)
                 
                 // Layer 4: Header and footer chrome constrained to space below preview
-                let bottomSpaceHeight = proxy.size.height - layout.previewSize.height
-                
                 VStack(spacing: Theme.space12) {
                     cameraHeader()
                     .padding()

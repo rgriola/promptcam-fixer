@@ -18,17 +18,9 @@ struct InstructionsView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: pageCount > 1 ? .always : .never))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
-
-            // Dismiss button
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(Theme.icon16)
-                    .foregroundStyle(Theme.secondaryText)
-                    .padding(Theme.space16)
-                    .contentShape(Rectangle())
-            }
+        
+            // Close button
+            CloseButton { dismiss() }
         }
     }
 

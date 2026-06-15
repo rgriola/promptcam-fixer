@@ -41,12 +41,13 @@ struct CameraTopControlsView: View {
                     HStack(spacing: 0){
                         Text(resolutionLabel)
                             .font(Theme.font16Semibold)
-                            .padding(.trailing, 2)
-        
+                            .padding(.trailing, 4)
+                        /*
                         Text("res")
                             .font(Theme.font12Medium)
                             .foregroundStyle(Theme.secondaryText)
                             .padding(.trailing, 4)
+                        */
 
                         Text(fpsLabel)
                             .font(Theme.font16Semibold)
@@ -62,6 +63,24 @@ struct CameraTopControlsView: View {
                 .accessibilityHint("Opens camera record format settings")
 
                 Spacer()
+
+                // Video Mode Badge (shows STD or CINE)
+                VideoModeBadgeView(mode: videoMode)
+
+                // Cinematic aperture button — only visible when cinematic mode + iOS 26+ aperture available.
+                if let apertureText {
+                    // removed spacer to being elements closer
+                    Button(action: onTapAperture) {
+                        Text(apertureText)
+                            .font(Theme.mono16Medium)
+                            .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Simulated aperture")
+                            .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
+                    }
+                }
+
+
+                Spacer()
                 // Move to Bottom to Control EV with Dial
                 Button(action: onTapEV) {
                     Text("EV \(evText)")
@@ -71,22 +90,7 @@ struct CameraTopControlsView: View {
                         .accessibilityHint("Shows current exposure")
                 }
 
-                Spacer()
-
-                // Cinematic aperture button — only visible when cinematic mode + iOS 26+ aperture available.
-                if let apertureText {
-                    Button(action: onTapAperture) {
-                        Text(apertureText)
-                            .font(Theme.mono16Medium)
-                            .foregroundStyle(Theme.accent)
-                            .accessibilityLabel("Simulated aperture")
-                            .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
-                    }
-                    Spacer()
-                }
-
-                // Video Mode Badge (shows STD or CINE)
-                VideoModeBadgeView(mode: videoMode)
+                
 
                 Spacer()
 
