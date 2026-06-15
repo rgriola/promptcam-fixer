@@ -124,6 +124,10 @@ final class CameraViewModel {
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
 
+    /// Shared with RecordingsLibrarySheet — pre-fetched on appear so the
+    /// Camera Roll opens instantly.
+    let recordingsLibraryViewModel = RecordingsLibraryViewModel()
+
     init(
         cameraService: CameraServiceProtocol = CameraService(),
         permissionService: PermissionService = PermissionService()
@@ -144,6 +148,10 @@ final class CameraViewModel {
         cameraService.startSession()
         // Supported formats are received via onSupportedFormatsQueried callback
         // after configureSession completes on the session queue.
+
+        // Pre-fetch recordings list + first page of thumbnails in the background
+        // so the Camera Roll sheet opens instantly.
+        Task { await recordingsLibraryViewModel.prefetch() }
     }
 
     func onDisappear() {

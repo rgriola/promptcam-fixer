@@ -507,7 +507,7 @@ struct CameraView: View {
                 viewModel.dismissActiveSheet()
             }
         case .recordingsLibrary:
-            RecordingsLibrarySheet()
+            RecordingsLibrarySheet(viewModel: viewModel.recordingsLibraryViewModel)
         }
     }
 }

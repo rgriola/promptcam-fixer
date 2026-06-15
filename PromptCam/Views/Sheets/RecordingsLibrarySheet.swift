@@ -3,7 +3,7 @@ import SwiftUI
 
 struct RecordingsLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = RecordingsLibraryViewModel()
+    var viewModel: RecordingsLibraryViewModel
 
     // Thumbnail cache — must be @State (not NSCache) so SwiftUI observes insertions
     // and re-renders cells when thumbnails arrive. LazyVGrid naturally bounds the
