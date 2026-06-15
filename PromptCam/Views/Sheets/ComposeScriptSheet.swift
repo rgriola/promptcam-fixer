@@ -77,6 +77,18 @@ struct ComposeScriptSheet: View {
                             .foregroundStyle(Theme.primaryText)
                         
                         Spacer()
+
+                        // clear button
+                        Button {
+                            draftText = ""
+                        } label: {
+                            Label("Clear", systemImage: "xmark.circle.fill")
+                                .font(Theme.font12Regular)
+                                .foregroundStyle(Theme.red)
+                        }
+                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
+                        .disabled(draftText.isEmpty)
+
                         // char count
                         Text("\(draftText.count) / \(Self.kMaxScriptLength)")
                             .font(Theme.font12Regular)
@@ -98,7 +110,7 @@ struct ComposeScriptSheet: View {
                 // Delay keyboard focus until the cover presentation animation
                 // completes (~0.5s). The text editor is pre-sized so the keyboard
                 // fills the space below without resizing anything.
-                try? await Task.sleep(for: .milliseconds(500))
+               // try? await Task.sleep(for: .milliseconds(500))
                 isEditorFocused = true
             }
             
