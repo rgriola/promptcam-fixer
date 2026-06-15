@@ -1,0 +1,133 @@
+import Photos
+import SwiftUI
+
+struct RecordingsLibrarySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var viewModel = RecordingsLibraryViewModel()
+
+    // UI state
+    @State private var thumbnailCache: [String: UIImage] = [:]
+    @State private var selectedRecording: Recording?
+    @State private var videoURL: URL?
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Theme.bgGrad.ignoresSafeArea()
+
+                if !viewModel.hasAccess {
+                    permissionDeniedView
+                } else if viewModel.isLoading {
+                    ProgressView().tint(Theme.primaryText)
+                } else if viewModel.recordings.isEmpty {
+                    emptyStateView
+                } else {
+                    recordingsGrid
+                }
+            }
+            .navigationTitle("Camera Roll")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+            .task { await viewModel.load() }
+            .fullScreenCover(item: $selectedRecording) { recording in
+                RecordingPlayerView(
+                    recording: recording,
+                    videoURL: videoURL,
+                    onDelete: { Task { await viewModel.delete(recording) } }
+                )
+            }
+            .onChange(of: selectedRecording) { _, newRec in
+                videoURL = nil
+                if let newRec {
+                    Task { videoURL = await viewModel.exportForSharing(newRec) }
+                }
+            }
+        }
+        .onDisappear {
+            viewModel.stopCaching()
+        }
+    }
+
+    private var recordingsGrid: some View {
+        ScrollView {
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 1),
+                    GridItem(.flexible(), spacing: 1),
+                    GridItem(.flexible(), spacing: 1)
+                ],
+                spacing: 1
+            ) {
+                ForEach(viewModel.recordings) { recording in
+                    RecordingThumbnailView(
+                        recording: recording,
+                        thumbnail: thumbnailCache[recording.id]
+                    ) {
+                        selectedRecording = recording
+                    }
+                    .task(id: recording.id) {
+                        guard thumbnailCache[recording.id] == nil else { return }
+                        let size = CGSize(width: 300, height: 300)
+                        if let img = await viewModel.thumbnail(for: recording, size: size) {
+                            thumbnailCache[recording.id] = img
+                        }
+                    }
+                    .onAppear {
+                        let size = CGSize(width: 300, height: 300)
+                        if let idx = viewModel.recordings.firstIndex(of: recording) {
+                            let start = max(0, idx - 10)
+                            let end = min(viewModel.recordings.count, idx + 10)
+                            let ids = viewModel.recordings[start..<end].map(\.id)
+                            viewModel.startCaching(ids: ids, size: size)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var permissionDeniedView: some View {
+        VStack(spacing: Theme.space16) {
+            Image(systemName: "photo.badge.exclamationmark")
+                .font(.system(size: 48))
+                .foregroundStyle(Theme.secondaryText)
+            Text("Photo Library Access Required")
+                .font(Theme.font20Semibold)
+                .foregroundStyle(Theme.primaryText)
+            Text("Grant PromptCam permission to read your videos in Settings.")
+                .font(Theme.font16Regular)
+                .foregroundStyle(Theme.secondaryText)
+                .multilineTextAlignment(.center)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .padding(.horizontal, Theme.space32)
+            .padding(.vertical, Theme.space8)
+            .background(Theme.accent, in: RoundedRectangle(cornerRadius: Theme.radiusSm))
+            .foregroundStyle(Theme.blackText)
+            .font(Theme.font16Semibold)
+        }
+        .padding(Theme.space32)
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: Theme.space16) {
+            Image(systemName: "video.slash")
+                .font(.system(size: 48))
+                .foregroundStyle(Theme.secondaryText)
+            Text("No Videos Found")
+                .font(Theme.font20Semibold)
+                .foregroundStyle(Theme.primaryText)
+            Text("Record a video to see it here.")
+                .font(Theme.font16Regular)
+                .foregroundStyle(Theme.secondaryText)
+        }
+    }
+}

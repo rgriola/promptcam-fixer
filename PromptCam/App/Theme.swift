@@ -153,7 +153,6 @@ extension Color {
     }
 }
 
-
 // Drag Gesture based control
 /*
  Component API

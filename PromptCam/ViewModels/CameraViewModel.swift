@@ -8,6 +8,7 @@ enum CameraSheetRoute: String, Identifiable, Sendable {
     case formatPanel
     case composeScript
     case settings
+    case recordingsLibrary
 
     var id: String { rawValue }
 }
@@ -75,7 +76,6 @@ final class CameraViewModel {
     var errorMessage: String?
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
-    var isPhotoPickerPresented = false
     var activeSheet: CameraSheetRoute?
     var cameraMode: CameraMode = .camera
     /// Warning banner for format panel locked during recording.
@@ -110,7 +110,6 @@ final class CameraViewModel {
     // See class-level doc for explanation of the queue pattern.
 
     @ObservationIgnored private var queuedSheet: CameraSheetRoute?
-    @ObservationIgnored private var queuedPhotoPicker = false
     @ObservationIgnored private var lastPresentedSheet: CameraSheetRoute?
 
     // MARK: - Style Persistence Keys
@@ -172,16 +171,7 @@ final class CameraViewModel {
     }
 
     func openPhotoLibrary() {
-        // Only one modal presenter can be active at a time in SwiftUI.
-        guard !isPhotoPickerPresented else { return }
-
-        if activeSheet != nil {
-            queuedPhotoPicker = true
-            dismissActiveSheet()
-            return
-        }
-
-        isPhotoPickerPresented = true
+        presentSheet(.recordingsLibrary)
     }
 
     
@@ -226,11 +216,7 @@ final class CameraViewModel {
         presentQueuedModalIfNeeded()
     }
 
-    func handlePhotoPickerStateChanged(_ newValue: Bool) {
-        guard !newValue else { return }
 
-        presentQueuedModalIfNeeded()
-    }
 
     func updateScriptText(_ text: String) {
         Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
@@ -286,12 +272,6 @@ final class CameraViewModel {
     }
 
     private func presentSheet(_ route: CameraSheetRoute) {
-        if isPhotoPickerPresented {
-            queuedSheet = route
-            isPhotoPickerPresented = false
-            return
-        }
-
         guard activeSheet == nil else {
             queuedSheet = route
             return
@@ -306,18 +286,9 @@ final class CameraViewModel {
     }
 
     private func presentQueuedModalIfNeeded() {
-        guard activeSheet == nil else { return }
-
-        if queuedPhotoPicker {
-            queuedPhotoPicker = false
-            isPhotoPickerPresented = true
-            return
-        }
-
-        if let route = queuedSheet {
-            queuedSheet = nil
-            presentSheet(route)
-        }
+        guard activeSheet == nil, let route = queuedSheet else { return }
+        queuedSheet = nil
+        presentSheet(route)
     }
 
     func focus(at devicePoint: CGPoint) {

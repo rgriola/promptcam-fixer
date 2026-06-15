@@ -14,7 +14,6 @@
 // view-local animation timing and position — the ViewModel only owns the
 // camera-service-facing lock status.
 import AVFoundation
-import PhotosUI
 import SwiftUI
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
@@ -35,8 +34,6 @@ struct CameraView: View {
     @State private var exposureBias: Float = 0
 
     // MARK: - Sheet / Picker State
-    /// Temporary media selection binding for PhotosPicker.
-    @State private var selectedMediaItem: PhotosPickerItem?
 
     // MARK: - Teleprompter State
     /// Script text we last auto-centered for. Re-center whenever the text changes.
@@ -288,12 +285,6 @@ struct CameraView: View {
         } message: {
             Text(viewModel.errorMessage ?? "Unknown error")
         }
-        .photosPicker(
-            isPresented: $viewModel.isPhotoPickerPresented,
-            selection: $selectedMediaItem,
-            matching: .videos,
-            preferredItemEncoding: .automatic
-        )
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
         }
@@ -310,16 +301,8 @@ struct CameraView: View {
             cleanupFocusState()
         }
         // MARK: - State Observers
-        .onChange(of: selectedMediaItem) { _, newItem in
-            guard newItem != nil else { return }
-            Log.ui.info("Media selected from library picker")
-            selectedMediaItem = nil
-        }
         .onChange(of: viewModel.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
-        }
-        .onChange(of: viewModel.isPhotoPickerPresented) { _, newValue in
-            viewModel.handlePhotoPickerStateChanged(newValue)
         }
         .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
             // Auto-dismiss aperture panel if cinematic mode is turned off.
@@ -457,7 +440,14 @@ struct CameraView: View {
     
     /// Toggles AF/AE lock on/off. When locking, uses the last focus point
     /// if available, otherwise uses screen center.
+    /// Cinematic mode only supports continuous autofocus, so lock is disabled.
     private func toggleLockStatus() {
+        // Cinematic video requires continuous autofocus — lock not supported
+        guard viewModel.recordingFormat.mode != .cinematic else {
+            Log.ui.info("AF/AE lock blocked — cinematic mode requires continuous autofocus")
+            return
+        }
+        
         if viewModel.lockStatus.isLocked {
             // Unlock: return to continuous auto
             viewModel.unlockFocusExposure()
@@ -511,6 +501,8 @@ struct CameraView: View {
             CameraSettingsSheet {
                 viewModel.dismissActiveSheet()
             }
+        case .recordingsLibrary:
+            RecordingsLibrarySheet()
         }
     }
 }

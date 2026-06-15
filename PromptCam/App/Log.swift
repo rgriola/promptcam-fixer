@@ -9,4 +9,5 @@ enum Log {
     static let viewmodel = Logger(subsystem: subsystem, category: "ViewModel")
     static let ui = Logger(subsystem: subsystem, category: "UI")
     static let teleprompter = Logger(subsystem: subsystem, category: "Teleprompter")
+    static let recordings = Logger(subsystem: subsystem, category: "Recordings")
 }

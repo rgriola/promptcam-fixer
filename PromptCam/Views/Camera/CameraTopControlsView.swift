@@ -93,7 +93,8 @@ struct CameraTopControlsView: View {
                 // Change to Toggle Lock and Auto
                 CameraLockStatusBadgeView(
                     status: lockStatus,
-                    onToggle: onTapLock
+                    onToggle: onTapLock,
+                    isDisabled: videoMode == .cinematic
                 )
             }
             .padding(.horizontal, Theme.space12)
