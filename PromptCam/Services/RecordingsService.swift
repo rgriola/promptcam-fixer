@@ -33,14 +33,15 @@ struct RecordingsService: Sendable {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
     }
 
-    /// Thumbnail via the shared caching manager. Uses `.highQualityFormat`
-    /// delivery to guarantee exactly one callback — avoiding a potential
-    /// continuation hang with `.opportunistic` (which fires twice).
+    /// Thumbnail via the shared caching manager. Uses `.fastFormat` delivery
+    /// for responsive grid scrolling — returns a single callback (safe for
+    /// continuations) with a quick low-res decode. For a 300×300 grid cell,
+    /// the fast decode is visually indistinguishable from high-quality.
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .highQualityFormat
+            options.deliveryMode = .fastFormat
             options.isNetworkAccessAllowed = true
             Self.cachingManager.requestImage(
                 for: asset,

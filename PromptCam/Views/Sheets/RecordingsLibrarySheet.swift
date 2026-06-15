@@ -5,8 +5,10 @@ struct RecordingsLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = RecordingsLibraryViewModel()
 
-    // UI state — NSCache auto-evicts under memory pressure, preventing unbounded growth.
-    @State private var thumbnailCache = NSCache<NSString, UIImage>()
+    // Thumbnail cache — must be @State (not NSCache) so SwiftUI observes insertions
+    // and re-renders cells when thumbnails arrive. LazyVGrid naturally bounds the
+    // number of concurrent .task calls to visible cells.
+    @State private var thumbnails: [String: UIImage] = [:]
     @State private var selectedRecording: Recording?
     @State private var videoURL: URL?
 
@@ -64,16 +66,15 @@ struct RecordingsLibrarySheet: View {
                 ForEach(viewModel.recordings) { recording in
                     RecordingThumbnailView(
                         recording: recording,
-                        thumbnail: thumbnailCache.object(forKey: recording.id as NSString)
+                        thumbnail: thumbnails[recording.id]
                     ) {
                         selectedRecording = recording
                     }
                     .task(id: recording.id) {
-                        let key = recording.id as NSString
-                        guard thumbnailCache.object(forKey: key) == nil else { return }
+                        guard thumbnails[recording.id] == nil else { return }
                         let size = CGSize(width: 300, height: 300)
                         if let img = await viewModel.thumbnail(for: recording, size: size) {
-                            thumbnailCache.setObject(img, forKey: key)
+                            thumbnails[recording.id] = img
                         }
                     }
                     .onAppear {
