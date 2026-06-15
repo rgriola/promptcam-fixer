@@ -276,15 +276,15 @@ struct CameraView: View {
         }
         // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
-            viewModel.errorMessage != nil
+            viewModel.cameraError != nil
         }, set: { _ in
-            viewModel.errorMessage = nil
+            viewModel.cameraError = nil
         })) {
             Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
+                viewModel.cameraError = nil
             }
         } message: {
-            Text(viewModel.errorMessage ?? "Unknown error")
+            Text(viewModel.cameraError?.localizedDescription ?? "Unknown error")
         }
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
@@ -390,6 +390,10 @@ struct CameraView: View {
             onTapAdjust: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showAdjustmentPanel.toggle()
+                    if showAdjustmentPanel {
+                        showEVPanel = false
+                        showAperturePanel = false
+                    }
                 }
                 Log.ui.debug("adjustmentPanel toggled -> \(showAdjustmentPanel, privacy: .public)")
             },

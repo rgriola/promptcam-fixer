@@ -73,7 +73,7 @@ final class CameraViewModel {
     /// Recording duration in seconds, updated every 0.1s while recording.
     var recordingDuration: TimeInterval = 0
 
-    var errorMessage: String?
+    var cameraError: CameraError?
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
     var activeSheet: CameraSheetRoute?
@@ -105,6 +105,7 @@ final class CameraViewModel {
     // MARK: - Timer State
     
     @ObservationIgnored private var timerCancellable: AnyCancellable?
+    @ObservationIgnored private var recordingStartDate: Date?
     
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
@@ -120,11 +121,11 @@ final class CameraViewModel {
         static let bgOpacity  = "tp.bgOpacity"
     }
 
-    let cameraService: CameraService
+    let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
 
     init(
-        cameraService: CameraService = CameraService(),
+        cameraService: CameraServiceProtocol = CameraService(),
         permissionService: PermissionService = PermissionService()
     ) {
         self.cameraService = cameraService
@@ -134,7 +135,7 @@ final class CameraViewModel {
         bindCallbacks()
     }
 
-    var session: AVCaptureSession { cameraService.session }
+    var session: AVCaptureSession { cameraService.previewSession }
 
     func onAppear() {
         isCameraReady = false
@@ -197,9 +198,7 @@ final class CameraViewModel {
         presentSheet(.formatPanel)
     }
 
-    func openEVSlider (){
-        
-    }
+
 
     func dismissActiveSheet() {
         activeSheet = nil
@@ -322,13 +321,16 @@ final class CameraViewModel {
     
     // MARK: - Recording Timer
     
-    /// Starts the recording timer using Combine. Increments duration every 0.1 seconds.
+    /// Starts the recording timer using Combine. Computes duration from a start
+    /// date rather than accumulating increments, avoiding floating-point drift.
     private func startTimer() {
         recordingDuration = 0
+        recordingStartDate = Date()
         timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                self?.recordingDuration += 0.1
+                guard let self, let start = self.recordingStartDate else { return }
+                self.recordingDuration = Date().timeIntervalSince(start)
             }
         Log.viewmodel.debug("Recording timer started")
     }
@@ -337,6 +339,7 @@ final class CameraViewModel {
     private func stopTimer() {
         timerCancellable?.cancel()
         timerCancellable = nil
+        recordingStartDate = nil
         recordingDuration = 0
         Log.viewmodel.debug("Recording timer stopped")
     }
@@ -412,8 +415,8 @@ final class CameraViewModel {
             }
         }
 
-        cameraService.onError = { [weak self] message in
-            self?.errorMessage = message
+        cameraService.onError = { [weak self] error in
+            self?.cameraError = error
         }
     }
 }
