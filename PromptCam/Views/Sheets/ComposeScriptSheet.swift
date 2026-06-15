@@ -52,47 +52,52 @@ struct ComposeScriptSheet: View {
     /// Script editor UI with immediate keyboard focus.
     var body: some View {
         NavigationStack {
-            VStack(spacing: Theme.space12) {
-                TextEditor(text: $draftText)
-                    .font(Theme.font16Regular)
-                    .focused($isEditorFocused)
-                    .padding(Theme.space8)
-                    .background(
-                        Theme.panelBg.opacity(0.2), 
-                        in: RoundedRectangle(cornerRadius: Theme.radiusMd))
-                    .frame(minHeight: 200, maxHeight: .infinity)
-                    .onChange(of: draftText) { _, newValue in
-                        if newValue.count > Self.kMaxScriptLength {
-                            draftText = String(newValue.prefix(Self.kMaxScriptLength))
-                        }
-                    }
+            GeometryReader { geo in
+                let editorHeight = geo.size.height * 0.45
 
-                HStack {
-                    // note at bottom 
-                    Text("Save to apply script updates.")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(Theme.primaryText)
-                    
+                VStack(spacing: Theme.space12) {
+                    TextEditor(text: $draftText)
+                        .font(Theme.font16Regular)
+                        .focused($isEditorFocused)
+                        .padding(Theme.space8)
+                        .background(
+                            Theme.panelBg.opacity(0.2), 
+                            in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+                        .frame(height: editorHeight)
+                        .onChange(of: draftText) { _, newValue in
+                            if newValue.count > Self.kMaxScriptLength {
+                                draftText = String(newValue.prefix(Self.kMaxScriptLength))
+                            }
+                        }
+
+                    HStack {
+                        // note at bottom 
+                        Text("Save to apply script updates.")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                        
+                        Spacer()
+                        // char count
+                        Text("\(draftText.count) / \(Self.kMaxScriptLength)")
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
+                            .monospacedDigit()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
                     Spacer()
-                    // char count
-                    Text("\(draftText.count) / \(Self.kMaxScriptLength)")
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
-                        .monospacedDigit()
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+                .padding(Theme.space16)
             }
-            .padding(Theme.space16)
-            .frame(maxHeight: .infinity)
+            .ignoresSafeArea(.keyboard)
             .navigationTitle("Script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
             .task {
-                // Delay keyboard focus until the sheet presentation animation
-                // completes (~0.5s). Focusing immediately causes the keyboard
-                // to animate simultaneously with the sheet, triggering a
-                // second layout pass that rescales the camera preview behind it.
+                // Delay keyboard focus until the cover presentation animation
+                // completes (~0.5s). The text editor is pre-sized so the keyboard
+                // fills the space below without resizing anything.
                 try? await Task.sleep(for: .milliseconds(500))
                 isEditorFocused = true
             }
@@ -115,6 +120,5 @@ struct ComposeScriptSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
-        .presentationBackgroundInteraction(.enabled)
     }
 }
