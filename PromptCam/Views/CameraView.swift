@@ -507,7 +507,7 @@ struct CameraView: View {
             // Routed via .fullScreenCover above — this case should not be reached.
             EmptyView()
         case .settings:
-            CameraSettingsSheet {
+            CameraSettingsSheet(capabilities: viewModel.deviceCapabilities) {
                 viewModel.dismissActiveSheet()
             }
         case .recordingsLibrary:

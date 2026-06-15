@@ -11,6 +11,8 @@ import SwiftUI
 /// Permission statuses auto-refresh when the sheet appears and when
 /// returning from iOS Settings via `scenePhase` observation.
 struct CameraSettingsSheet: View {
+    /// Device capabilities detected at launch.
+    let capabilities: DeviceCapabilities
     /// Callback to dismiss settings sheet.
     let onClose: () -> Void
 
@@ -32,20 +34,23 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                Section("Camera Formats") {
-                    ForEach(appRecordingFormats, id: \.self) { format in
-                        HStack(spacing: Theme.space8) {
-                            Image(systemName: "video.fill")
-                                .foregroundStyle(Theme.purple)
-                                .frame(width: 20)
-                            Text(format)
-                                .font(Theme.font16Regular)
-                                .foregroundStyle(Theme.white)
-                        }
+                Section("Standard Formats") {
+                    ForEach(standardFormats, id: \.self) { format in
+                        formatRow(format)
                     }
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
+
+                if capabilities.supportsCinematicMode {
+                    Section("Cinematic Formats") {
+                        ForEach(cinematicFormats, id: \.self) { format in
+                            formatRow(format, icon: "circle.dotted.and.circle")
+                        }
+                    }
+                    .listRowBackground(Theme.black.opacity(0.1))
+                    .foregroundStyle(Theme.white)
+                }
                 
                 Section("Permissions") {
 
@@ -112,15 +117,38 @@ struct CameraSettingsSheet: View {
         return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
-    /// Recording formats the app supports, listed as resolution + frame rate.
-    private var appRecordingFormats: [String] {
+    /// Standard recording formats available on this device.
+    private var standardFormats: [String] {
         var formats: [String] = []
-        for resolution in VideoResolution.allCases {
-            for frameRate in VideoFrameRate.allCases {
+        for resolution in capabilities.standardResolutions {
+            for frameRate in capabilities.standardFrameRates {
                 formats.append("\(resolution.rawValue) \(frameRate.rawValue)fps")
             }
         }
         return formats
+    }
+
+    /// Cinematic recording formats available on this device.
+    private var cinematicFormats: [String] {
+        var formats: [String] = []
+        for resolution in capabilities.cinematicResolutions {
+            for frameRate in capabilities.cinematicFrameRates {
+                formats.append("\(resolution.rawValue) \(frameRate.rawValue)fps")
+            }
+        }
+        return formats
+    }
+
+    /// Reusable format row with icon.
+    private func formatRow(_ format: String, icon: String = "video.fill") -> some View {
+        HStack(spacing: Theme.space8) {
+            Image(systemName: icon)
+                .foregroundStyle(Theme.purple)
+                .frame(width: 20)
+            Text(format)
+                .font(Theme.font16Regular)
+                .foregroundStyle(Theme.white)
+        }
     }
 
     private func refreshStatuses() {
