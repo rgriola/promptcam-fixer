@@ -108,8 +108,8 @@ struct CameraSettingsSheet: View {
 
     /// Device model + OS version, e.g. "iPhone 17 Pro · iOS 26.0"
     private var deviceInfo: String {
-        let device = UIDevice.current
-        return "\(device.name) · \(device.systemName) \(device.systemVersion)"
+        let os = UIDevice.current
+        return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
     /// Lists camera modes available on this device (e.g. Standard, Cinematic, Slo-mo).
