@@ -27,7 +27,7 @@ struct CameraSettingsSheet: View {
 
                 Section("About") {
                     SettingStatusRow(title: "Version", value: appVersion)
-                    SettingStatusRow(title: "Device", value: deviceInfo)
+                    SettingStatusRow(title: "Model Name", value: deviceInfo)
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
