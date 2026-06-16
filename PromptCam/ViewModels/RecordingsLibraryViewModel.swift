@@ -49,6 +49,14 @@ final class RecordingsLibraryViewModel {
         }
     }
 
+    /// Forces a fresh re-fetch of all recordings. Called after a new video
+    /// is saved to the photo library so the Camera Roll stays current.
+    func refresh() async {
+        guard hasAccess else { return }
+        recordings = await service.fetchAllRecordings()
+        Log.recordings.info("Refreshed \(self.recordings.count, privacy: .public) recordings")
+    }
+
     func thumbnail(for r: Recording, size: CGSize) async -> UIImage? {
         await service.thumbnail(for: r, targetSize: size)
     }

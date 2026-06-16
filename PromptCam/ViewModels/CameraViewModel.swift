@@ -390,7 +390,17 @@ final class CameraViewModel {
 
     private func bindCallbacks() {
         cameraService.onRecordingStateChanged = { [weak self] isRecording in
-            self?.isRecording = isRecording
+            guard let self else { return }
+            self.isRecording = isRecording
+            // When recording stops, the video is saved to the photo library
+            // asynchronously. Wait a moment then refresh the Camera Roll
+            // so the new recording appears without restarting the app.
+            if !isRecording {
+                Task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    await self.recordingsLibraryViewModel.refresh()
+                }
+            }
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
