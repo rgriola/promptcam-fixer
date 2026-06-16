@@ -68,7 +68,7 @@ enum CameraLayout {
     // MARK: - VU Meter
 
     /// Width of the vertical VU meter bar.
-    static let vuMeterWidth: CGFloat = 8
+    static let vuMeterWidth: CGFloat = 25
 
     /// Horizontal inset from the left edge of the preview.
     static let vuMeterHorizontalInset: CGFloat = 20

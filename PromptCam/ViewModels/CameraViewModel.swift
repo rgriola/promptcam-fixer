@@ -167,9 +167,7 @@ final class CameraViewModel {
         cameraService.startSession()
         // Supported formats are received via onSupportedFormatsQueried callback
         // after configureSession completes on the session queue.
-
-        // Attach audio metering service to the live capture session.
-        setupAudioMeter()
+        // Audio metering attaches in onSessionRunningStateChanged callback.
 
         // Pre-fetch recordings list + first page of thumbnails in the background
         // so the Camera Roll sheet opens instantly.
@@ -395,7 +393,14 @@ final class CameraViewModel {
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
-            self?.isCameraReady = isRunning
+            guard let self else { return }
+            self.isCameraReady = isRunning
+            // Attach audio metering once the session is fully configured
+            // and running. Attaching earlier fails because the session
+            // hasn't added its audio input yet.
+            if isRunning && self.audioMeterService == nil {
+                self.setupAudioMeter()
+            }
         }
 
         cameraService.onFormatApplied = { [weak self] applied in
