@@ -96,7 +96,7 @@ struct VUMeterView: View {
 
                 // Peak hold indicator
                 Rectangle()
-                    .fill(Theme.white.opacity(0.9))
+                    .fill(Theme.accent.opacity(0.9))
                     .frame(width: barWidth + 4, height: peakLineHeight)
                     .position(x: barX + barWidth / 2, y: peakY)
                     .animation(.linear(duration: 0.05), value: peak)

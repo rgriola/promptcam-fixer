@@ -251,7 +251,38 @@ Title: Guide Dog
 Text : This is the instructions page to walk through how to use Prompter Cam Fixer.
 ...
 
-To - Do
+To - Do June 16
+
+- Known Issues
+  Recorded Session does not immediatly populate into the Camera Roll. Camera Roll probably needs a UI refresh triggered by the Recording.
+
+  VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
+
+  Settings - does not show full Camera Recording Formats, just abbrevated ones.
+
+  Add Light and Dark Themes.
+
+  Teleprompter Text jumps when user touches screen. Need more gracefull easing.
+
+  Focus Long Touch
+
+  Some Theme styles need to be improved
+  Some Layouts need new math so they cascade correctly ie VU Meter and Top
+
+  Line Navbar (former header) Padding incorrect relation to Camera Preview across devices.
+
+  swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove Sheet function. Note this may change what the user sees - Apple uses a Blur Effect for transition
+
+  EV Bias Control Panel needs to say "EV Bias"
+
+  Apature Panel needs f styling, and default 5.6, Reset button floor setting of 5.6, maybe do stops like a camera.
+  Custom Slider ?
+
+  #
+  - [ ] Add App Guide Pages. Think Handrails for Users
+  - Insert Images drawn from App with Correct Styles
+  - Change App Icon + Splash Screen
+  - Look at cleaner opening for Camera View.
 
 - Script View -
   [X] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
@@ -259,7 +290,7 @@ To - Do
 
 - Camera View
 
-  [ ]Add VU Meter to left side.
+  [x]Add VU Meter to left side.
 
   [X] migrated to Swift 6 & iOS 18+
 
