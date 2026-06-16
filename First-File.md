@@ -254,8 +254,8 @@ Text : This is the instructions page to walk through how to use Prompter Cam Fix
 To - Do
 
 - Script View -
-  [ ] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
-  [ ] Add a lightweight save for backup should creator lost the script
+  [X] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
+  [X] Add a lightweight save for backup should creator lost the script
 
 - Camera View
 
@@ -300,3 +300,6 @@ To - Do
 
 **_ Task _**
 Lets devise a plan to make these changes with some differences
+
+Full Screen Cover v Sheet -
+Keyboard Adjusts background on a Sheet?? why who knows.

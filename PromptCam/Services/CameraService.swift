@@ -108,6 +108,8 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     var videoDevice: AVCaptureDevice?
     /// Retained so we can toggle cinematicVideoCaptureEnabled and set simulatedAperture.
     var videoInput: AVCaptureDeviceInput?
+    /// The audio capture device — retained for gain control.
+    var audioDevice: AVCaptureDevice?
     var isSessionConfigured = false
 
     /// Lock protecting callback closures, which are set from @MainActor
@@ -273,6 +275,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 }
 
                 if let audioDevice = AVCaptureDevice.default(for: .audio) {
+                    self.audioDevice = audioDevice
                     let audioInput = try AVCaptureDeviceInput(device: audioDevice)
                     if self.session.canAddInput(audioInput) {
                         self.session.addInput(audioInput)

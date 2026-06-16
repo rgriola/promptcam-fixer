@@ -105,6 +105,21 @@ final class CameraViewModel {
     /// Current simulated aperture value shown in the aperture slider.
     var cinematicSimulatedAperture: Float = 2.0
 
+    // MARK: - Audio Metering
+
+    /// Current average audio input level (0.0–1.0).
+    var audioLevel: Float = 0
+    /// Current peak-hold audio level (0.0–1.0).
+    var audioPeak: Float = 0
+    /// Whether an external microphone is connected.
+    var isExternalMic: Bool = false
+    /// Marketing name of the external mic, if available.
+    var externalMicName: String?
+    /// Whether hardware gain control is available on this device.
+    var isGainAvailable: Bool = false
+    /// Current audio input gain (0.0–1.0). Only functional when `isGainAvailable`.
+    var audioGain: Float = 0.5
+
     // MARK: - Timer State
     
     @ObservationIgnored private var timerCancellable: AnyCancellable?
@@ -126,6 +141,7 @@ final class CameraViewModel {
 
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
+    @ObservationIgnored private var audioMeterService: AudioMeterService?
 
     /// Shared with RecordingsLibrarySheet — pre-fetched on appear so the
     /// Camera Roll opens instantly.
@@ -152,6 +168,9 @@ final class CameraViewModel {
         // Supported formats are received via onSupportedFormatsQueried callback
         // after configureSession completes on the session queue.
 
+        // Attach audio metering service to the live capture session.
+        setupAudioMeter()
+
         // Pre-fetch recordings list + first page of thumbnails in the background
         // so the Camera Roll sheet opens instantly.
         Task { await recordingsLibraryViewModel.prefetch() }
@@ -159,6 +178,7 @@ final class CameraViewModel {
 
     func onDisappear() {
         stopTimer()
+        audioMeterService?.stopMonitoringRoute()
         cameraService.stopSession()
         isCameraReady = false
     }
@@ -434,6 +454,34 @@ final class CameraViewModel {
         cameraService.onError = { [weak self] error in
             self?.cameraError = error
         }
+    }
+
+    // MARK: - Audio Meter
+
+    private func setupAudioMeter() {
+        let meter = AudioMeterService()
+
+        meter.onLevelsUpdated = { [weak self] average, peak in
+            self?.audioLevel = average
+            self?.audioPeak = peak
+        }
+
+        meter.onRouteChanged = { [weak self] isExternal, name in
+            self?.isExternalMic = isExternal
+            self?.externalMicName = name
+        }
+
+        meter.attach(to: cameraService.previewSession)
+        meter.startMonitoringRoute()
+
+        self.isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
+        self.audioMeterService = meter
+    }
+
+    /// Adjusts the hardware microphone gain.
+    func setAudioGain(_ value: Float) {
+        audioGain = value
+        audioMeterService?.setGain(value, on: cameraService.audioDevice)
     }
 }
 

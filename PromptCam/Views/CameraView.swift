@@ -86,6 +86,26 @@ struct CameraView: View {
                     .position(focusIndicatorPoint)
                 } */
 
+                // Layer 2.5: Audio VU meter on the left edge of the preview.
+                // Hidden when any modal sheet is open.
+                if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
+                    VUMeterView(
+                        level: viewModel.audioLevel,
+                        peak: viewModel.audioPeak,
+                        isExternalMic: viewModel.isExternalMic,
+                        isRecording: viewModel.isRecording
+                    )
+                    .frame(
+                        width: CameraLayout.vuMeterWidth,
+                        height: layout.previewSize.height - CameraLayout.vuMeterVerticalPadding * 2
+                    )
+                    .position(
+                        x: CameraLayout.vuMeterHorizontalInset,
+                        y: layout.previewSize.height / 2
+                    )
+                    .transition(.opacity)
+                }
+
                 // Layer 3: Recording cluster positioned at bottom of camera preview
                 RecordingClusterView(
                     isRecording: viewModel.isRecording,

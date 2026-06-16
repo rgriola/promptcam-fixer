@@ -18,11 +18,13 @@
 		315EB17E07A1DE5E04BA8963 /* CameraService+Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */; };
 		32027F533DD7867B0C6F4A7B /* RecordingPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */; };
 		32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */; };
+		36AB13ED36D31581CC92AB1D /* AudioMeterServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3DF3CAE00311888032EA9C2 /* AudioMeterServiceTests.swift */; };
 		3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
 		443F7B66B1525C29D11615E3 /* ScriptArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF8EE3057D35E0F0E2460635 /* ScriptArchive.swift */; };
 		458BEE449E3C2807C04630BA /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */; };
 		4718DE5C64AD0E7571CC2AB1 /* SaveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525F4215FDEF56A0D72B7C58 /* SaveButton.swift */; };
+		47D0DC9B0F3E248040308101 /* VUMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1828A6344E540055104881 /* VUMeterView.swift */; };
 		48965C15F496BB1BD799A0E0 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6CF1CBDA28AF2C0D93B83A /* Log.swift */; };
 		565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */; };
 		5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */; };
@@ -57,6 +59,7 @@
 		D1D09FA35BCB222C0CA52EC9 /* RecordingTimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098CF98A9B397E6DACFC59FF /* RecordingTimerPanel.swift */; };
 		D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749694F8D9812A53CBCC6CC /* CameraView.swift */; };
 		E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */; };
+		EAC8CAA83BD8319FC68DBB20 /* AudioMeterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332DF864FBE30C5BE2A2E6D6 /* AudioMeterService.swift */; };
 		EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC9B16CA9F0DE0167C80C67 /* PermissionStatusHelpers.swift */; };
 		EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C5486901965005D700AC21 /* CameraService.swift */; };
 		F0A4B3974BEA99A0DE98BEE3 /* DeviceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB5A8FF10278D42745AE498 /* DeviceModel.swift */; };
@@ -90,9 +93,11 @@
 		12FD5F32937ED7BA3903AF66 /* CameraFooterControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFooterControlsView.swift; sourceTree = "<group>"; };
 		14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryWarningBanner.swift; sourceTree = "<group>"; };
+		1F1828A6344E540055104881 /* VUMeterView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VUMeterView.swift; sourceTree = "<group>"; };
 		20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterConfig.swift; sourceTree = "<group>"; };
 		26EEA7971142FD517E1511C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		332DF864FBE30C5BE2A2E6D6 /* AudioMeterService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioMeterService.swift; sourceTree = "<group>"; };
 		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
 		3A7E2E71F8EF2FCD7E8217A3 /* CameraService+Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraService+Format.swift"; sourceTree = "<group>"; };
 		3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraService+Controls.swift"; sourceTree = "<group>"; };
@@ -145,6 +150,7 @@
 		E6904D890420C96DB2895AFC /* RecordingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsService.swift; sourceTree = "<group>"; };
 		E749694F8D9812A53CBCC6CC /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		EEF8D93300F29DC55D504352 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F3DF3CAE00311888032EA9C2 /* AudioMeterServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioMeterServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -155,6 +161,7 @@
 				AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */,
 				A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */,
 				0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */,
+				F3DF3CAE00311888032EA9C2 /* AudioMeterServiceTests.swift */,
 			);
 			path = PromptCamTests;
 			sourceTree = "<group>";
@@ -170,6 +177,7 @@
 				07CD4E201E8DD159B20FF392 /* CameraServiceProtocol.swift */,
 				55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */,
 				E6904D890420C96DB2895AFC /* RecordingsService.swift */,
+				332DF864FBE30C5BE2A2E6D6 /* AudioMeterService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -311,6 +319,7 @@
 				098CF98A9B397E6DACFC59FF /* RecordingTimerPanel.swift */,
 				62386ADCCFC7E9387894F205 /* TeleprompterCenterResetButton.swift */,
 				DB7EEE9468E02324BB4E04FD /* VideoModeBadgeView.swift */,
+				1F1828A6344E540055104881 /* VUMeterView.swift */,
 			);
 			path = Camera;
 			sourceTree = "<group>";
@@ -480,6 +489,8 @@
 				443F7B66B1525C29D11615E3 /* ScriptArchive.swift in Sources */,
 				9DFDBC516BB4D6C52A2CCC00 /* ScriptArchiveSheet.swift in Sources */,
 				F0A4B3974BEA99A0DE98BEE3 /* DeviceModel.swift in Sources */,
+				EAC8CAA83BD8319FC68DBB20 /* AudioMeterService.swift in Sources */,
+				47D0DC9B0F3E248040308101 /* VUMeterView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,6 +510,7 @@
 				565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */,
 				F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */,
 				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
+				36AB13ED36D31581CC92AB1D /* AudioMeterServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
