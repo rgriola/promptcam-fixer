@@ -53,6 +53,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         set { callbackLock.withLock { _onRouteChanged = newValue } }
     }
 
+    private var _onInputsAvailable: (@MainActor @Sendable ([AVAudioSessionPortDescription]) -> Void)?
+    /// Publishes the list of available audio inputs when the route changes.
+    var onInputsAvailable: (@MainActor @Sendable ([AVAudioSessionPortDescription]) -> Void)? {
+        get { callbackLock.withLock { _onInputsAvailable } }
+        set { callbackLock.withLock { _onInputsAvailable = newValue } }
+    }
+
     // MARK: - Private State
 
     /// Lock protecting metering state.
@@ -333,12 +340,35 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         }
     }
 
+    // MARK: - Input Selection
+
+    /// Sets the preferred audio input and restarts the engine to use it.
+    /// - Parameter port: The `AVAudioSessionPortDescription` to switch to,
+    ///   or `nil` to reset to system default.
+    func selectInput(_ port: AVAudioSessionPortDescription?) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setPreferredInput(port)
+            Log.camera.debug("AudioMeterService: preferred input set to \(port?.portName ?? "system default")")
+        } catch {
+            Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
+        }
+        // Restart engine to pick up the new input.
+        restartEngine()
+    }
+
+    /// Returns the currently active input port, if any.
+    var activeInput: AVAudioSessionPortDescription? {
+        AVAudioSession.sharedInstance().currentRoute.inputs.first
+    }
+
     // MARK: - Private Helpers
 
     /// Inspects `AVAudioSession.sharedInstance().currentRoute` and fires
-    /// `onRouteChanged`.
+    /// `onRouteChanged` and `onInputsAvailable`.
     private func evaluateCurrentRoute() {
-        let route = AVAudioSession.sharedInstance().currentRoute
+        let session = AVAudioSession.sharedInstance()
+        let route = session.currentRoute
         let input = route.inputs.first
         let isExternal: Bool
         if let portType = input?.portType {
@@ -351,6 +381,14 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         if let callback = onRouteChanged {
             DispatchQueue.main.async {
                 Task { @MainActor in callback(isExternal, portName) }
+            }
+        }
+
+        // Publish available inputs so the UI can offer a picker.
+        let inputs = session.availableInputs ?? []
+        if let callback = onInputsAvailable {
+            DispatchQueue.main.async {
+                Task { @MainActor in callback(inputs) }
             }
         }
     }

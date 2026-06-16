@@ -105,6 +105,9 @@ struct CameraView: View {
                         y: layout.previewSize.height - meterHeight / 2 - 65
                     )
                     .transition(.opacity)
+                    .onTapGesture {
+                        viewModel.showAudioSourcePicker = true
+                    }
                 }
 
                 // Layer 3: Recording cluster positioned at bottom of camera preview
@@ -290,6 +293,28 @@ struct CameraView: View {
                     autoDismissAfter: 3.0,
                     isPresented: $viewModel.showFormatLockedWarning
                 )
+
+                // Layer 10: Audio source picker — appears when a new mic is connected.
+                if viewModel.showAudioSourcePicker {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            viewModel.showAudioSourcePicker = false
+                        }
+
+                    AudioSourcePickerView(
+                        inputs: viewModel.availableAudioInputs,
+                        activeInputName: viewModel.activeAudioInputName,
+                        onSelect: { port in
+                            viewModel.selectAudioInput(port)
+                        },
+                        onDismiss: {
+                            viewModel.showAudioSourcePicker = false
+                        }
+                    )
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .zIndex(100)
+                }
             }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout

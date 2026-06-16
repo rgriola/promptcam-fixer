@@ -58,6 +58,7 @@
 		C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */; };
 		D1D09FA35BCB222C0CA52EC9 /* RecordingTimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098CF98A9B397E6DACFC59FF /* RecordingTimerPanel.swift */; };
 		D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749694F8D9812A53CBCC6CC /* CameraView.swift */; };
+		E2D0CB843DFC6EBEF0BF978A /* AudioSourcePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74B172B1CCD3127A8F2E961 /* AudioSourcePickerView.swift */; };
 		E44FB16FCDA4EB5B30AF7054 /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */; };
 		EAC8CAA83BD8319FC68DBB20 /* AudioMeterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332DF864FBE30C5BE2A2E6D6 /* AudioMeterService.swift */; };
 		EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC9B16CA9F0DE0167C80C67 /* PermissionStatusHelpers.swift */; };
@@ -149,6 +150,7 @@
 		DEB7527037EBC9AB5DB07434 /* CameraService+Recording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraService+Recording.swift"; sourceTree = "<group>"; };
 		E6904D890420C96DB2895AFC /* RecordingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsService.swift; sourceTree = "<group>"; };
 		E749694F8D9812A53CBCC6CC /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		E74B172B1CCD3127A8F2E961 /* AudioSourcePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioSourcePickerView.swift; sourceTree = "<group>"; };
 		EEF8D93300F29DC55D504352 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F3DF3CAE00311888032EA9C2 /* AudioMeterServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioMeterServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -320,6 +322,7 @@
 				62386ADCCFC7E9387894F205 /* TeleprompterCenterResetButton.swift */,
 				DB7EEE9468E02324BB4E04FD /* VideoModeBadgeView.swift */,
 				1F1828A6344E540055104881 /* VUMeterView.swift */,
+				E74B172B1CCD3127A8F2E961 /* AudioSourcePickerView.swift */,
 			);
 			path = Camera;
 			sourceTree = "<group>";
@@ -491,6 +494,7 @@
 				F0A4B3974BEA99A0DE98BEE3 /* DeviceModel.swift in Sources */,
 				EAC8CAA83BD8319FC68DBB20 /* AudioMeterService.swift in Sources */,
 				47D0DC9B0F3E248040308101 /* VUMeterView.swift in Sources */,
+				E2D0CB843DFC6EBEF0BF978A /* AudioSourcePickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

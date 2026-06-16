@@ -119,6 +119,12 @@ final class CameraViewModel {
     var isGainAvailable: Bool = false
     /// Current audio input gain (0.0–1.0). Only functional when `isGainAvailable`.
     var audioGain: Float = 0.5
+    /// Available audio input sources (built-in mic, USB, BT, etc.).
+    var availableAudioInputs: [AVAudioSessionPortDescription] = []
+    /// Name of the currently active audio input.
+    var activeAudioInputName: String?
+    /// When true, present the audio source picker to the user.
+    var showAudioSourcePicker: Bool = false
 
     // MARK: - Timer State
     
@@ -485,6 +491,18 @@ final class CameraViewModel {
         meter.onRouteChanged = { [weak self] isExternal, name in
             self?.isExternalMic = isExternal
             self?.externalMicName = name
+            self?.activeAudioInputName = name
+        }
+
+        meter.onInputsAvailable = { [weak self] inputs in
+            guard let self else { return }
+            let oldCount = self.availableAudioInputs.count
+            self.availableAudioInputs = inputs
+            // Show picker when a new input appears (not on initial setup
+            // and not when an input is removed — only additions).
+            if oldCount > 0 && inputs.count > oldCount {
+                self.showAudioSourcePicker = true
+            }
         }
 
         // Start audio engine tap on the microphone for real-time levels.
@@ -493,7 +511,15 @@ final class CameraViewModel {
         meter.startMonitoringRoute()
 
         self.isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
+        self.activeAudioInputName = meter.activeInput?.portName
         self.audioMeterService = meter
+    }
+
+    /// User-selected audio input from the source picker.
+    func selectAudioInput(_ port: AVAudioSessionPortDescription?) {
+        audioMeterService?.selectInput(port)
+        activeAudioInputName = port?.portName ?? audioMeterService?.activeInput?.portName
+        showAudioSourcePicker = false
     }
 
     /// Adjusts the hardware microphone gain.
