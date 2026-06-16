@@ -96,14 +96,21 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     // MARK: - Session Attachment
 
     /// Adds `audioDataOutput` to the session and sets this service as the
-    /// sample-buffer delegate.
+    /// sample-buffer delegate. Safe to call while the session is running.
     func attach(to session: AVCaptureSession) {
-        if session.canAddOutput(audioDataOutput) {
-            session.addOutput(audioDataOutput)
-            audioDataOutput.setSampleBufferDelegate(self, queue: audioQueue)
-            Log.camera.debug("AudioMeterService: attached to session")
-        } else {
-            Log.camera.error("AudioMeterService: cannot add audio data output")
+        // Session mutations must not block the main thread and require
+        // begin/commitConfiguration when the session is already running.
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            session.beginConfiguration()
+            if session.canAddOutput(self.audioDataOutput) {
+                session.addOutput(self.audioDataOutput)
+                self.audioDataOutput.setSampleBufferDelegate(self, queue: self.audioQueue)
+                Log.camera.debug("AudioMeterService: attached to session")
+            } else {
+                Log.camera.error("AudioMeterService: cannot add audio data output")
+            }
+            session.commitConfiguration()
         }
     }
 
