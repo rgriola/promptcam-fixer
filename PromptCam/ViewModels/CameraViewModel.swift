@@ -176,7 +176,7 @@ final class CameraViewModel {
 
     func onDisappear() {
         stopTimer()
-        audioMeterService?.stopPolling()
+        audioMeterService?.stopMetering()
         audioMeterService?.stopMonitoringRoute()
         cameraService.stopSession()
         isCameraReady = false
@@ -477,9 +477,9 @@ final class CameraViewModel {
             self?.externalMicName = name
         }
 
-        // Poll audio levels from the movie file output's audio connection.
-        // This uses the existing pipeline — no extra outputs needed.
-        meter.startPolling(movieFileOutput: cameraService.movieFileOutput)
+        // Start audio engine tap on the microphone for real-time levels.
+        // Runs independently of AVCaptureSession — no conflicts.
+        meter.startMetering()
         meter.startMonitoringRoute()
 
         self.isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
