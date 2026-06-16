@@ -203,11 +203,29 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.evaluateCurrentRoute()
+            self?.handleRouteChange()
         }
 
         // Publish initial state.
         evaluateCurrentRoute()
+    }
+
+    /// Handles an audio route change by restarting the engine (so the input
+    /// tap rebinds to the new mic) and publishing the updated route state.
+    private func handleRouteChange() {
+        evaluateCurrentRoute()
+
+        // The AVAudioEngine input tap is bound to the format of the mic that
+        // was active when it started. Switching mics (built-in ↔ external)
+        // changes the input format, so we must restart the engine.
+        guard audioEngine != nil else { return }
+        Log.camera.debug("AudioMeterService: route changed — restarting engine")
+        stopMetering()
+        // Small delay lets AVAudioSession settle the new route before we
+        // re-query the input format.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.startMetering()
+        }
     }
 
     /// Stops observing audio route changes.
