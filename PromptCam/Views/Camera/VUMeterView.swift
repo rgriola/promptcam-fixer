@@ -27,8 +27,8 @@ struct VUMeterView: View {
 
     // MARK: - Gradient colors
 
-    private let vuGreen = Color(hex: "#34C759")
-    private let vuYellow = Color(hex: "#FFD60A")
+    private let vuGreen = Color(hex: "#c734b6")
+    private let vuYellow = Color(hex: "#0a99ff")
     private let vuRed = Color(hex: "#FF3B30")
 
     // MARK: - Body
@@ -107,15 +107,15 @@ struct VUMeterView: View {
 
                     // Hash line extending from the bar to the left
                     Rectangle()
-                        .fill(Theme.white.opacity(0.35))
-                        .frame(width: 8, height: 1)
-                        .position(x: barX - 6, y: markY)
+                        .fill(Theme.white.opacity(0.75))
+                        .frame(width: 15, height: 1)
+                        .position(x: barX + 8, y: markY)
 
                     // dB label
                     Text(mark.label)
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Theme.white.opacity(0.5))
-                        .position(x: barX - 20, y: markY)
+                        .foregroundStyle(Theme.white.opacity(0.75))
+                        .position(x: barX + 20, y: markY)
                 }
             }
             .frame(width: width, height: height)
