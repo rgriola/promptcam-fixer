@@ -64,8 +64,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// The audio engine used for input metering.
     private var audioEngine: AVAudioEngine?
 
+    /// Whether the audio session category has been configured at least once.
+    private var isSessionConfigured = false
+
     /// Observer token for route-change notifications.
     private var routeObserver: NSObjectProtocol?
+
+    /// Observer token for interruption notifications.
+    private var interruptionObserver: NSObjectProtocol?
+
+    /// Work item for debouncing rapid route-change restarts.
+    private var restartWorkItem: DispatchWorkItem?
 
     // MARK: - Init
 
@@ -88,13 +97,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     // MARK: - Engine Metering
 
-    /// Starts the audio engine and installs a tap on the input node
-    /// (microphone) to compute real-time levels.
-    func startMetering() {
-        // Ensure previous engine is torn down.
-        stopMetering()
-
-        // Configure AVAudioSession for recording alongside AVCaptureSession.
+    /// Configures the audio session once. Subsequent calls are no-ops.
+    private func ensureSessionConfigured() {
+        guard !isSessionConfigured else { return }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(
@@ -103,10 +108,21 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
                 options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
             )
             try session.setActive(true)
+            isSessionConfigured = true
         } catch {
             Log.camera.error("AudioMeterService: audio session setup failed – \(error.localizedDescription)")
-            return
         }
+    }
+
+    /// Starts the audio engine and installs a tap on the input node
+    /// (microphone) to compute real-time levels.
+    func startMetering() {
+        // Tear down any existing engine first.
+        tearDownEngine()
+
+        // Configure audio session once.
+        ensureSessionConfigured()
+        guard isSessionConfigured else { return }
 
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
@@ -134,12 +150,38 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Stops the audio engine and removes the input tap.
     func stopMetering() {
+        restartWorkItem?.cancel()
+        restartWorkItem = nil
+        tearDownEngine()
+        stopMonitoringRoute()
+    }
+
+    /// Tears down the engine without cancelling route monitoring.
+    private func tearDownEngine() {
         if let engine = audioEngine {
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
             audioEngine = nil
             Log.camera.debug("AudioMeterService: engine stopped")
         }
+    }
+
+    /// Restarts the engine with debouncing. Multiple rapid calls (e.g. from
+    /// successive route-change notifications) collapse into a single restart.
+    private func restartEngine() {
+        // Cancel any pending restart.
+        restartWorkItem?.cancel()
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            Log.camera.debug("AudioMeterService: restarting engine after route/interruption change")
+            self.tearDownEngine()
+            self.startMetering()
+        }
+        restartWorkItem = work
+
+        // 500ms delay lets AVAudioSession fully settle the new route.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     /// Processes a PCM buffer from the input tap — computes RMS, converts
@@ -194,7 +236,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     // MARK: - Route Monitoring
 
     /// Begins observing `AVAudioSession.routeChangeNotification` and
-    /// immediately publishes the current route state.
+    /// `interruptionNotification`, and immediately publishes the current
+    /// route state.
     func startMonitoringRoute() {
         stopMonitoringRoute()
 
@@ -202,37 +245,70 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.handleRouteChange()
+        ) { [weak self] notification in
+            self?.handleRouteChange(notification)
+        }
+
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleInterruption(notification)
         }
 
         // Publish initial state.
         evaluateCurrentRoute()
     }
 
-    /// Handles an audio route change by restarting the engine (so the input
-    /// tap rebinds to the new mic) and publishing the updated route state.
-    private func handleRouteChange() {
+    /// Handles an audio route change by restarting the engine so the input
+    /// tap rebinds to the new mic.
+    private func handleRouteChange(_ notification: Notification) {
+        let reasonRaw = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 0
+        let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw) ?? .unknown
+
+        Log.camera.debug("AudioMeterService: route changed, reason=\(reason.rawValue)")
+
         evaluateCurrentRoute()
 
-        // The AVAudioEngine input tap is bound to the format of the mic that
-        // was active when it started. Switching mics (built-in ↔ external)
-        // changes the input format, so we must restart the engine.
-        guard audioEngine != nil else { return }
-        Log.camera.debug("AudioMeterService: route changed — restarting engine")
-        stopMetering()
-        // Small delay lets AVAudioSession settle the new route before we
-        // re-query the input format.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.startMetering()
+        // Only restart for reasons that actually change the input device.
+        switch reason {
+        case .newDeviceAvailable, .oldDeviceUnavailable, .override, .routeConfigurationChange:
+            guard audioEngine != nil else { return }
+            restartEngine()
+        default:
+            break
         }
     }
 
-    /// Stops observing audio route changes.
+    /// Handles an audio session interruption (phone call, Siri, etc.).
+    private func handleInterruption(_ notification: Notification) {
+        let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 0
+        let type = AVAudioSession.InterruptionType(rawValue: typeRaw) ?? .began
+
+        if type == .ended {
+            Log.camera.debug("AudioMeterService: interruption ended — restarting engine")
+            // Re-activate the session after interruption.
+            do {
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch {
+                Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
+            }
+            restartEngine()
+        } else {
+            Log.camera.debug("AudioMeterService: interruption began — engine will pause")
+        }
+    }
+
+    /// Stops observing audio route and interruption changes.
     func stopMonitoringRoute() {
         if let observer = routeObserver {
             NotificationCenter.default.removeObserver(observer)
             routeObserver = nil
+        }
+        if let observer = interruptionObserver {
+            NotificationCenter.default.removeObserver(observer)
+            interruptionObserver = nil
         }
     }
 
