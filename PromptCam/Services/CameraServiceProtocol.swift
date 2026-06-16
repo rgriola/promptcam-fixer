@@ -22,6 +22,9 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
     /// The audio capture device, if available. Used for gain control.
     var audioDevice: AVCaptureDevice? { get }
 
+    /// The movie file output used for recording. Also used for audio level polling.
+    var movieFileOutput: AVCaptureMovieFileOutput { get }
+
     // MARK: - Callbacks (set by the ViewModel in bindCallbacks)
 
     var onRecordingStateChanged: (@MainActor @Sendable (Bool) -> Void)? { get set }

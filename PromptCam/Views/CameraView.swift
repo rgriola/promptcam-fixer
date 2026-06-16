@@ -89,6 +89,7 @@ struct CameraView: View {
                 // Layer 2.5: Audio VU meter on the left edge of the preview.
                 // Hidden when any modal sheet is open.
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
+                    let meterHeight = layout.previewSize.height * 0.35
                     VUMeterView(
                         level: viewModel.audioLevel,
                         peak: viewModel.audioPeak,
@@ -97,11 +98,11 @@ struct CameraView: View {
                     )
                     .frame(
                         width: CameraLayout.vuMeterWidth,
-                        height: layout.previewSize.height - CameraLayout.vuMeterVerticalPadding * 2
+                        height: meterHeight
                     )
                     .position(
                         x: CameraLayout.vuMeterHorizontalInset,
-                        y: layout.previewSize.height / 2
+                        y: layout.previewSize.height - meterHeight / 2 - 140
                     )
                     .transition(.opacity)
                 }

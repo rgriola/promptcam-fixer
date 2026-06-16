@@ -1,13 +1,13 @@
 import AVFoundation
-import AudioToolbox
 
-/// Provides real-time audio level metering by tapping into an
-/// `AVCaptureSession`'s audio pipeline.
+/// Provides real-time audio level metering by polling the audio channels
+/// on an `AVCaptureMovieFileOutput`'s audio connection.
 ///
-/// **Threading model**: The `AVCaptureAudioDataOutputSampleBufferDelegate`
-/// callback fires on a private serial queue (`audioQueue`). All mutable
-/// metering state is protected by `stateLock` (an `NSLock`). Results are
-/// relayed to the main thread via callback closures at ~30 fps.
+/// **Approach**: Rather than adding a separate `AVCaptureAudioDataOutput`
+/// (which can conflict with an already-running session), this service polls
+/// `AVCaptureAudioChannel.averagePowerLevel` and `.peakHoldLevel` via a
+/// `DispatchSourceTimer` at ~30 fps. These properties are always available
+/// once the session has an audio input and a movie file output.
 ///
 /// **Sendable invariant**: Mutable state is accessed exclusively under
 /// `stateLock`, so the type is safely `@unchecked Sendable`.
@@ -21,9 +21,6 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// How long (seconds) the peak indicator holds before decaying.
     private static let peakHoldDuration: TimeInterval = 1.5
 
-    /// Minimum interval between UI updates (~30 fps).
-    private static let uiUpdateInterval: TimeInterval = 1.0 / 30.0
-
     /// Ports that count as an external microphone.
     private static let externalMicPorts: Set<AVAudioSession.Port> = [
         .headsetMic,
@@ -32,15 +29,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         .bluetoothA2DP,
     ]
 
-    // MARK: - Public Output
-
-    /// The audio data output to add to the capture session.
-    let audioDataOutput = AVCaptureAudioDataOutput()
-
     // MARK: - Callbacks
 
     /// Lock protecting callback closures, which are set from `@MainActor`
-    /// but read from `audioQueue`.
+    /// but read from the polling timer.
     private let callbackLock = NSLock()
 
     private var _onLevelsUpdated: (@MainActor @Sendable (Float, Float) -> Void)?
@@ -59,18 +51,16 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     // MARK: - Private State
 
-    /// Serial queue for audio sample processing.
-    private let audioQueue = DispatchQueue(
-        label: "com.promptcam.fixer.audiometer",
-        qos: .userInitiated
-    )
-
-    /// Lock protecting metering state touched from `audioQueue`.
+    /// Lock protecting metering state.
     private let stateLock = NSLock()
-    private var currentLevel: Float = 0.0
     private var peakLevel: Float = 0.0
     private var peakTimestamp: TimeInterval = 0.0
-    private var lastUIUpdate: TimeInterval = 0.0
+
+    /// The movie file output whose audio connection we poll.
+    private weak var movieOutput: AVCaptureMovieFileOutput?
+
+    /// Polling timer for audio levels.
+    private var pollingTimer: DispatchSourceTimer?
 
     /// Observer token for route-change notifications.
     private var routeObserver: NSObjectProtocol?
@@ -82,6 +72,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     }
 
     deinit {
+        stopPolling()
         stopMonitoringRoute()
     }
 
@@ -93,31 +84,62 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         return (clamped - silenceThresholdDb) / (0.0 - silenceThresholdDb)
     }
 
-    // MARK: - Session Attachment
+    // MARK: - Polling
 
-    /// Adds `audioDataOutput` to the session and sets this service as the
-    /// sample-buffer delegate. Safe to call while the session is running.
-    func attach(to session: AVCaptureSession) {
-        // Session mutations must not block the main thread and require
-        // begin/commitConfiguration when the session is already running.
-        audioQueue.async { [weak self] in
-            guard let self else { return }
-            session.beginConfiguration()
-            if session.canAddOutput(self.audioDataOutput) {
-                session.addOutput(self.audioDataOutput)
-                self.audioDataOutput.setSampleBufferDelegate(self, queue: self.audioQueue)
-                Log.camera.debug("AudioMeterService: attached to session")
-            } else {
-                Log.camera.error("AudioMeterService: cannot add audio data output")
-            }
-            session.commitConfiguration()
+    /// Begins polling audio levels from the movie file output's audio connection.
+    /// - Parameter output: The `AVCaptureMovieFileOutput` already attached to the session.
+    func startPolling(movieFileOutput: AVCaptureMovieFileOutput) {
+        self.movieOutput = movieFileOutput
+
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .userInitiated))
+        timer.schedule(deadline: .now(), repeating: 1.0 / 30.0) // ~30 fps
+        timer.setEventHandler { [weak self] in
+            self?.pollLevels()
         }
+        timer.resume()
+        pollingTimer = timer
+        Log.camera.debug("AudioMeterService: polling started")
     }
 
-    /// Removes `audioDataOutput` from the session.
-    func detach(from session: AVCaptureSession) {
-        session.removeOutput(audioDataOutput)
-        Log.camera.debug("AudioMeterService: detached from session")
+    /// Stops polling audio levels.
+    func stopPolling() {
+        pollingTimer?.cancel()
+        pollingTimer = nil
+    }
+
+    private func pollLevels() {
+        guard let output = movieOutput,
+              let connection = output.connection(with: .audio) else { return }
+
+        // Read power levels from the first audio channel.
+        let channels = connection.audioChannels
+        guard let channel = channels.first else { return }
+
+        let avgDb = channel.averagePowerLevel
+        let peakDb = channel.peakHoldLevel
+
+        let normalizedLevel = Self.normalizeDecibels(avgDb)
+        let normalizedPeak = Self.normalizeDecibels(peakDb)
+
+        // Apply peak-hold decay logic.
+        let now = CACurrentMediaTime()
+
+        stateLock.lock()
+        if normalizedPeak > peakLevel {
+            peakLevel = normalizedPeak
+            peakTimestamp = now
+        } else if now - peakTimestamp > Self.peakHoldDuration {
+            peakLevel += (normalizedLevel - peakLevel) * 0.15
+        }
+        let peak = peakLevel
+        stateLock.unlock()
+
+        // Publish to main thread.
+        if let callback = onLevelsUpdated {
+            DispatchQueue.main.async {
+                Task { @MainActor in callback(normalizedLevel, peak) }
+            }
+        }
     }
 
     // MARK: - Route Monitoring
@@ -151,20 +173,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Returns whether hardware input gain adjustment is available on the
     /// current audio route.
-    ///
-    /// - Parameter device: Unused but kept for API symmetry with camera
-    ///   device references. Gain is controlled via `AVAudioSession`.
     func isGainAvailable(for device: AVCaptureDevice?) -> Bool {
         AVAudioSession.sharedInstance().isInputGainSettable
     }
 
     /// Sets the hardware input gain via `AVAudioSession`, clamped to
     /// `0.0 … 1.0`.
-    ///
-    /// - Parameters:
-    ///   - value: Desired gain in the range `0.0 … 1.0`.
-    ///   - device: Unused but kept for API symmetry. Gain is controlled
-    ///     via `AVAudioSession`.
     func setGain(_ value: Float, on device: AVCaptureDevice?) {
         let session = AVAudioSession.sharedInstance()
         guard session.isInputGainSettable else { return }
@@ -194,82 +208,6 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         if let callback = onRouteChanged {
             DispatchQueue.main.async {
                 Task { @MainActor in callback(isExternal, portName) }
-            }
-        }
-    }
-}
-
-// MARK: - AVCaptureAudioDataOutputSampleBufferDelegate
-
-extension AudioMeterService: AVCaptureAudioDataOutputSampleBufferDelegate {
-
-    func captureOutput(
-        _ output: AVCaptureOutput,
-        didOutput sampleBuffer: CMSampleBuffer,
-        from connection: AVCaptureConnection
-    ) {
-        // --- Extract audio samples ---
-        var blockBuffer: CMBlockBuffer?
-        var audioBufferList = AudioBufferList()
-        let status = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
-            sampleBuffer,
-            bufferListSizeNeededOut: nil,
-            bufferListOut: &audioBufferList,
-            bufferListSize: MemoryLayout<AudioBufferList>.size,
-            blockBufferAllocator: nil,
-            blockBufferMemoryAllocator: nil,
-            flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
-            blockBufferOut: &blockBuffer
-        )
-
-        guard status == noErr else { return }
-
-        guard let data = audioBufferList.mBuffers.mData else { return }
-        let sampleCount = Int(audioBufferList.mBuffers.mDataByteSize) / MemoryLayout<Float32>.size
-        guard sampleCount > 0 else { return }
-
-        let samples = data.assumingMemoryBound(to: Float32.self)
-
-        // --- Compute RMS ---
-        var sumOfSquares: Float = 0.0
-        for i in 0..<sampleCount {
-            let sample = samples[i]
-            sumOfSquares += sample * sample
-        }
-        let rms = sqrtf(sumOfSquares / Float(sampleCount))
-        let db: Float = rms > 0 ? 20.0 * log10f(rms) : Self.silenceThresholdDb
-        let normalizedLevel = Self.normalizeDecibels(db)
-
-        // --- Update state ---
-        let now = CACurrentMediaTime()
-
-        stateLock.lock()
-
-        currentLevel = normalizedLevel
-
-        // Peak hold logic.
-        if normalizedLevel > peakLevel {
-            peakLevel = normalizedLevel
-            peakTimestamp = now
-        } else if now - peakTimestamp > Self.peakHoldDuration {
-            // Decay peak toward current level.
-            peakLevel += (normalizedLevel - peakLevel) * 0.15
-        }
-
-        let peak = peakLevel
-
-        // Throttle UI updates to ~30 fps.
-        let shouldUpdate = (now - lastUIUpdate) >= Self.uiUpdateInterval
-        if shouldUpdate {
-            lastUIUpdate = now
-        }
-
-        stateLock.unlock()
-
-        // --- Publish to main thread ---
-        if shouldUpdate, let callback = onLevelsUpdated {
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(normalizedLevel, peak) }
             }
         }
     }

@@ -13,6 +13,7 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
 
     let previewSession = AVCaptureSession()
     let audioDevice: AVCaptureDevice? = nil
+    let movieFileOutput = AVCaptureMovieFileOutput()
 
     // MARK: - Call Tracking
 
