@@ -4,63 +4,29 @@ import SwiftUI
 /// A compact picker presented when a new audio input is detected.
 /// Lists all available audio sources and lets the user choose which
 /// mic the app should use for recording and metering.
+///
+/// Uses `StandardPanel` for consistent panel chrome.
 struct AudioSourcePickerView: View {
     let inputs: [AVAudioSessionPortDescription]
     let activeInputName: String?
     let onSelect: (AVAudioSessionPortDescription?) -> Void
     let onDismiss: () -> Void
 
-    /// Seconds before the picker auto-dismisses if the user takes no action.
-    private let autoDismissAfter: TimeInterval = 12
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Image(systemName: "mic.badge.plus")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-                Text("Audio Sources")
-                    .font(Theme.font16Semibold)
-                    .foregroundStyle(Theme.primaryText)
-                Spacer()
-                Button {
-                    onDismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Theme.secondaryText)
-                }
-            }
-            .padding(.horizontal, Theme.space16)
-            .padding(.vertical, Theme.space12)
-
-            Divider()
-                .overlay(Theme.separator)
-
-            // Input list
+        StandardPanel(
+            title: "Audio Sources",
+            icon: "mic.badge.plus",
+            autoDismissAfter: 12,
+            onDismiss: onDismiss
+        ) {
             ScrollView {
                 VStack(spacing: 2) {
                     ForEach(inputs, id: \.uid) { port in
                         audioInputRow(port)
                     }
                 }
-                .padding(.vertical, Theme.space8)
             }
             .frame(maxHeight: 240)
-        }
-        .background(Theme.panelBg)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.radiusLg)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .padding(.horizontal, 24)
-        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-        .task {
-            try? await Task.sleep(for: .seconds(autoDismissAfter))
-            guard !Task.isCancelled else { return }
-            onDismiss()
         }
     }
 

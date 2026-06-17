@@ -1,33 +1,39 @@
 // June 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - EV adjustment panel with hash marks
 // June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Fix reset: use absolute setExposure(to:) via onReset
+// June 17, 2026 - Refactored to use StandardPanel for consistent UI.
 import SwiftUI
 
-/// Slide-down panel for live exposure value adjustment.
-/// Positioned below the EV button in the camera header.
-/// Changes are live (no confirm needed). "Auto" button returns to neutral (EV 0).
+/// Panel for live exposure value adjustment.
+/// Changes are live (no confirm needed). "Reset" returns to neutral (EV 0).
+///
+/// Uses `StandardPanel` for consistent panel chrome.
 struct EVAdjustmentPanel: View {
     @Binding var exposureBias: Float
     let exposureRange: Float
     let onReset: () -> Void
     let onAdjust: (Float) -> Void
+    let onDismiss: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.space16) {
-            EVSliderRow(
-                exposureBias: $exposureBias,
-                exposureRange: exposureRange,
-                onAdjust: onAdjust
-            )
-            
-            AutoButton(onReset: {
-                // Reset slider binding to 0, then notify parent to set camera to absolute 0
-                exposureBias = 0
-                onReset()
-            })
+        StandardPanel(
+            title: "Exposure",
+            icon: "sun.max.fill",
+            autoDismissAfter: 12,
+            onDismiss: onDismiss
+        ) {
+            VStack(alignment: .leading, spacing: Theme.space16) {
+                EVSliderRow(
+                    exposureBias: $exposureBias,
+                    exposureRange: exposureRange,
+                    onAdjust: onAdjust
+                )
+
+                ResetButton(onReset: {
+                    exposureBias = 0
+                    onReset()
+                })
+            }
         }
-        .padding(Theme.space12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMd))
     }
 }
 
@@ -49,13 +55,13 @@ private struct EVSliderRow: View {
             HStack {
                 Text("EV")
                     .font(Theme.font16Medium)
-                    .foregroundStyle(Theme.blackText)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
                 Text(valueLabel)
                     .font(Theme.mono16Medium)
-                    .foregroundStyle(Theme.blackText)
+                    .foregroundStyle(Theme.accent)
                     .monospacedDigit()
             }
 
@@ -73,63 +79,68 @@ private struct EVSliderRow: View {
                 step: 0.1
             )
             .controlSize(.large)
-            .tint(Theme.blue)
+            .tint(Theme.accent)
 
-            // Hash marks at -5, 0, +5
+            // Hash marks at -max, 0, +max
             HStack {
                 Rectangle()
-                    .fill(Theme.secondaryText)
+                    .fill(Theme.secondaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
-                
+
                 Spacer()
-                
-                Rectangle()
-                    .fill(Theme.blackText)
-                    .frame(width: 1, height: 6)
-                
-                Spacer()
-                
+
                 Rectangle()
                     .fill(Theme.secondaryText)
+                    .frame(width: 1, height: 6)
+
+                Spacer()
+
+                Rectangle()
+                    .fill(Theme.secondaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
             }
             .padding(.top, 2)
-            
+
             // Min/Center/Max labels
             HStack {
                 Text("\(String(format: "%.0f", -exposureRange))")
-                    .font(Theme.font10Regular)
-                    .foregroundStyle(Theme.blackText)
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.tertiaryText)
 
                 Spacer()
 
                 Text("0")
-                    .font(Theme.font10Medium)
-                    .foregroundStyle(Theme.blackText)
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.tertiaryText)
 
                 Spacer()
 
                 Text("+\(String(format: "%.0f", exposureRange))")
-                    .font(Theme.font10Regular)
-                    .foregroundStyle(Theme.blackText)
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.tertiaryText)
             }
         }
     }
 }
 
-// MARK: - Auto Button
+// MARK: - Reset Button
 
-private struct AutoButton: View {
+private struct ResetButton: View {
     let onReset: () -> Void
 
     var body: some View {
         Button(action: onReset) {
-            Text("Reset")
-                .font(Theme.font16Medium)
-                .foregroundStyle(Theme.blue)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Theme.space8)
-                .background(Theme.glassOverlay, in: RoundedRectangle(cornerRadius: Theme.radiusSm))
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(Theme.font12Regular)
+                Text("Reset")
+                    .font(Theme.font12Regular)
+            }
+            .foregroundStyle(Theme.primaryText)
+            .padding(.horizontal, Theme.space12)
+            .padding(.vertical, 6)
+            .background(Theme.white.opacity(0.12))
+            .clipShape(Capsule())
         }
         .accessibilityLabel("Reset EV Bias")
         .accessibilityHint("Returns to neutral automatic exposure")

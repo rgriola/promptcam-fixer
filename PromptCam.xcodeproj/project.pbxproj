@@ -18,6 +18,7 @@
 		315EB17E07A1DE5E04BA8963 /* CameraService+Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */; };
 		32027F533DD7867B0C6F4A7B /* RecordingPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */; };
 		32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */; };
+		25D1494F821C8636F73EB9C6 /* StandardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671D4AEC4E7F17E8F6B43702 /* StandardPanel.swift */; };
 		3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */; };
 		41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */; };
 		41DC8BC23D7AA37EA938C17E /* AudioMeterServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */; };
@@ -94,6 +95,7 @@
 		12FD5F32937ED7BA3903AF66 /* CameraFooterControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFooterControlsView.swift; sourceTree = "<group>"; };
 		14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryWarningBanner.swift; sourceTree = "<group>"; };
+		671D4AEC4E7F17E8F6B43702 /* StandardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandardPanel.swift; sourceTree = "<group>"; };
 		20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterConfig.swift; sourceTree = "<group>"; };
 		260A828C38B379D7070292C3 /* ScriptArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptArchive.swift; sourceTree = "<group>"; };
 		26EEA7971142FD517E1511C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -273,6 +275,7 @@
 				8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */,
 				525F4215FDEF56A0D72B7C58 /* SaveButton.swift */,
 				1D1959F1635200E50A8B8191 /* TemporaryWarningBanner.swift */,
+				671D4AEC4E7F17E8F6B43702 /* StandardPanel.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -498,6 +501,7 @@
 				70373BC93B71581F7084FB3C /* TeleprompterMeasurement.swift in Sources */,
 				C75CF4CF08F93D0A81F7AA79 /* TeleprompterOverlayView.swift in Sources */,
 				32C0C1013D67054939D29354 /* TemporaryWarningBanner.swift in Sources */,
+				25D1494F821C8636F73EB9C6 /* StandardPanel.swift in Sources */,
 				8822631F7E4FCED4165D036E /* Theme.swift in Sources */,
 				ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,

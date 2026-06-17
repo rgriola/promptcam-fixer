@@ -1,16 +1,15 @@
 // June 14, 2026 - GitHub Copilot (Claude Sonnet 4.6)
-// June 17, 2026 - Restyled to match AudioSourcePickerView panel design.
+// June 17, 2026 - Refactored to use StandardPanel for consistent UI.
 // Cinematic aperture (f-stop) control panel.
 // Requires iOS 26+ for AVCaptureDeviceInput.simulatedAperture. On older OS,
 // the ViewModel never sets cinematicApertureRange so this panel is never shown.
 import SwiftUI
 
-/// Slide-in panel for adjusting the simulated aperture (f-stop) in cinematic mode.
+/// Panel for adjusting the simulated aperture (f-stop) in cinematic mode.
 /// A lower f-stop means wider aperture and more background blur.
 /// Changes are live (no confirm needed). "Default" resets to the format default.
 ///
-/// Styled to match `AudioSourcePickerView` — dark glass panel with header,
-/// close button, and auto-dismiss after 12 seconds of inactivity.
+/// Uses `StandardPanel` for consistent panel chrome.
 struct CinematicAperturePanel: View {
     @Binding var aperture: Float
     let apertureRange: ClosedRange<Float>
@@ -19,35 +18,13 @@ struct CinematicAperturePanel: View {
     let onAdjust: (Float) -> Void
     let onDismiss: () -> Void
 
-    /// Seconds before the panel auto-dismisses if the user takes no action.
-    private let autoDismissAfter: TimeInterval = 12
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Image(systemName: "camera.aperture")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-                Text("Aperture")
-                    .font(Theme.font16Semibold)
-                    .foregroundStyle(Theme.primaryText)
-                Spacer()
-                Button {
-                    onDismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Theme.secondaryText)
-                }
-            }
-            .padding(.horizontal, Theme.space16)
-            .padding(.vertical, Theme.space12)
-
-            Divider()
-                .overlay(Theme.separator)
-
-            // Content
+        StandardPanel(
+            title: "Aperture",
+            icon: "camera.aperture",
+            autoDismissAfter: 12,
+            onDismiss: onDismiss
+        ) {
             VStack(alignment: .leading, spacing: Theme.space16) {
                 ApertureSliderRow(
                     aperture: $aperture,
@@ -60,20 +37,6 @@ struct CinematicAperturePanel: View {
                     onReset()
                 })
             }
-            .padding(Theme.space16)
-        }
-        .background(Theme.panelBg)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.radiusLg)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .padding(.horizontal, 24)
-        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
-        .task {
-            try? await Task.sleep(for: .seconds(autoDismissAfter))
-            guard !Task.isCancelled else { return }
-            onDismiss()
         }
     }
 }
