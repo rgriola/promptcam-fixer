@@ -102,7 +102,10 @@ struct CameraView: View {
                     )
                     .position(
                         x: CameraLayout.vuMeterHorizontalInset + 5,
-                        y: layout.previewSize.height - meterHeight / 2 - 65
+                        // Align bottom edge with record button bottom:
+                        // Record button center = previewHeight - 125, radius = 36
+                        // → button bottom = previewHeight - 89
+                        y: layout.previewSize.height - 89 - meterHeight / 2
                     )
                     .transition(.opacity)
                     .contentShape(Rectangle())
