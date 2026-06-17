@@ -16,7 +16,7 @@ struct EVAdjustmentPanel: View {
 
     var body: some View {
         StandardPanel(
-            title: "Exposure",
+            title: "EV Bias",
             icon: "sun.max.fill",
             autoDismissAfter: 12,
             onDismiss: onDismiss
@@ -27,11 +27,14 @@ struct EVAdjustmentPanel: View {
                     exposureRange: exposureRange,
                     onAdjust: onAdjust
                 )
-
-                ResetButton(onReset: {
-                    exposureBias = 0
-                    onReset()
-                })
+                HStack{
+                    Spacer()
+                    ResetButton(onReset: {
+                        exposureBias = 0
+                        onReset()
+                    })
+                    Spacer()
+                }
             }
         }
     }
@@ -84,19 +87,19 @@ private struct EVSliderRow: View {
             // Hash marks at -max, 0, +max
             HStack {
                 Rectangle()
-                    .fill(Theme.secondaryText.opacity(0.5))
+                    .fill(Theme.primaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
 
                 Spacer()
 
                 Rectangle()
-                    .fill(Theme.secondaryText)
+                    .fill(Theme.primaryText)
                     .frame(width: 1, height: 6)
 
                 Spacer()
 
                 Rectangle()
-                    .fill(Theme.secondaryText.opacity(0.5))
+                    .fill(Theme.primaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
             }
             .padding(.top, 2)
@@ -105,19 +108,19 @@ private struct EVSliderRow: View {
             HStack {
                 Text("\(String(format: "%.0f", -exposureRange))")
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
                 Text("0")
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
                 Text("+\(String(format: "%.0f", exposureRange))")
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
             }
         }
     }

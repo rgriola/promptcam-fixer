@@ -219,14 +219,7 @@ private struct OnboardingPermissionRow: View {
             }
         }
         .padding(Theme.space16)
-        .background(Theme.black.opacity(0.1),
-            in: RoundedRectangle(cornerRadius: Theme.radiusMd))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.radiusMd)
-                .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
-        )
-
-
+        .cardBackground()
     }
 }
 

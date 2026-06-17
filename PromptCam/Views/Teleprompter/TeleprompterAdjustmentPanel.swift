@@ -14,7 +14,7 @@ struct TeleprompterAdjustmentPanel: View {
 
     var body: some View {
         StandardPanel(
-            title: "Teleprompter",
+            title: "Prompter",
             icon: "text.viewfinder",
             autoDismissAfter: nil,  // Stays open — user is actively adjusting
             onDismiss: onDismiss

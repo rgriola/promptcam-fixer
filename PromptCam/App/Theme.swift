@@ -131,6 +131,22 @@ enum Theme {
 
 }
 
+// MARK: - View Extensions
+
+extension View {
+    /// Applies a subtle card background: dark fill with light border.
+    func cardBackground(cornerRadius: CGFloat = Theme.radiusMd) -> some View {
+        self.background {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(Theme.black.opacity(0.1))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
+                }
+        }
+    }
+}
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

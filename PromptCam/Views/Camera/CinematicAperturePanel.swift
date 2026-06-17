@@ -31,11 +31,14 @@ struct CinematicAperturePanel: View {
                     apertureRange: apertureRange,
                     onAdjust: onAdjust
                 )
-
-                DefaultButton(onReset: {
-                    aperture = defaultAperture
-                    onReset()
-                })
+                HStack{
+                    Spacer()
+                    DefaultButton(onReset: {
+                        aperture = defaultAperture
+                        onReset()
+                        })
+                    Spacer()
+                }
             }
         }
     }
@@ -85,19 +88,19 @@ private struct ApertureSliderRow: View {
             // Hash marks at min, mid, max
             HStack {
                 Rectangle()
-                    .fill(Theme.secondaryText.opacity(0.5))
+                    .fill(Theme.primaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
 
                 Spacer()
 
                 Rectangle()
-                    .fill(Theme.secondaryText)
+                    .fill(Theme.primaryText)
                     .frame(width: 1, height: 6)
 
                 Spacer()
 
                 Rectangle()
-                    .fill(Theme.secondaryText.opacity(0.5))
+                    .fill(Theme.primaryText.opacity(0.5))
                     .frame(width: 1, height: 6)
             }
             .padding(.top, 2)
@@ -105,19 +108,19 @@ private struct ApertureSliderRow: View {
             HStack {
                 Text(String(format: "f/%.1f", apertureRange.lowerBound))
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
                 Text(String(format: "f/%.1f", (apertureRange.lowerBound + apertureRange.upperBound) / 2))
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
                 Text(String(format: "f/%.1f", apertureRange.upperBound))
                     .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.primaryText)
             }
         }
     }
@@ -133,7 +136,7 @@ private struct DefaultButton: View {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.counterclockwise")
                     .font(Theme.font12Regular)
-                Text("Default")
+                Text("Reset")
                     .font(Theme.font12Regular)
             }
             .foregroundStyle(Theme.primaryText)

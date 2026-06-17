@@ -65,8 +65,15 @@ struct AudioSourcePickerView: View {
             }
             .padding(.horizontal, Theme.space16)
             .padding(.vertical, Theme.space12)
-            .background(isActive ? Theme.accent.opacity(0.1) : Color.clear)
-            .contentShape(Rectangle())
+            .background {
+                RoundedRectangle(cornerRadius: Theme.radiusLg, style: .continuous)
+                    .fill(Theme.black.opacity(isActive ? 0.5 : 0.1))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Theme.radiusLg, style: .continuous)
+                            .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
+                    }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Theme.radiusLg, style: .continuous))
         }
         .buttonStyle(.plain)
     }

@@ -64,7 +64,7 @@ struct StandardPanel<Content: View>: View {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.white)
                 Text(title)
                     .font(Theme.font16Semibold)
                     .foregroundStyle(Theme.primaryText)
@@ -74,7 +74,7 @@ struct StandardPanel<Content: View>: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 22))
-                        .foregroundStyle(Theme.secondaryText)
+                        .foregroundStyle(Theme.white)
                 }
             }
             .padding(.horizontal, Theme.space16)
@@ -87,7 +87,7 @@ struct StandardPanel<Content: View>: View {
             content()
                 .padding(Theme.space16)
         }
-        .background(Theme.panelBg)
+        .background(Theme.bgGrad)
         .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLg))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.radiusLg)
@@ -155,3 +155,4 @@ struct StandardPanelOverlay<Content: View>: View {
             .transition(.scale(scale: 0.95).combined(with: .opacity))
     }
 }
+
