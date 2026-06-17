@@ -42,6 +42,7 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
 
     func startRecording()
     func stopRecording()
+    func reconfigureAudioInput()
 
     // MARK: - Format & Cinematic
 

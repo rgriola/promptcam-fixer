@@ -500,6 +500,9 @@ final class CameraViewModel {
             // Skip on initial setup (activeAudioInputName was nil).
             if micChanged && self.audioMeterService != nil {
                 self.showAudioSourcePicker = true
+                // Also swap the capture session's audio input so recordings
+                // use the same mic the VU meter is monitoring.
+                self.cameraService.reconfigureAudioInput()
             }
         }
 
@@ -527,6 +530,8 @@ final class CameraViewModel {
         audioMeterService?.selectInput(port)
         activeAudioInputName = port?.portName ?? audioMeterService?.activeInput?.portName
         showAudioSourcePicker = false
+        // Sync the capture session's audio input to match.
+        cameraService.reconfigureAudioInput()
     }
 
     /// Adjusts the hardware microphone gain.

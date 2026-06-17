@@ -66,6 +66,10 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
         stopRecordingCalled = true
     }
 
+    func reconfigureAudioInput() {
+        // No-op in mock
+    }
+
     // MARK: - Format & Cinematic
 
     func applyFormat(_ format: RecordingFormat) {

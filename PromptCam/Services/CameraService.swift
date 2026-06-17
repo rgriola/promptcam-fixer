@@ -110,6 +110,8 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     var videoInput: AVCaptureDeviceInput?
     /// The audio capture device — retained for gain control.
     var audioDevice: AVCaptureDevice?
+    /// The audio capture input — retained so we can hot-swap on route changes.
+    var audioInput: AVCaptureDeviceInput?
     var isSessionConfigured = false
 
     /// Lock protecting callback closures, which are set from @MainActor
@@ -232,6 +234,63 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         preferredDevice(for: format.mode, resolution: format.resolution)
     }
 
+    // MARK: - Audio Input Hot-Swap
+
+    /// Reconfigures the capture session's audio input to match the current
+    /// `AVAudioSession` preferred input.
+    ///
+    /// Called by `CameraViewModel` when `AudioMeterService` detects a route
+    /// change. This ensures that the **recorded** audio uses the same mic
+    /// the VU meter is monitoring.
+    ///
+    /// Safe to call while not recording. If called during an active
+    /// recording, it's a no-op to avoid corrupting the file.
+    func reconfigureAudioInput() {
+        sessionQueue.async { [self] in
+            guard isSessionConfigured else { return }
+            guard !movieFileOutput.isRecording else {
+                Log.camera.debug("CameraService: skipping audio input swap — recording in progress")
+                return
+            }
+
+            guard let newDevice = AVCaptureDevice.default(for: .audio) else {
+                Log.camera.error("CameraService: no audio device available")
+                return
+            }
+
+            // Skip if already using the same device.
+            if let current = audioDevice, current.uniqueID == newDevice.uniqueID {
+                Log.camera.debug("CameraService: audio device unchanged (\(newDevice.localizedName))")
+                return
+            }
+
+            session.beginConfiguration()
+            defer { session.commitConfiguration() }
+
+            // Remove old audio input.
+            if let oldInput = audioInput {
+                session.removeInput(oldInput)
+                audioInput = nil
+                Log.camera.debug("CameraService: removed old audio input")
+            }
+
+            // Add new audio input.
+            do {
+                let newInput = try AVCaptureDeviceInput(device: newDevice)
+                if session.canAddInput(newInput) {
+                    session.addInput(newInput)
+                    audioInput = newInput
+                    audioDevice = newDevice
+                    Log.camera.debug("CameraService: swapped audio input to \(newDevice.localizedName)")
+                } else {
+                    Log.camera.error("CameraService: cannot add new audio input")
+                }
+            } catch {
+                Log.camera.error("CameraService: audio input creation failed – \(error.localizedDescription)")
+            }
+        }
+    }
+
     // MARK: - Session Lifecycle
 
     func configureSession(format: RecordingFormat = .default) {
@@ -276,9 +335,10 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
                 if let audioDevice = AVCaptureDevice.default(for: .audio) {
                     self.audioDevice = audioDevice
-                    let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                    if self.session.canAddInput(audioInput) {
-                        self.session.addInput(audioInput)
+                    let input = try AVCaptureDeviceInput(device: audioDevice)
+                    if self.session.canAddInput(input) {
+                        self.session.addInput(input)
+                        self.audioInput = input
                     }
                 }
 
