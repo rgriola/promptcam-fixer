@@ -594,6 +594,21 @@ final class CameraViewModel {
         self.audioMeterService = meter
     }
 
+    /// Opens the audio source picker, refreshing the available inputs list
+    /// from `AVAudioSession` first.
+    ///
+    /// iOS can lag updating `availableInputs` after a route change
+    /// notification. Re-reading here guarantees the list is current when
+    /// the user actually sees the picker.
+    func openAudioSourcePicker() {
+        availableAudioInputs = AVAudioSession.sharedInstance().availableInputs ?? []
+        activeAudioInputName = audioMeterService?.activeInput?.portName
+            ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName
+        withAnimation(.easeOut(duration: 0.25)) {
+            showAudioSourcePicker = true
+        }
+    }
+
     /// User-selected audio input from the source picker.
     func selectAudioInput(_ port: AVAudioSessionPortDescription?) {
         audioMeterService?.selectInput(port)
