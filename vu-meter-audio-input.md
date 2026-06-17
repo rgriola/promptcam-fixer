@@ -9,13 +9,13 @@
 
 The VU meter and audio input system spans **5 files** across 3 layers:
 
-| Layer | File | Responsibility |
-|-------|------|----------------|
-| **Service** | [AudioMeterService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift) | AVAudioEngine tap, RMS computation, route monitoring, input selection |
-| **Service** | [CameraService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift) | AVCaptureSession audio input hot-swap (`reconfigureAudioInput`) |
-| **ViewModel** | [CameraViewModel.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift) | Bridges service callbacks → published UI state |
-| **View** | [VUMeterView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Camera/VUMeterView.swift) | Vertical bar with gradient fill, peak hold, hash marks, source icon |
-| **View** | [AudioSourcePickerView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Camera/AudioSourcePickerView.swift) | Modal overlay for choosing between available mics |
+| Layer         | File                                                                                                                                         | Responsibility                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Service**   | [AudioMeterService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift)             | AVAudioEngine tap, RMS computation, route monitoring, input selection |
+| **Service**   | [CameraService.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift)                     | AVCaptureSession audio input hot-swap (`reconfigureAudioInput`)       |
+| **ViewModel** | [CameraViewModel.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift)               | Bridges service callbacks → published UI state                        |
+| **View**      | [VUMeterView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Camera/VUMeterView.swift)                     | Vertical bar with gradient fill, peak hold, hash marks, source icon   |
+| **View**      | [AudioSourcePickerView.swift](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Views/Camera/AudioSourcePickerView.swift) | Modal overlay for choosing between available mics                     |
 
 ---
 
@@ -81,14 +81,14 @@ graph TD
 
 #### Audio Engine & Metering
 
-| Concept | Implementation | Lines |
-|---------|---------------|-------|
-| Engine setup | `AVAudioEngine()` → `inputNode.installTap(bufferSize: 1024)` | [L126–L155](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L126-L155) |
-| RMS computation | `Σ(sample²) / N → √ → 20·log₁₀(rms)` on channel 0 | [L196–L210](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L196-L210) |
-| dB normalization | Maps `[-60, 0]` dB → `[0.0, 1.0]` | [L100–L103](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L100-L103) |
-| Peak hold | New level > peak → update; after 1.5s → decay at 0.15 blend | [L217–L224](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L217-L224) |
-| UI throttle | Publishes at 30 fps max via `CACurrentMediaTime` comparison | [L228–L231](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L228-L231) |
-| Thread safety | `stateLock` (NSLock) protects peak/timestamp; `callbackLock` protects closures | [L40](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L40), [L66](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L66) |
+| Concept          | Implementation                                                                 | Lines                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Engine setup     | `AVAudioEngine()` → `inputNode.installTap(bufferSize: 1024)`                   | [L126–L155](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L126-L155)                                                                                                       |
+| RMS computation  | `Σ(sample²) / N → √ → 20·log₁₀(rms)` on channel 0                              | [L196–L210](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L196-L210)                                                                                                       |
+| dB normalization | Maps `[-60, 0]` dB → `[0.0, 1.0]`                                              | [L100–L103](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L100-L103)                                                                                                       |
+| Peak hold        | New level > peak → update; after 1.5s → decay at 0.15 blend                    | [L217–L224](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L217-L224)                                                                                                       |
+| UI throttle      | Publishes at 30 fps max via `CACurrentMediaTime` comparison                    | [L228–L231](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L228-L231)                                                                                                       |
+| Thread safety    | `stateLock` (NSLock) protects peak/timestamp; `callbackLock` protects closures | [L40](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L40), [L66](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L66) |
 
 #### Route Change Handling
 
@@ -113,6 +113,7 @@ handleRouteChange(reason)
 #### External Port Types
 
 Defined at [L29–L34](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L29-L34):
+
 ```swift
 .headsetMic, .usbAudio, .bluetoothHFP, .bluetoothA2DP
 ```
@@ -145,16 +146,17 @@ sessionQueue.async {
 
 **Audio properties**: [L108–L127](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift#L108-L127)
 
-| Property | Type | Source |
-|----------|------|--------|
-| `audioLevel` | `Float` | `onLevelsUpdated` callback |
-| `audioPeak` | `Float` | `onLevelsUpdated` callback |
-| `isExternalMic` | `Bool` | `onRouteChanged` callback |
-| `activeAudioInputName` | `String?` | `onRouteChanged` / `onInputsAvailable` |
-| `availableAudioInputs` | `[AVAudioSessionPortDescription]` | `onInputsAvailable` callback |
-| `showAudioSourcePicker` | `Bool` | Set `true` when `activeAudioInputName` changes |
+| Property                | Type                              | Source                                         |
+| ----------------------- | --------------------------------- | ---------------------------------------------- |
+| `audioLevel`            | `Float`                           | `onLevelsUpdated` callback                     |
+| `audioPeak`             | `Float`                           | `onLevelsUpdated` callback                     |
+| `isExternalMic`         | `Bool`                            | `onRouteChanged` callback                      |
+| `activeAudioInputName`  | `String?`                         | `onRouteChanged` / `onInputsAvailable`         |
+| `availableAudioInputs`  | `[AVAudioSessionPortDescription]` | `onInputsAvailable` callback                   |
+| `showAudioSourcePicker` | `Bool`                            | Set `true` when `activeAudioInputName` changes |
 
 **Picker trigger logic** ([onRouteChanged callback](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift#L491-L507)):
+
 ```swift
 let micChanged = name != self.activeAudioInputName
 if micChanged && self.audioMeterService != nil {
@@ -164,6 +166,7 @@ if micChanged && self.audioMeterService != nil {
 ```
 
 **Manual selection** ([selectAudioInput](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/ViewModels/CameraViewModel.swift#L530-L537)):
+
 ```swift
 audioMeterService?.selectInput(port)         // sets preferred + restarts engine
 cameraService.reconfigureAudioInput()         // syncs capture session
@@ -177,12 +180,12 @@ cameraService.reconfigureAudioInput()         // syncs capture session
 
 #### Layout
 
-| Element | Size / Position |
-|---------|----------------|
-| Total frame | `50pt × 28%` of preview height |
-| Bar width | 55% of frame width (~27pt) |
-| dB labels | Right 45% of frame |
-| Source icon | 14pt, centered above bar |
+| Element          | Size / Position                        |
+| ---------------- | -------------------------------------- |
+| Total frame      | `50pt × 28%` of preview height         |
+| Bar width        | 55% of frame width (~27pt)             |
+| dB labels        | Right 45% of frame                     |
+| Source icon      | 14pt, centered above bar               |
 | Bottom alignment | Aligned with record button bottom edge |
 
 #### Visual Stack (ZStack, bottom-up)
@@ -197,11 +200,13 @@ cameraService.reconfigureAudioInput()         // syncs capture session
 5. **Hash marks + labels**: At 0, -6, -12, -20, -30, -40 dB positions
 
 #### Animations
+
 - Level: `.linear(duration: 0.05)` — smooth 50ms transitions
 - Recording state: `.easeInOut(duration: 0.25)`
 - External mic icon: `.easeInOut(duration: 0.3)`
 
 #### Tap Target
+
 Full frame via `.contentShape(Rectangle())` → opens `AudioSourcePickerView`
 
 ---
@@ -218,13 +223,13 @@ Full frame via `.contentShape(Rectangle())` → opens `AudioSourcePickerView`
 
 #### Icon mapping
 
-| Port Type | Icon |
-|-----------|------|
-| `.builtInMic` | `iphone` |
-| `.headsetMic` | `headphones` |
-| `.usbAudio` | `cable.connector` |
-| `.bluetoothHFP/.A2DP` | `wave.3.right` |
-| Other | `mic.fill` |
+| Port Type             | Icon              |
+| --------------------- | ----------------- |
+| `.builtInMic`         | `iphone`          |
+| `.headsetMic`         | `headphones`      |
+| `.usbAudio`           | `cable.connector` |
+| `.bluetoothHFP/.A2DP` | `wave.3.right`    |
+| Other                 | `mic.fill`        |
 
 ---
 
@@ -265,11 +270,12 @@ Full frame via `.contentShape(Rectangle())` → opens `AudioSourcePickerView`
 
 > [!IMPORTANT]
 > **2. Mid-recording mic swap is silently ignored**
-> [reconfigureAudioInput()](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift#L251-L253) is a no-op during recording. The user gets no feedback that their mic swap didn't apply to the recording. Consider showing a warning banner (similar to the format-locked warning) that says "Stop recording to switch audio source."
+> [reconfigureAudioInput()](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/CameraService.swift#L251-L253) is a no-op during recording. The user gets no feedback that their mic swap didn't apply to the recording. Consider showing a warning banner (similar to the format-locked warning) that says "Stop recording to switch audio source." (Losing an External Mic Source while recording Should Pop a Visable Warning so the user addressed the issue. It could be a mechnical issue like the mic disconnected from the device physically. )
 
 > [!IMPORTANT]
 > **3. `restartEngine()` vs `restartEngineWithSessionReset()` inconsistency**
 > Two restart methods exist with different debounce delays:
+>
 > - [restartEngine()](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L178-L192): 500ms delay, used only by `handleInterruption`
 > - [restartEngineWithSessionReset()](file:///Users/rodczaro/Desktop/00-Vibecode/promptcam-fixer/PromptCam/Services/AudioMeterService.swift#L355-L375): 800ms delay, used by route changes and `selectInput`
 >

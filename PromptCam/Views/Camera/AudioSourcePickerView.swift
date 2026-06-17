@@ -10,6 +10,9 @@ struct AudioSourcePickerView: View {
     let onSelect: (AVAudioSessionPortDescription?) -> Void
     let onDismiss: () -> Void
 
+    /// Seconds before the picker auto-dismisses if the user takes no action.
+    private let autoDismissAfter: TimeInterval = 12
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -54,6 +57,11 @@ struct AudioSourcePickerView: View {
         )
         .padding(.horizontal, 24)
         .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+        .task {
+            try? await Task.sleep(for: .seconds(autoDismissAfter))
+            guard !Task.isCancelled else { return }
+            onDismiss()
+        }
     }
 
     // MARK: - Row

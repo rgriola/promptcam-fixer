@@ -1,4 +1,5 @@
 import AVFoundation
+import Accelerate
 
 /// Provides real-time audio level metering using `AVAudioEngine`'s input
 /// node tap.
@@ -112,7 +113,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             try session.setCategory(
                 .playAndRecord,
                 mode: .videoRecording,
-                options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+                options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
             try session.setActive(true)
             isSessionConfigured = true
@@ -175,37 +176,47 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Restarts the engine with debouncing. Multiple rapid calls (e.g. from
     /// successive route-change notifications) collapse into a single restart.
-    private func restartEngine() {
+    /// - Parameter delay: Seconds to wait before performing the restart.
+    ///   Use a longer delay (~0.8s) for route changes so the audio route
+    ///   has time to fully settle; use a shorter delay (~0.5s) for
+    ///   interruption recovery.
+    private func restartEngine(delay: TimeInterval = 0.5) {
         // Cancel any pending restart.
         restartWorkItem?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            Log.camera.debug("AudioMeterService: restarting engine after route/interruption change")
+            Log.camera.debug("AudioMeterService: restarting engine (delay=\(delay)s)")
             self.tearDownEngine()
+
+            // A fresh AVAudioEngine automatically connects its inputNode
+            // to the current AVAudioSession preferred input — no session
+            // cycling needed. We must NOT call setActive(false) here because
+            // AVCaptureSession shares the same AVAudioSession; deactivating
+            // would kill the capture session's audio connection.
             self.startMetering()
+
+            // Re-publish available inputs and route state.
+            self.evaluateCurrentRoute()
         }
         restartWorkItem = work
 
-        // 500ms delay lets AVAudioSession fully settle the new route.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     /// Processes a PCM buffer from the input tap — computes RMS, converts
     /// to dB, normalizes, applies peak hold, and publishes.
+    ///
+    /// RMS is computed via `vDSP_rmsqv` (SIMD-accelerated) on channel 0.
     private func processBuffer(_ buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData else { return }
-        let frameLength = Int(buffer.frameLength)
+        let frameLength = vDSP_Length(buffer.frameLength)
         guard frameLength > 0 else { return }
 
-        // Compute RMS across channel 0.
-        let samples = channelData[0]
-        var sumOfSquares: Float = 0.0
-        for i in 0..<frameLength {
-            let sample = samples[i]
-            sumOfSquares += sample * sample
-        }
-        let rms = sqrtf(sumOfSquares / Float(frameLength))
+        // SIMD-accelerated RMS across channel 0.
+        var rms: Float = 0
+        vDSP_rmsqv(channelData[0], 1, &rms, frameLength)
+
         let db: Float = rms > 0 ? 20.0 * log10f(rms) : Self.silenceThresholdDb
         let normalizedLevel = Self.normalizeDecibels(db)
 
@@ -283,19 +294,19 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             autoSelectExternalInput()
             evaluateCurrentRoute()
             guard audioEngine != nil else { return }
-            restartEngineWithSessionReset()
+            restartEngine(delay: 0.8)
 
         case .oldDeviceUnavailable:
             // A mic was unplugged — fall back to built-in.
             autoSelectBuiltInInput()
             evaluateCurrentRoute()
             guard audioEngine != nil else { return }
-            restartEngineWithSessionReset()
+            restartEngine(delay: 0.8)
 
         case .override, .routeConfigurationChange:
             evaluateCurrentRoute()
             guard audioEngine != nil else { return }
-            restartEngineWithSessionReset()
+            restartEngine(delay: 0.8)
 
         default:
             evaluateCurrentRoute()
@@ -348,30 +359,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Tears down the engine and restarts it with a debounce so the new
     /// `AVAudioEngine.inputNode` picks up the current preferred input.
     ///
-    /// **Important**: We must NOT call `setActive(false)` here because
-    /// `AVCaptureSession` shares the same `AVAudioSession`. Deactivating it
-    /// kills the capture session's audio connection, causing recordings from
-    /// external mics to have no audio.
+    /// Convenience wrapper around `restartEngine(delay:)` using the longer
+    /// 0.8s delay appropriate for route-change settling.
     private func restartEngineWithSessionReset() {
-        restartWorkItem?.cancel()
-
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            Log.camera.debug("AudioMeterService: restarting engine for new input")
-            self.tearDownEngine()
-
-            // A fresh AVAudioEngine automatically connects its inputNode
-            // to the current AVAudioSession preferred input — no session
-            // cycling needed.
-            self.startMetering()
-
-            // Re-publish available inputs and route state.
-            self.evaluateCurrentRoute()
-        }
-        restartWorkItem = work
-
-        // 800ms delay lets the audio route fully settle.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: work)
+        restartEngine(delay: 0.8)
     }
 
     /// Handles an audio session interruption (phone call, Siri, etc.).
@@ -387,7 +378,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             } catch {
                 Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
             }
-            restartEngine()
+            restartEngine(delay: 0.5)
         } else {
             Log.camera.debug("AudioMeterService: interruption began — engine will pause")
         }
@@ -452,7 +443,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     // MARK: - Private Helpers
 
     /// Inspects `AVAudioSession.sharedInstance().currentRoute` and fires
-    /// `onRouteChanged` and `onInputsAvailable`.
+    /// `onRouteChanged` and `onInputsAvailable` in a single main-thread
+    /// dispatch so both callbacks see the same snapshot.
     private func evaluateCurrentRoute() {
         let session = AVAudioSession.sharedInstance()
         let route = session.currentRoute
@@ -464,18 +456,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             isExternal = false
         }
         let portName = input?.portName
-
-        if let callback = onRouteChanged {
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(isExternal, portName) }
-            }
-        }
-
-        // Publish available inputs so the UI can offer a picker.
         let inputs = session.availableInputs ?? []
-        if let callback = onInputsAvailable {
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(inputs) }
+
+        let routeCallback = onRouteChanged
+        let inputsCallback = onInputsAvailable
+
+        guard routeCallback != nil || inputsCallback != nil else { return }
+
+        DispatchQueue.main.async {
+            Task { @MainActor in
+                routeCallback?(isExternal, portName)
+                inputsCallback?(inputs)
             }
         }
     }

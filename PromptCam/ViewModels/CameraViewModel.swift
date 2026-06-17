@@ -125,6 +125,16 @@ final class CameraViewModel {
     var activeAudioInputName: String?
     /// When true, present the audio source picker to the user.
     var showAudioSourcePicker: Bool = false
+    /// Warning banner shown when the audio route changes during recording
+    /// (e.g. external mic disconnects mid-take). Auto-dismisses.
+    var showAudioRouteChangedWarning: Bool = false
+    /// Body text of the audio-route warning banner. Updated alongside
+    /// `showAudioRouteChangedWarning`.
+    var audioRouteChangedMessage: String = ""
+    /// Source-name pill shown briefly beside the VU meter when the route
+    /// changes. Cleared after a short delay.
+    var audioSourceHint: String? = nil
+    @ObservationIgnored private var audioSourceHintTask: Task<Void, Never>?
 
     // MARK: - Timer State
     
@@ -490,18 +500,43 @@ final class CameraViewModel {
 
         meter.onRouteChanged = { [weak self] isExternal, name in
             guard let self else { return }
-            let micChanged = name != self.activeAudioInputName
+            let previousName = self.activeAudioInputName
+            let micChanged = name != previousName
             self.isExternalMic = isExternal
             self.externalMicName = name
             self.activeAudioInputName = name
 
-            // When the active mic changes (plug/unplug), show the picker
-            // immediately so the user can confirm or override the source.
-            // Skip on initial setup (activeAudioInputName was nil).
-            if micChanged && self.audioMeterService != nil {
+            // When the active mic changes (plug/unplug), surface UI feedback.
+            // Skip on initial setup (previousName was nil).
+            guard micChanged && self.audioMeterService != nil else { return }
+
+            // Detect direction: was external, now built-in = disconnect.
+            let wasExternal = previousName != nil && !isExternal && previousName != name
+            let nowExternal = isExternal && previousName != nil
+
+            // Always show an inline source-name hint beside the VU meter.
+            self.showSourceHint(name)
+
+            if self.isRecording {
+                // Mid-recording route change: do NOT swap the capture session
+                // (would corrupt the .mov). Warn the user instead.
+                if wasExternal {
+                    self.audioRouteChangedMessage = "⚠ External mic disconnected. Recording continues on iPhone mic."
+                } else {
+                    self.audioRouteChangedMessage = "Audio source changed during recording. Stop to apply new mic."
+                }
+                self.showAudioRouteChangedWarning = true
+            } else {
+                // Not recording — safe to swap the capture session.
+                if wasExternal {
+                    // External mic was removed: warn the creator.
+                    self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
+                    self.showAudioRouteChangedWarning = true
+                } else if nowExternal {
+                    // New external mic connected — no warning needed,
+                    // just show the picker for confirmation.
+                }
                 self.showAudioSourcePicker = true
-                // Also swap the capture session's audio input so recordings
-                // use the same mic the VU meter is monitoring.
                 self.cameraService.reconfigureAudioInput()
             }
         }
@@ -538,6 +573,19 @@ final class CameraViewModel {
     func setAudioGain(_ value: Float) {
         audioGain = value
         audioMeterService?.setGain(value, on: cameraService.audioDevice)
+    }
+
+    /// Shows the inline source-name pill beside the VU meter and auto-clears
+    /// it after a short delay. Successive calls reset the timer.
+    private func showSourceHint(_ name: String?) {
+        audioSourceHintTask?.cancel()
+        audioSourceHint = name
+        guard name != nil else { return }
+        audioSourceHintTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            self?.audioSourceHint = nil
+        }
     }
 }
 

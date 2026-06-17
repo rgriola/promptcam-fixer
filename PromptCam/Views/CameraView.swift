@@ -94,7 +94,8 @@ struct CameraView: View {
                         level: viewModel.audioLevel,
                         peak: viewModel.audioPeak,
                         isExternalMic: viewModel.isExternalMic,
-                        isRecording: viewModel.isRecording
+                        isRecording: viewModel.isRecording,
+                        sourceNameHint: viewModel.audioSourceHint
                     )
                     .frame(
                         width: CameraLayout.vuMeterWidth,
@@ -296,6 +297,15 @@ struct CameraView: View {
                     systemImage: "exclamationmark.triangle.fill",
                     autoDismissAfter: 3.0,
                     isPresented: $viewModel.showFormatLockedWarning
+                )
+
+                // Layer 7.5: Audio route changed warning (e.g. mic disconnect
+                // during recording). Body text is provided by the view model.
+                TemporaryWarningBanner(
+                    message: viewModel.audioRouteChangedMessage,
+                    systemImage: "mic.slash.fill",
+                    autoDismissAfter: 4.0,
+                    isPresented: $viewModel.showAudioRouteChangedWarning
                 )
 
                 // Layer 10: Audio source picker — dims 10% and shows input
