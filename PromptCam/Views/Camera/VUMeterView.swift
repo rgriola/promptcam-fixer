@@ -38,9 +38,8 @@ struct VUMeterView: View {
             let width = geo.size.width
             let height = geo.size.height
 
-            // Top padding reserves space for the mic icon when connected.
-            // Without external mic, the full height is bar.
-            let topPad: CGFloat = isExternalMic ? micIconSize + Theme.space4 : 0
+            // Top padding reserves space for the source icon.
+            let topPad: CGFloat = micIconSize + Theme.space4
             let barHeight = height - topPad
 
             // Bar occupies the left ~55% of width; right side holds dB labels.
@@ -56,14 +55,12 @@ struct VUMeterView: View {
             let peakY = topPad + barHeight - (clampedPeak * barHeight)
 
             ZStack {
-                // Mic icon — centered above the bar so it aligns with it
-                if isExternalMic {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: micIconSize, weight: .semibold))
-                        .foregroundStyle(Theme.purple)
-                        .position(x: barCenterX, y: micIconSize / 2)
-                        .transition(.opacity)
-                }
+                // Source icon — always visible above the bar
+                Image(systemName: isExternalMic ? "mic.fill" : "iphone.gen3.radiowaves.left.and.right")
+                    .font(.system(size: micIconSize, weight: .semibold))
+                    .foregroundStyle(isExternalMic ? Theme.purple : Theme.secondaryText)
+                    .position(x: barCenterX, y: micIconSize / 2)
+                    .transition(.opacity)
 
                 // Background track
                 RoundedRectangle(cornerRadius: 4)
