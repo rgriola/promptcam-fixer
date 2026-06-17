@@ -253,42 +253,40 @@ struct CameraView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Layer 9: Cinematic aperture panel — mirrors EV panel layout.
+                // Layer 9: Cinematic aperture panel — standardised panel styling.
                 // Only rendered when cinematicApertureRange is non-nil (cinematic + iOS 26+).
                 if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
-                    VStack(spacing: 0) {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(Theme.panelSpring) {
-                                    showAperturePanel = false
-                                }
-                                Log.ui.debug("Aperture panel dismissed via tap-outside")
+                    Color.black.opacity(0.1)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showAperturePanel = false
                             }
-
-                        HStack {
-                            CinematicAperturePanel(
-                                aperture: $viewModel.cinematicSimulatedAperture,
-                                apertureRange: apertureRange,
-                                defaultAperture: apertureRange.lowerBound +
-                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
-                                onReset: {
-                                    let def = apertureRange.lowerBound +
-                                        (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
-                                    viewModel.setSimulatedAperture(def)
-                                    Log.ui.debug("Aperture reset to default")
-                                },
-                                onAdjust: { value in
-                                    viewModel.setSimulatedAperture(value)
-                                }
-                            )
-                            .frame(width: 260)
-                            .padding(.leading, Theme.space12)
+                            Log.ui.debug("Aperture panel dismissed via tap-outside")
                         }
-                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+
+                    CinematicAperturePanel(
+                        aperture: $viewModel.cinematicSimulatedAperture,
+                        apertureRange: apertureRange,
+                        defaultAperture: apertureRange.lowerBound +
+                            (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
+                        onReset: {
+                            let def = apertureRange.lowerBound +
+                                (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
+                            viewModel.setSimulatedAperture(def)
+                            Log.ui.debug("Aperture reset to default")
+                        },
+                        onAdjust: { value in
+                            viewModel.setSimulatedAperture(value)
+                        },
+                        onDismiss: {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showAperturePanel = false
+                            }
+                        }
+                    )
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+                    .zIndex(99)
                 }
 
                 // Layer 7: Temporary warning banner (top center).

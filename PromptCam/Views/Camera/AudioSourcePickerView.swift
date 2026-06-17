@@ -20,7 +20,7 @@ struct AudioSourcePickerView: View {
                 Image(systemName: "mic.badge.plus")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Theme.accent)
-                Text("Audio Source Detected")
+                Text("Audio Sources")
                     .font(Theme.font16Semibold)
                     .foregroundStyle(Theme.primaryText)
                 Spacer()

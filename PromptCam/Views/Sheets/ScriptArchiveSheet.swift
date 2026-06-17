@@ -15,8 +15,8 @@ struct ScriptArchiveSheet: View {
                         "No Recent Scripts",
                         systemImage: "clock.arrow.circlepath",
                         description: Text("Saved scripts appear here for 7 days.")
-                        .foregroundStyle(Theme.primaryText)
                     )
+                    .foregroundStyle(Theme.white)
                 } else {
                     List {
                         ForEach(scripts) { script in
