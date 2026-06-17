@@ -31,7 +31,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     private static let silenceFloor: Float = 0.005
 
     /// Seconds of sustained absolute silence before the watchdog fires.
-    private static let silenceWatchdogThreshold: TimeInterval = 2.0
+    /// Set to 5s to avoid false positives from natural speech pauses.
+    private static let silenceWatchdogThreshold: TimeInterval = 5.0
 
     /// Ports that count as an external microphone.
     private static let externalMicPorts: Set<AVAudioSession.Port> = [

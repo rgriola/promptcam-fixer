@@ -42,6 +42,7 @@ struct TemporaryWarningBanner: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Theme.space16)
+        .animation(.easeInOut(duration: 0.3), value: isPresented)
         .allowsHitTesting(false)
     }
 }
