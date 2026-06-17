@@ -104,6 +104,7 @@ struct ComposeScriptSheet: View {
                     Spacer()
                 }
                 .padding(Theme.space16)
+
             }
             .ignoresSafeArea(.keyboard)
             .navigationTitle("Script")

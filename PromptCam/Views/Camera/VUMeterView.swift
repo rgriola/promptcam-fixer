@@ -34,56 +34,56 @@ struct VUMeterView: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: Theme.space4) {
-            // External mic indicator
-            if isExternalMic {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: micIconSize, weight: .semibold))
-                    .foregroundStyle(Theme.purple)
-                    .transition(.opacity)
-            }
-
-            // Meter bar with hash marks
-            meterBar
-        }
-        .opacity(isRecording ? 1.0 : 0.6)
-        .animation(.easeInOut(duration: 0.25), value: isRecording)
-        .animation(.easeInOut(duration: 0.3), value: isExternalMic)
-    }
-
-    // MARK: - Meter bar
-
-    private var meterBar: some View {
         GeometryReader { geo in
-            let height = geo.size.height
             let width = geo.size.width
-            let barWidth = width * 0.45        // Bar takes ~45% of width
-            let barX = width - barWidth         // Bar on the right side
-            let clampedLevel = CGFloat(min(max(level, 0), 1))
-            let clampedPeak = CGFloat(min(max(peak, 0), 1))
-            let fillHeight = clampedLevel * height
-            let peakY = height - (clampedPeak * height)
+            let height = geo.size.height
 
-            ZStack(alignment: .bottom) {
+            // Top padding reserves space for the mic icon when connected.
+            // Without external mic, the full height is bar.
+            let topPad: CGFloat = isExternalMic ? micIconSize + Theme.space4 : 0
+            let barHeight = height - topPad
+
+            // Bar occupies the left ~55% of width; right side holds dB labels.
+            let barWidth = floor(width * 0.55)
+            let barCenterX = barWidth / 2
+            let labelGap: CGFloat = 4      // gap between bar right edge and label
+            let labelX = barWidth + labelGap
+            let labelWidth = max(width - labelX, 0)
+
+            let clampedLevel = CGFloat(min(max(level, 0), 1))
+            let clampedPeak  = CGFloat(min(max(peak,  0), 1))
+            let fillHeight = clampedLevel * barHeight
+            let peakY = topPad + barHeight - (clampedPeak * barHeight)
+
+            ZStack {
+                // Mic icon — centered above the bar so it aligns with it
+                if isExternalMic {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: micIconSize, weight: .semibold))
+                        .foregroundStyle(Theme.purple)
+                        .position(x: barCenterX, y: micIconSize / 2)
+                        .transition(.opacity)
+                }
+
                 // Background track
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Theme.panelBg.opacity(0.3))
-                    .frame(width: barWidth)
-                    .position(x: barX + barWidth / 2, y: height / 2)
+                    .frame(width: barWidth, height: barHeight)
+                    .position(x: barCenterX, y: topPad + barHeight / 2)
 
-                // Filled portion (gradient from bottom)
+                // Level fill — gradient rises from bottom
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
                             LinearGradient(
                                 stops: [
-                                    .init(color: vuGreen, location: 0.0),
-                                    .init(color: vuGreen, location: 0.6),
+                                    .init(color: vuGreen,  location: 0.0),
+                                    .init(color: vuGreen,  location: 0.6),
                                     .init(color: vuYellow, location: 0.6),
                                     .init(color: vuYellow, location: 0.8),
-                                    .init(color: vuRed, location: 0.8),
-                                    .init(color: vuRed, location: 1.0),
+                                    .init(color: vuRed,    location: 0.8),
+                                    .init(color: vuRed,    location: 1.0),
                                 ],
                                 startPoint: .bottom,
                                 endPoint: .top
@@ -91,36 +91,39 @@ struct VUMeterView: View {
                         )
                         .frame(width: barWidth, height: fillHeight)
                 }
-                .frame(width: barWidth, height: height)
-                .position(x: barX + barWidth / 2, y: height / 2)
+                .frame(width: barWidth, height: barHeight)
+                .position(x: barCenterX, y: topPad + barHeight / 2)
 
                 // Peak hold indicator
                 Rectangle()
                     .fill(Theme.accent.opacity(0.9))
                     .frame(width: barWidth + 4, height: peakLineHeight)
-                    .position(x: barX + barWidth / 2, y: peakY)
+                    .position(x: barCenterX, y: peakY)
                     .animation(.linear(duration: 0.05), value: peak)
 
-                // Hash marks with dB labels
+                // Hash marks across the bar + dB labels to the right
                 ForEach(Array(Self.hashMarks.enumerated()), id: \.offset) { _, mark in
-                    let markY = height - (mark.position * height)
+                    let markY = topPad + barHeight - (mark.position * barHeight)
 
-                    // Hash line extending from the bar to the left
+                    // Tick spans exactly the bar width — no overhang
                     Rectangle()
-                        .fill(Theme.white.opacity(0.75))
-                        .frame(width: 15, height: 1)
-                        .position(x: barX + 8, y: markY)
+                        .fill(Theme.white.opacity(0.6))
+                        .frame(width: barWidth, height: 1)
+                        .position(x: barCenterX, y: markY)
 
-                    // dB label
+                    // dB label right-aligned in the space right of the bar
                     Text(mark.label)
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
                         .foregroundStyle(Theme.white.opacity(0.75))
-                        .position(x: barX + 20, y: markY)
+                        .frame(width: labelWidth + 10, alignment: .leading)
+                        .position(x: (labelX + labelWidth / 2) + 5, y: markY)
                 }
             }
             .frame(width: width, height: height)
         }
         .animation(.linear(duration: 0.05), value: level)
+        .animation(.easeInOut(duration: 0.25), value: isRecording)
+        .animation(.easeInOut(duration: 0.3), value: isExternalMic)
     }
 }
 

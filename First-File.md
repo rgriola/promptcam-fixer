@@ -254,9 +254,9 @@ Text : This is the instructions page to walk through how to use Prompter Cam Fix
 To - Do June 16
 
 - Known Issues
-  Recorded Session does not immediatly populate into the Camera Roll. Camera Roll probably needs a UI refresh triggered by the Recording.
+  [x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
 
-  App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
+  [ ] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
 
   Settings - does not show full Camera Recording Formats, just abbrevated ones.
 

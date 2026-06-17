@@ -268,24 +268,114 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         evaluateCurrentRoute()
     }
 
-    /// Handles an audio route change by restarting the engine so the input
-    /// tap rebinds to the new mic.
+    /// Handles an audio route change by detecting the new input, explicitly
+    /// setting it as preferred, and restarting the engine.
     private func handleRouteChange(_ notification: Notification) {
         let reasonRaw = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 0
         let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw) ?? .unknown
 
         Log.camera.debug("AudioMeterService: route changed, reason=\(reason.rawValue)")
 
-        evaluateCurrentRoute()
-
-        // Only restart for reasons that actually change the input device.
+        // Only act on reasons that change the input device.
         switch reason {
-        case .newDeviceAvailable, .oldDeviceUnavailable, .override, .routeConfigurationChange:
+        case .newDeviceAvailable:
+            // A new mic was plugged in — find and select it.
+            autoSelectExternalInput()
+            evaluateCurrentRoute()
             guard audioEngine != nil else { return }
-            restartEngine()
+            restartEngineWithSessionReset()
+
+        case .oldDeviceUnavailable:
+            // A mic was unplugged — fall back to built-in.
+            autoSelectBuiltInInput()
+            evaluateCurrentRoute()
+            guard audioEngine != nil else { return }
+            restartEngineWithSessionReset()
+
+        case .override, .routeConfigurationChange:
+            evaluateCurrentRoute()
+            guard audioEngine != nil else { return }
+            restartEngineWithSessionReset()
+
         default:
-            break
+            evaluateCurrentRoute()
         }
+    }
+
+    /// Scans available inputs for an external mic and sets it as preferred.
+    private func autoSelectExternalInput() {
+        let session = AVAudioSession.sharedInstance()
+        guard let availableInputs = session.availableInputs else { return }
+
+        // Look for external mic types.
+        for input in availableInputs {
+            if Self.externalMicPorts.contains(input.portType) {
+                do {
+                    try session.setPreferredInput(input)
+                    Log.camera.debug("AudioMeterService: auto-selected external input: \(input.portName)")
+                } catch {
+                    Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
+                }
+                return
+            }
+        }
+    }
+
+    /// Sets the built-in microphone as the preferred input.
+    private func autoSelectBuiltInInput() {
+        let session = AVAudioSession.sharedInstance()
+        guard let availableInputs = session.availableInputs else { return }
+
+        for input in availableInputs where input.portType == .builtInMic {
+            do {
+                try session.setPreferredInput(input)
+                Log.camera.debug("AudioMeterService: auto-selected built-in mic: \(input.portName)")
+            } catch {
+                Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
+            }
+            return
+        }
+
+        // If no built-in found, reset to system default.
+        do {
+            try session.setPreferredInput(nil)
+            Log.camera.debug("AudioMeterService: reset to system default input")
+        } catch {
+            Log.camera.error("AudioMeterService: setPreferredInput(nil) failed – \(error.localizedDescription)")
+        }
+    }
+
+    /// Tears down the engine, reactivates the audio session to pick up the
+    /// new preferred input, then restarts with a debounce.
+    private func restartEngineWithSessionReset() {
+        restartWorkItem?.cancel()
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.tearDownEngine()
+
+            // Reactivate the audio session so the preferred input takes effect.
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setActive(false, options: .notifyOthersOnDeactivation)
+                try session.setCategory(
+                    .playAndRecord,
+                    mode: .videoRecording,
+                    options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+                )
+                try session.setActive(true)
+                Log.camera.debug("AudioMeterService: audio session reactivated for new input")
+            } catch {
+                Log.camera.error("AudioMeterService: session reactivation failed – \(error.localizedDescription)")
+            }
+
+            self.isSessionConfigured = true
+            self.startMetering()
+        }
+        restartWorkItem = work
+
+        // 800ms delay lets the audio route fully settle.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: work)
     }
 
     /// Handles an audio session interruption (phone call, Siri, etc.).
@@ -353,8 +443,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         } catch {
             Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
         }
-        // Restart engine to pick up the new input.
-        restartEngine()
+        // Restart engine with a full session reset to ensure the new
+        // preferred input takes effect.
+        restartEngineWithSessionReset()
     }
 
     /// Returns the currently active input port, if any.
@@ -392,4 +483,5 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             }
         }
     }
+    
 }

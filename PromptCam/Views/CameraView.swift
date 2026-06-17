@@ -101,7 +101,7 @@ struct CameraView: View {
                         height: meterHeight
                     )
                     .position(
-                        x: CameraLayout.vuMeterHorizontalInset,
+                        x: CameraLayout.vuMeterHorizontalInset + 5,
                         y: layout.previewSize.height - meterHeight / 2 - 65
                     )
                     .transition(.opacity)
