@@ -294,25 +294,32 @@ struct CameraView: View {
                     isPresented: $viewModel.showFormatLockedWarning
                 )
 
-                // Layer 10: Audio source picker — appears when a new mic is connected.
+                // Layer 10: Audio source picker — dims 10% and shows input
+                // choice when a mic is plugged in or removed.
                 if viewModel.showAudioSourcePicker {
-                    Color.black.opacity(0.4)
+                    Color.black.opacity(0.1)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            viewModel.showAudioSourcePicker = false
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                viewModel.showAudioSourcePicker = false
+                            }
                         }
 
                     AudioSourcePickerView(
                         inputs: viewModel.availableAudioInputs,
                         activeInputName: viewModel.activeAudioInputName,
                         onSelect: { port in
-                            viewModel.selectAudioInput(port)
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                viewModel.selectAudioInput(port)
+                            }
                         },
                         onDismiss: {
-                            viewModel.showAudioSourcePicker = false
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                viewModel.showAudioSourcePicker = false
+                            }
                         }
                     )
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
                     .zIndex(100)
                 }
             }

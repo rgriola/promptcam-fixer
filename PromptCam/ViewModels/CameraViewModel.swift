@@ -489,27 +489,27 @@ final class CameraViewModel {
         }
 
         meter.onRouteChanged = { [weak self] isExternal, name in
-            self?.isExternalMic = isExternal
-            self?.externalMicName = name
-            self?.activeAudioInputName = name
+            guard let self else { return }
+            let micChanged = name != self.activeAudioInputName
+            self.isExternalMic = isExternal
+            self.externalMicName = name
+            self.activeAudioInputName = name
+
+            // When the active mic changes (plug/unplug), show the picker
+            // immediately so the user can confirm or override the source.
+            // Skip on initial setup (activeAudioInputName was nil).
+            if micChanged && self.audioMeterService != nil {
+                self.showAudioSourcePicker = true
+            }
         }
 
         meter.onInputsAvailable = { [weak self] inputs in
             guard let self else { return }
-            let oldUIDs = Set(self.availableAudioInputs.map(\.uid))
-            let newUIDs = Set(inputs.map(\.uid))
             self.availableAudioInputs = inputs
 
-            // Update active input name from the current route.
+            // Keep active input name in sync with current route.
             self.activeAudioInputName = self.audioMeterService?.activeInput?.portName
                 ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName
-
-            // Show picker when a genuinely new device appears (not on
-            // initial setup when oldUIDs is empty).
-            let addedUIDs = newUIDs.subtracting(oldUIDs)
-            if !oldUIDs.isEmpty && !addedUIDs.isEmpty {
-                self.showAudioSourcePicker = true
-            }
         }
 
         // Start audio engine tap on the microphone for real-time levels.

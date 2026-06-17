@@ -256,6 +256,8 @@ To - Do June 16
 - Known Issues
   [x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
 
+  [Camera Roll] Needs to handle vertical + horizontal video layouts better. Horizontals overplay verticals, probably would be opposite if we were shooting horizontals
+
   [ ] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
 
   Settings - does not show full Camera Recording Formats, just abbrevated ones.
