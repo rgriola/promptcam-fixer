@@ -371,6 +371,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
             self.isSessionConfigured = true
             self.startMetering()
+
+            // Re-publish available inputs and route state now that the
+            // session is reactivated — the device list may have changed.
+            self.evaluateCurrentRoute()
         }
         restartWorkItem = work
 

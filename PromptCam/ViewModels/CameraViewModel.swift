@@ -496,11 +496,18 @@ final class CameraViewModel {
 
         meter.onInputsAvailable = { [weak self] inputs in
             guard let self else { return }
-            let oldCount = self.availableAudioInputs.count
+            let oldUIDs = Set(self.availableAudioInputs.map(\.uid))
+            let newUIDs = Set(inputs.map(\.uid))
             self.availableAudioInputs = inputs
-            // Show picker when a new input appears (not on initial setup
-            // and not when an input is removed — only additions).
-            if oldCount > 0 && inputs.count > oldCount {
+
+            // Update active input name from the current route.
+            self.activeAudioInputName = self.audioMeterService?.activeInput?.portName
+                ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName
+
+            // Show picker when a genuinely new device appears (not on
+            // initial setup when oldUIDs is empty).
+            let addedUIDs = newUIDs.subtracting(oldUIDs)
+            if !oldUIDs.isEmpty && !addedUIDs.isEmpty {
                 self.showAudioSourcePicker = true
             }
         }
