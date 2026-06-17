@@ -105,6 +105,7 @@ struct CameraView: View {
                         y: layout.previewSize.height - meterHeight / 2 - 65
                     )
                     .transition(.opacity)
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         viewModel.showAudioSourcePicker = true
                     }
