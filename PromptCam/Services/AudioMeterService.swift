@@ -26,6 +26,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Minimum interval between UI updates (~30 fps).
     private static let uiUpdateInterval: TimeInterval = 1.0 / 30.0
 
+    /// Normalized level below which audio is considered "absolute silence".
+    /// Slightly above zero to ignore floating-point noise.
+    private static let silenceFloor: Float = 0.005
+
+    /// Seconds of sustained absolute silence before the watchdog fires.
+    private static let silenceWatchdogThreshold: TimeInterval = 2.0
+
     /// Ports that count as an external microphone.
     private static let externalMicPorts: Set<AVAudioSession.Port> = [
         .headsetMic,
@@ -61,6 +68,15 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         set { callbackLock.withLock { _onInputsAvailable = newValue } }
     }
 
+    private var _onSilenceWatchdog: (@MainActor @Sendable (Bool) -> Void)?
+    /// Fires when sustained silence is detected (`true`) or when audio
+    /// recovers after a silence alert (`false`). The ViewModel should
+    /// only act on this when an external mic is active.
+    var onSilenceWatchdog: (@MainActor @Sendable (Bool) -> Void)? {
+        get { callbackLock.withLock { _onSilenceWatchdog } }
+        set { callbackLock.withLock { _onSilenceWatchdog = newValue } }
+    }
+
     // MARK: - Private State
 
     /// Lock protecting metering state.
@@ -68,6 +84,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     private var peakLevel: Float = 0.0
     private var peakTimestamp: TimeInterval = 0.0
     private var lastUIUpdate: TimeInterval = 0.0
+
+    /// Timestamp of the last buffer with level above `silenceFloor`.
+    private var lastNonZeroBufferTime: TimeInterval = 0.0
+    /// Whether the silence alert has already fired (prevents re-firing
+    /// on every subsequent silent buffer).
+    private var silenceAlertFired: Bool = false
 
     /// The audio engine used for input metering.
     private var audioEngine: AVAudioEngine?
@@ -131,6 +153,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // Configure audio session once.
         ensureSessionConfigured()
         guard isSessionConfigured else { return }
+
+        // Reset silence watchdog so engine restarts (route changes) don't
+        // trigger a false positive from the gap between teardown and start.
+        stateLock.lock()
+        lastNonZeroBufferTime = CACurrentMediaTime()
+        silenceAlertFired = false
+        stateLock.unlock()
 
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
@@ -235,6 +264,23 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         }
         let peak = peakLevel
 
+        // Silence watchdog: track last non-zero buffer.
+        var fireSilenceAlert = false
+        var fireSilenceRecovery = false
+
+        if normalizedLevel > Self.silenceFloor {
+            lastNonZeroBufferTime = now
+            if silenceAlertFired {
+                silenceAlertFired = false
+                fireSilenceRecovery = true
+            }
+        } else if !silenceAlertFired
+                    && lastNonZeroBufferTime > 0
+                    && (now - lastNonZeroBufferTime) > Self.silenceWatchdogThreshold {
+            silenceAlertFired = true
+            fireSilenceAlert = true
+        }
+
         // Throttle UI updates to ~30 fps.
         let shouldUpdate = (now - lastUIUpdate) >= Self.uiUpdateInterval
         if shouldUpdate {
@@ -247,6 +293,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         if shouldUpdate, let callback = onLevelsUpdated {
             DispatchQueue.main.async {
                 Task { @MainActor in callback(normalizedLevel, peak) }
+            }
+        }
+
+        // Silence watchdog callbacks (outside the lock).
+        if fireSilenceAlert, let callback = onSilenceWatchdog {
+            DispatchQueue.main.async {
+                Task { @MainActor in callback(true) }
+            }
+        } else if fireSilenceRecovery, let callback = onSilenceWatchdog {
+            DispatchQueue.main.async {
+                Task { @MainActor in callback(false) }
             }
         }
     }

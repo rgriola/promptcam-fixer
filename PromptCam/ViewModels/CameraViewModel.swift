@@ -131,6 +131,9 @@ final class CameraViewModel {
     /// Body text of the audio-route warning banner. Updated alongside
     /// `showAudioRouteChangedWarning`.
     var audioRouteChangedMessage: String = ""
+    /// Warning banner shown when the silence watchdog detects sustained
+    /// dead audio from an external mic (flaky cable, hardware mute, etc.).
+    var showAudioSilenceWarning: Bool = false
     /// Source-name pill shown briefly beside the VU meter when the route
     /// changes. Cleared after a short delay.
     var audioSourceHint: String? = nil
@@ -554,6 +557,21 @@ final class CameraViewModel {
             // onRouteChanged to avoid a race condition where this
             // callback overwrites it before the route callback can
             // detect the change.
+        }
+
+        meter.onSilenceWatchdog = { [weak self] isSilent in
+            guard let self else { return }
+            if isSilent {
+                // Only warn when an external mic is active — a quiet room
+                // with the built-in mic is normal, not a hardware fault.
+                guard self.isExternalMic else { return }
+                self.showAudioSilenceWarning = true
+                Log.camera.warning("AudioMeterService: silence watchdog fired — external mic may be disconnected or muted")
+            } else {
+                // Audio recovered — dismiss the warning.
+                self.showAudioSilenceWarning = false
+                Log.camera.debug("AudioMeterService: silence watchdog cleared — audio recovered")
+            }
         }
 
         // Start audio engine tap on the microphone for real-time levels.

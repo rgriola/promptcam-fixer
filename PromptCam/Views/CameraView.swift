@@ -308,6 +308,15 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioRouteChangedWarning
                 )
 
+                // Layer 7.6: Silence watchdog — sustained dead audio from
+                // an external mic (flaky cable, hardware mute, etc.).
+                TemporaryWarningBanner(
+                    message: "No audio signal detected. Check microphone connection.",
+                    systemImage: "waveform.badge.exclamationmark",
+                    autoDismissAfter: 6.0,
+                    isPresented: $viewModel.showAudioSilenceWarning
+                )
+
                 // Layer 10: Audio source picker — dims 10% and shows input
                 // choice when a mic is plugged in or removed.
                 if viewModel.showAudioSourcePicker {
