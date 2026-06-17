@@ -500,8 +500,14 @@ final class CameraViewModel {
 
         meter.onRouteChanged = { [weak self] isExternal, name in
             guard let self else { return }
+
+            // Snapshot old state BEFORE updating — `isExternalMic` is set
+            // only in this callback so it's a reliable "previous" value.
+            let wasExternalBefore = self.isExternalMic
             let previousName = self.activeAudioInputName
             let micChanged = name != previousName
+
+            // Update state.
             self.isExternalMic = isExternal
             self.externalMicName = name
             self.activeAudioInputName = name
@@ -510,9 +516,10 @@ final class CameraViewModel {
             // Skip on initial setup (previousName was nil).
             guard micChanged && self.audioMeterService != nil else { return }
 
-            // Detect direction: was external, now built-in = disconnect.
-            let wasExternal = previousName != nil && !isExternal && previousName != name
-            let nowExternal = isExternal && previousName != nil
+            // Detect direction using the boolean flag, which is immune to
+            // the onInputsAvailable race condition.
+            let disconnected = wasExternalBefore && !isExternal   // external → built-in
+            let connected    = !wasExternalBefore && isExternal   // built-in → external
 
             // Always show an inline source-name hint beside the VU meter.
             self.showSourceHint(name)
@@ -520,7 +527,7 @@ final class CameraViewModel {
             if self.isRecording {
                 // Mid-recording route change: do NOT swap the capture session
                 // (would corrupt the .mov). Warn the user instead.
-                if wasExternal {
+                if disconnected {
                     self.audioRouteChangedMessage = "⚠ External mic disconnected. Recording continues on iPhone mic."
                 } else {
                     self.audioRouteChangedMessage = "Audio source changed during recording. Stop to apply new mic."
@@ -528,14 +535,13 @@ final class CameraViewModel {
                 self.showAudioRouteChangedWarning = true
             } else {
                 // Not recording — safe to swap the capture session.
-                if wasExternal {
+                if disconnected {
                     // External mic was removed: warn the creator.
                     self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
                     self.showAudioRouteChangedWarning = true
-                } else if nowExternal {
-                    // New external mic connected — no warning needed,
-                    // just show the picker for confirmation.
                 }
+                // Show picker for both connect and disconnect so user
+                // can confirm or override the new source.
                 self.showAudioSourcePicker = true
                 self.cameraService.reconfigureAudioInput()
             }
@@ -544,10 +550,10 @@ final class CameraViewModel {
         meter.onInputsAvailable = { [weak self] inputs in
             guard let self else { return }
             self.availableAudioInputs = inputs
-
-            // Keep active input name in sync with current route.
-            self.activeAudioInputName = self.audioMeterService?.activeInput?.portName
-                ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName
+            // Note: activeAudioInputName is updated exclusively in
+            // onRouteChanged to avoid a race condition where this
+            // callback overwrites it before the route callback can
+            // detect the change.
         }
 
         // Start audio engine tap on the microphone for real-time levels.
