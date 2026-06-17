@@ -345,35 +345,27 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         }
     }
 
-    /// Tears down the engine, reactivates the audio session to pick up the
-    /// new preferred input, then restarts with a debounce.
+    /// Tears down the engine and restarts it with a debounce so the new
+    /// `AVAudioEngine.inputNode` picks up the current preferred input.
+    ///
+    /// **Important**: We must NOT call `setActive(false)` here because
+    /// `AVCaptureSession` shares the same `AVAudioSession`. Deactivating it
+    /// kills the capture session's audio connection, causing recordings from
+    /// external mics to have no audio.
     private func restartEngineWithSessionReset() {
         restartWorkItem?.cancel()
 
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
+            Log.camera.debug("AudioMeterService: restarting engine for new input")
             self.tearDownEngine()
 
-            // Reactivate the audio session so the preferred input takes effect.
-            do {
-                let session = AVAudioSession.sharedInstance()
-                try session.setActive(false, options: .notifyOthersOnDeactivation)
-                try session.setCategory(
-                    .playAndRecord,
-                    mode: .videoRecording,
-                    options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
-                )
-                try session.setActive(true)
-                Log.camera.debug("AudioMeterService: audio session reactivated for new input")
-            } catch {
-                Log.camera.error("AudioMeterService: session reactivation failed – \(error.localizedDescription)")
-            }
-
-            self.isSessionConfigured = true
+            // A fresh AVAudioEngine automatically connects its inputNode
+            // to the current AVAudioSession preferred input — no session
+            // cycling needed.
             self.startMetering()
 
-            // Re-publish available inputs and route state now that the
-            // session is reactivated — the device list may have changed.
+            // Re-publish available inputs and route state.
             self.evaluateCurrentRoute()
         }
         restartWorkItem = work
