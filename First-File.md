@@ -254,11 +254,8 @@ Text : This is the instructions page to walk through how to use Prompter Cam Fix
 To - Do June 16
 
 - Known Issues
-  [x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
 
   [Camera Roll] Needs to handle vertical + horizontal video layouts better. Horizontals overplay verticals, probably would be opposite if we were shooting horizontals
-
-  [ ] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
 
   Settings - does not show full Camera Recording Formats, just abbrevated ones.
 
@@ -275,8 +272,6 @@ To - Do June 16
 
   swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove Sheet function. Note this may change what the user sees - Apple uses a Blur Effect for transition
 
-  EV Bias Control Panel needs to say "EV Bias"
-
   Apature Panel needs f styling, and default 5.6, Reset button floor setting of 5.6, maybe do stops like a camera.
   Custom Slider ?
 
@@ -286,9 +281,17 @@ To - Do June 16
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
 
+Finished issues
+
 - Script View -
+
+  EV Bias Control Panel needs to say "EV Bias"
   [X] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
   [X] Add a lightweight save for backup should creator lost the script
+
+  [x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
+
+  [x] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
 
 - Camera View
 
