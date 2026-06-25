@@ -34,13 +34,24 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Set to 5s to avoid false positives from natural speech pauses.
     private static let silenceWatchdogThreshold: TimeInterval = 5.0
 
-    /// Ports that count as an external microphone.
-    private static let externalMicPorts: Set<AVAudioSession.Port> = [
-        .headsetMic,
-        .usbAudio,
-        .bluetoothHFP,
-        .bluetoothA2DP,
-    ]
+    /// Returns whether a given port type should be treated as an external microphone.
+    ///
+    /// Uses a deny-list approach rather than an allow-list: any port that is NOT a
+    /// known built-in or speaker output is considered external. This correctly handles
+    /// USB-C audio adapters and accessories that report their type as `"Other"` —
+    /// the string the system logs as `"Endpoint Value Converter failed to find a match
+    /// for string 'Other'"` — which would silently fall through a pure allow-list.
+    private static func isExternalMicPort(_ portType: AVAudioSession.Port) -> Bool {
+        // Ports that are definitively NOT external input devices.
+        let builtInPorts: Set<AVAudioSession.Port> = [
+            .builtInMic,        // iPhone / iPad built-in microphone
+            .builtInSpeaker,    // speaker output, not input
+            .builtInReceiver,   // earpiece, not input
+            .headphones,        // headphone output (no mic on this port)
+            .carAudio,          // car speakers, not a mic input
+        ]
+        return !builtInPorts.contains(portType)
+    }
 
     // MARK: - Callbacks
 
@@ -376,9 +387,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         let session = AVAudioSession.sharedInstance()
         guard let availableInputs = session.availableInputs else { return }
 
-        // Look for external mic types.
+        // Look for external mic types using the deny-list approach.
         for input in availableInputs {
-            if Self.externalMicPorts.contains(input.portType) {
+            if Self.isExternalMicPort(input.portType) {
                 do {
                     try session.setPreferredInput(input)
                     Log.camera.debug("AudioMeterService: auto-selected external input: \(input.portName)")
@@ -509,7 +520,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         let input = route.inputs.first
         let isExternal: Bool
         if let portType = input?.portType {
-            isExternal = Self.externalMicPorts.contains(portType)
+            isExternal = Self.isExternalMicPort(portType)
         } else {
             isExternal = false
         }

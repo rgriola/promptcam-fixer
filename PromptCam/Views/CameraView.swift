@@ -101,6 +101,11 @@ struct CameraView: View {
                         width: CameraLayout.vuMeterWidth,
                         height: meterHeight
                     )
+                    .background(
+                        Color.black.opacity(0.3)
+                        .cornerRadius(8)
+                        .padding(-10)
+                        )
                     .position(
                         x: CameraLayout.vuMeterHorizontalInset + 5,
                         // Align bottom edge with record button bottom:
@@ -109,7 +114,6 @@ struct CameraView: View {
                         y: layout.previewSize.height - 89 - meterHeight / 2
                     )
                     .transition(.opacity)
-                    .contentShape(Rectangle())
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
                     }

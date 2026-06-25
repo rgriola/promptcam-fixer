@@ -28,7 +28,7 @@ struct TeleprompterAdjustmentPanel: View {
                         get: { config.fontSize },
                         set: { config.fontSize = round($0 / 2) * 2 } // snap to even
                     ),
-                    range: 16...72,
+                    range: 24...50,
                     step: 2
                 )
                 // MARK: Scroll Speed
@@ -36,12 +36,12 @@ struct TeleprompterAdjustmentPanel: View {
                     label: "Speed",
                     valueLabel: "\(Int(config.speedPointsPerSecond))/s",
                     value: $config.speedPointsPerSecond,
-                    range: 5...150,
+                    range: 20...80,
                     step: 1
                 )
-                // MARK: Background Opacity
+                // MARK: Text - Background Contrast 
                 SliderRow(
-                    label: "Opacity",
+                    label: "Contrast",
                     valueLabel: "\(Int(config.backgroundOpacity * 100))%",
                     value: $config.backgroundOpacity,
                     range: 0...0.30,

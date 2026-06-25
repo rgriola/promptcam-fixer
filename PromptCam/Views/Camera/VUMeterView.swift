@@ -182,6 +182,8 @@ struct VUMeterView: View {
             clipClearTask = nil
         }
     }
+    
+    
 
     // MARK: - Helpers
 

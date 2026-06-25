@@ -71,7 +71,7 @@ struct StandardPanel<Content: View>: View {
                 Spacer()
                 Button {
                     onDismiss()
-                } label: {
+                } label: { // close button
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 22))
                         .foregroundStyle(Theme.white)
