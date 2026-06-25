@@ -33,12 +33,27 @@ struct CameraLockStatusBadgeView: View {
     var body: some View {
         Button(action: onToggle) {
             let parts = status.displayParts
-            VStack(spacing: 0) {
-                Text(parts.top)
-                    .font(parts.bottom == nil ? Theme.mono16Medium : Theme.mono12Medium)
-                if let bottom = parts.bottom {
-                    Text(bottom)
+            ZStack(alignment: .center) {
+                // Invisible anchor — always holds the largest possible height
+                // (AUTO at mono16 + "Lock" at mono12) so the header HStack
+                // never sees a size change when the badge switches states.
+                VStack(spacing: 0) {
+                    Text("AUTO")
+                        .font(Theme.mono16Medium)
+                    Text("Lock")
                         .font(Theme.mono12Medium)
+                }
+                .opacity(0)
+                .accessibilityHidden(true)
+
+                // Real content — overlaid and centered inside the stable frame.
+                VStack(spacing: 0) {
+                    Text(parts.top)
+                        .font(parts.bottom == nil ? Theme.mono16Medium : Theme.mono12Medium)
+                    // Always render the bottom slot; invisible when AUTO.
+                    Text(parts.bottom ?? " ")
+                        .font(Theme.mono12Medium)
+                        .opacity(parts.bottom == nil ? 0 : 1)
                 }
             }
             .foregroundStyle(statusColor)

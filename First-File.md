@@ -276,7 +276,7 @@ To - Do June 23 from June 16
 
 - Known Issues
 
-[ ] Scripting
+[X] Scripting
 
 - Need to reformat copy/paste text to layout correctly from Outlook Pasting
 - Converting Script to All Caps, Cap First, All lower
@@ -301,8 +301,8 @@ Custom Slider ?
 
 [ ] Add Support for Clicker start/stop. Voice Activated?
 [ ] Move Guide Dog to Settings Panel or Make Guide Dog the Settings Panel. 
-[ ] Recall Button icon needs a new design. 
-[ ] I want to move the Cine/Standard Button to the left. I don't like it in the format panel. 
+[x] Recall Button icon needs a new design. 
+[x] I want to move the Cine/Standard Button to the left. I don't like it in the format panel. 
 [ ] Figure out how to Connect Record and Scroll at the Same time. 
 [ ] Overlay for tools. 
 [ ] Camera Roll Button Add a Photo in a Circle to show its the library, 
