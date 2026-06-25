@@ -73,7 +73,6 @@ struct CameraSettingsSheet: View {
                             .font(Theme.font16Regular)
                             .foregroundStyle(Theme.white)
                     }
-                    .tint(Theme.white)
                 } header: {
                     Text("Formats")
                         .foregroundStyle(Theme.primaryText)
@@ -119,6 +118,7 @@ struct CameraSettingsSheet: View {
                 .foregroundStyle(Theme.white)
                 
             }
+            .tint(Theme.white)
             .scrollContentBackground(.hidden)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
