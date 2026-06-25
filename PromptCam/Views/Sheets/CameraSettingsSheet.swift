@@ -136,7 +136,6 @@ struct CameraSettingsSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
-        .preferredColorScheme(.dark)
     }
 
     // MARK: - Computed Properties

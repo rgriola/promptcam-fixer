@@ -159,6 +159,5 @@ struct CameraFormatPanelSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
-        .preferredColorScheme(.dark)
     }
 }

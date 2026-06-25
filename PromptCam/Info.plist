@@ -4,6 +4,8 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>PromptCam uses your location to tag video recordings with where they were filmed.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIImageName</key>

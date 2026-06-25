@@ -244,7 +244,6 @@ struct ComposeScriptSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showArchive) {
             ScriptArchiveSheet { restoredText in
                 draftText = restoredText

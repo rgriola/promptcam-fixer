@@ -18,14 +18,17 @@ struct PromptCamApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding || showCamera || skipOnboardingForUITest {
-                CameraView(viewModel: viewModel)
-            } else {
-                PermissionsOnboardingView {
-                    hasCompletedOnboarding = true
-                    showCamera = true
+            Group {
+                if hasCompletedOnboarding || showCamera || skipOnboardingForUITest {
+                    CameraView(viewModel: viewModel)
+                } else {
+                    PermissionsOnboardingView {
+                        hasCompletedOnboarding = true
+                        showCamera = true
+                    }
                 }
             }
+            .preferredColorScheme(.dark)
         }
     }
 }
