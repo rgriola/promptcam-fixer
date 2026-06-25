@@ -35,18 +35,18 @@ struct CameraLockStatusBadgeView: View {
             let parts = status.displayParts
             VStack(spacing: 0) {
                 Text(parts.top)
-                    .font(Theme.mono16Medium)
+                    .font(parts.bottom == nil ? Theme.mono16Medium : Theme.mono12Medium)
                 if let bottom = parts.bottom {
                     Text(bottom)
-                        .font(Theme.mono10Medium)
+                        .font(Theme.mono12Medium)
                 }
             }
             .foregroundStyle(statusColor)
             .opacity(isDisabled ? 0.4 : 1.0)
         }
         .disabled(status == .unsupported || isDisabled)
-        .accessibilityLabel("Focus and exposure lock")
-        .accessibilityHint(isDisabled ? "Not available in cinematic mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock"))
+        .accessibilityLabel("Focus/Exposure lock")
+        .accessibilityHint(isDisabled ? "Auto Only in Cine Mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock"))
         .accessibilityValue(status.text)
     }
 }
