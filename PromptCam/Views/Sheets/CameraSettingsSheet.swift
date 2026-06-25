@@ -19,6 +19,8 @@ struct CameraSettingsSheet: View {
     @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    /// Controls the format accordion open/closed state.
+    @State private var formatsExpanded = false
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -34,23 +36,31 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                Section("Standard Formats") {
-                    ForEach(standardFormats, id: \.self) { format in
-                        formatRow(format)
+                // MARK: - Formats Accordion
+                Section {
+                    DisclosureGroup(isExpanded: $formatsExpanded) {
+                        // Standard formats
+                        ForEach(standardFormats, id: \.self) { format in
+                            formatRow(format)
+                        }
+                        // Cinematic formats — only shown when device supports the mode.
+                        if capabilities.supportsCinematicMode {
+                            ForEach(cinematicFormats, id: \.self) { format in
+                                formatRow(format, icon: "circle.dotted.and.circle")
+                            }
+                        }
+                    } label: {
+                        Label("Video Formats", systemImage: "video.fill")
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white)
                     }
+                    .tint(Theme.accent)
+                } header: {
+                    Text("Formats")
+                        .foregroundStyle(Theme.primaryText)
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
-
-                if capabilities.supportsCinematicMode {
-                    Section("Cinematic Formats") {
-                        ForEach(cinematicFormats, id: \.self) { format in
-                            formatRow(format, icon: "circle.dotted.and.circle")
-                        }
-                    }
-                    .listRowBackground(Theme.black.opacity(0.1))
-                    .foregroundStyle(Theme.white)
-                }
                 
                 Section("Permissions") {
 
