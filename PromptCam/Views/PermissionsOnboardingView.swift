@@ -1,6 +1,7 @@
 // PromptCam — Permissions Onboarding
 // Refactored June 1, 2026 — uses shared PermissionStatusDisplay helpers and Theme tokens.
 import AVFoundation
+import CoreLocation
 import Photos
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct PermissionsOnboardingView: View {
     @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
     @State private var isRequesting = false
 
     @Environment(\.scenePhase) private var scenePhase
@@ -30,6 +32,7 @@ struct PermissionsOnboardingView: View {
         cameraStatus == .notDetermined
             || micStatus == .notDetermined
             || photoStatus == .notDetermined
+            || locationStatus == .notDetermined
     }
 
     var body: some View {
@@ -46,7 +49,7 @@ struct PermissionsOnboardingView: View {
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
 
-                Text("Required access to camera, mic & photo library.")
+                Text("Required access to camera, mic, photo library & location.")
                     .font(Theme.font16Regular)
                     .foregroundStyle(Theme.white)
                     .multilineTextAlignment(.center)
@@ -85,6 +88,16 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
+                )
+
+                OnboardingPermissionRow(
+                    icon: "location.fill",
+                    iconColor: .teal,
+                    title: "Location",
+                    description: "Tags recordings with where they were filmed",
+                    status: PermissionStatusDisplay.label(for: locationStatus),
+                    statusColor: PermissionStatusDisplay.color(for: locationStatus),
+                    showSettingsLink: locationStatus == .denied || locationStatus == .restricted
                 )
             }
             .padding(.horizontal, Theme.space24)
@@ -152,6 +165,11 @@ struct PermissionsOnboardingView: View {
             if photoStatus == .notDetermined {
                 _ = await permissionService.requestPhotoLibraryAccess()
             }
+            if locationStatus == .notDetermined {
+                // CoreLocation has no async API — fires the dialog and returns.
+                // Status is refreshed when the scene becomes active again.
+                permissionService.requestLocationAccess()
+            }
             refreshStatuses()
             isRequesting = false
         }
@@ -161,6 +179,7 @@ struct PermissionsOnboardingView: View {
         cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        locationStatus = CLLocationManager().authorizationStatus
     }
 }
 

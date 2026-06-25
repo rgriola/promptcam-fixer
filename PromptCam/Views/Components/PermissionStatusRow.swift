@@ -1,12 +1,13 @@
 // PromptCam — Reusable Permission & Settings Row Components
 // Extracted from CameraView.swift (refactor June 1, 2026)
+// June 25, 2026 — All rows now tap directly to iOS Settings (not just denied)
 import SwiftUI
 
 // MARK: - Permission Status Row
 
-/// Row displaying a permission's icon, title, status dot, label, and optional
-/// "Settings" link for denied permissions. Used in both the settings sheet and
-/// any future permission-related UI.
+/// Tappable row displaying a permission's icon, title, status dot, and label.
+/// Tapping any row opens the app's iOS Settings page so the user can
+/// review or change any permission at any time — not just denied ones.
 struct PermissionStatusRow: View {
     /// SF Symbol name for the permission icon.
     let icon: String
@@ -18,34 +19,41 @@ struct PermissionStatusRow: View {
     let status: String
     /// Semantic color matching the authorization state.
     let statusColor: Color
-    /// Whether the permission is denied/restricted — shows "Settings" link.
-    let isDenied: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(Theme.icon16)
-                .foregroundStyle(iconColor)
-                .frame(width: 24)
-
-            Text(title)
-                .font(Theme.font16Medium)
-
-            Spacer()
-
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(status)
-                    .font(Theme.font12Medium)
-                    .foregroundStyle(statusColor)
+        Button {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url)
             }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(Theme.icon16)
+                    .foregroundStyle(iconColor)
+                    .frame(width: 24)
 
-            if isDenied {
-                OpenSettingsButton()
+                Text(title)
+                    .font(Theme.font16Medium)
+                    .foregroundStyle(Theme.white)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 8, height: 8)
+                    Text(status)
+                        .font(Theme.font12Medium)
+                        .foregroundStyle(statusColor)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.secondaryText)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens iOS Settings to manage this permission")
     }
 }
 

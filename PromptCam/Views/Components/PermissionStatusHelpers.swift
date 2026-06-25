@@ -1,13 +1,15 @@
 // PromptCam — Shared Permission Status Display Helpers
 // Consolidated from CameraSettingsSheet + PermissionsOnboardingView (refactor June 1, 2026)
 import AVFoundation
+import CoreLocation
 import Photos
 import SwiftUI
 
 // MARK: - Permission Status Display
 
-/// Shared label and color mappers for AVFoundation and Photos authorization statuses.
-/// Used by both the settings sheet and the onboarding screen to avoid duplication.
+/// Shared label and color mappers for AVFoundation, Photos, and CoreLocation
+/// authorization statuses. Used by both the settings sheet and the onboarding
+/// screen to avoid duplication.
 enum PermissionStatusDisplay {
 
     // MARK: - AVFoundation (Camera / Microphone)
@@ -50,6 +52,29 @@ enum PermissionStatusDisplay {
     static func color(for status: PHAuthorizationStatus) -> Color {
         switch status {
         case .authorized, .limited: return .green
+        case .notDetermined: return .orange
+        case .denied, .restricted: return .red
+        @unknown default: return .gray
+        }
+    }
+
+    // MARK: - Location
+
+    /// Human-readable label for location authorization status.
+    static func label(for status: CLAuthorizationStatus) -> String {
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways: return "Granted"
+        case .notDetermined: return "Not Set"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    /// Semantic color for location authorization status.
+    static func color(for status: CLAuthorizationStatus) -> Color {
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways: return .green
         case .notDetermined: return .orange
         case .denied, .restricted: return .red
         @unknown default: return .gray

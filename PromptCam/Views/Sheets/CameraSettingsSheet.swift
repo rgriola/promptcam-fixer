@@ -2,6 +2,7 @@
 // Extracted from CameraView.swift (refactor June 1, 2026)
 // Uses shared PermissionStatusDisplay helpers and PermissionStatusRow component.
 import AVFoundation
+import CoreLocation
 import Photos
 import SwiftUI
 
@@ -19,6 +20,7 @@ struct CameraSettingsSheet: View {
     @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
     /// Controls the format accordion open/closed state.
     @State private var formatsExpanded = false
 
@@ -86,8 +88,7 @@ struct CameraSettingsSheet: View {
                         iconColor: .blue,
                         title: "Camera",
                         status: PermissionStatusDisplay.label(for: cameraStatus),
-                        statusColor: PermissionStatusDisplay.color(for: cameraStatus),
-                        isDenied: cameraStatus == .denied || cameraStatus == .restricted
+                        statusColor: PermissionStatusDisplay.color(for: cameraStatus)
                     )
 
                     PermissionStatusRow(
@@ -95,8 +96,7 @@ struct CameraSettingsSheet: View {
                         iconColor: .orange,
                         title: "Microphone",
                         status: PermissionStatusDisplay.label(for: micStatus),
-                        statusColor: PermissionStatusDisplay.color(for: micStatus),
-                        isDenied: micStatus == .denied || micStatus == .restricted
+                        statusColor: PermissionStatusDisplay.color(for: micStatus)
                     )
 
                     PermissionStatusRow(
@@ -104,8 +104,15 @@ struct CameraSettingsSheet: View {
                         iconColor: .green,
                         title: "Photo Library",
                         status: PermissionStatusDisplay.label(for: photoStatus),
-                        statusColor: PermissionStatusDisplay.color(for: photoStatus),
-                        isDenied: photoStatus == .denied || photoStatus == .restricted
+                        statusColor: PermissionStatusDisplay.color(for: photoStatus)
+                    )
+
+                    PermissionStatusRow(
+                        icon: "location.fill",
+                        iconColor: .teal,
+                        title: "Location",
+                        status: PermissionStatusDisplay.label(for: locationStatus),
+                        statusColor: PermissionStatusDisplay.color(for: locationStatus)
                     )
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
@@ -184,5 +191,6 @@ struct CameraSettingsSheet: View {
         cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        locationStatus = CLLocationManager().authorizationStatus
     }
 }

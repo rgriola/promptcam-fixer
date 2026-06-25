@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreLocation
 import Photos
 
 struct PermissionService {
@@ -14,6 +15,11 @@ struct PermissionService {
 
     var photoLibraryStatus: PHAuthorizationStatus {
         PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    }
+
+    /// Current location authorization status (read-only, no prompt).
+    var locationStatus: CLAuthorizationStatus {
+        CLLocationManager().authorizationStatus
     }
 
     /// Returns `true` only when camera, mic, and photo library are all authorized.
@@ -55,6 +61,13 @@ struct PermissionService {
     func requestPhotoLibraryAccess() async -> Bool {
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         return status == .authorized || status == .limited
+    }
+
+    /// Requests "when in use" location access for video geo-tagging.
+    /// CoreLocation has no async authorization API — the system dialog is shown
+    /// and the status is refreshed when the scene becomes active again.
+    func requestLocationAccess() {
+        CLLocationManager().requestWhenInUseAuthorization()
     }
 
     // MARK: - Aggregate Request (legacy convenience)
