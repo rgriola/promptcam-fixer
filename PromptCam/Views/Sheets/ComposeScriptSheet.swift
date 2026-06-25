@@ -15,6 +15,8 @@ struct ComposeScriptSheet: View {
     @FocusState private var isEditorFocused: Bool
     /// Controls visibility of the script archive sheet.
     @State private var showArchive = false
+    /// Tracks whether the clean action just ran — shows a brief "Cleaned" confirmation.
+    @State private var didClean = false
     /// Callback fired with latest text when user saves.
     let onSave: (String) -> Void
     /// Callback fired when user cancels editing.
@@ -39,6 +41,66 @@ struct ComposeScriptSheet: View {
             !CharacterSet.controlCharacters.contains(scalar) || allowed.contains(scalar)
         }
         return String(String.UnicodeScalarView(filtered))
+    }
+
+    /// Removes paste-in formatting artifacts from apps like Outlook, Word, and Slack
+    /// so the script is ready for teleprompter use.
+    ///
+    /// Steps applied in order:
+    /// 1. Normalize line endings (\r\n → \n)
+    /// 2. Replace non-breaking spaces with regular spaces
+    /// 3. Strip ==OC== markers (case-insensitive)
+    /// 4. Per line: remove leading whitespace, trailing whitespace, and common bullet prefixes
+    /// 5. Collapse runs of more than one blank line into a single blank line
+    /// 6. Trim leading and trailing blank lines
+    private func cleanForTeleprompter(_ text: String) -> String {
+        // 1. Normalize line endings.
+        var result = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r",   with: "\n")
+
+        // 2. Non-breaking spaces → regular space.
+        result = result.replacingOccurrences(of: "\u{00A0}", with: " ")
+
+        // 3. Strip ==OC== markers.
+        result = result.replacingOccurrences(of: "==OC==", with: "",
+                                             options: [.caseInsensitive])
+
+        // 4. Per-line cleanup.
+        let bulletPrefixes = ["\u{2022} ", "\u{00B7} ", "\u{25CF} ", "\u{25E6} ",
+                              "- ", "* ", "\u{2013} ", "\u{2014} "]
+        let cleaned: [String] = result
+            .components(separatedBy: "\n")
+            .map { line in
+                var l = line
+                // Strip leading whitespace.
+                l = l.drop(while: { $0 == " " || $0 == "\t" }).description
+                // Strip trailing whitespace.
+                while l.last == " " || l.last == "\t" { l.removeLast() }
+                // Remove leading bullet / list prefix.
+                for prefix in bulletPrefixes where l.hasPrefix(prefix) {
+                    l = String(l.dropFirst(prefix.count))
+                    break
+                }
+                return l
+            }
+
+        // 5. Collapse multiple consecutive blank lines to at most one.
+        var output: [String] = []
+        var blankRun = 0
+        for line in cleaned {
+            if line.isEmpty {
+                blankRun += 1
+                if blankRun == 1 { output.append(line) }
+            } else {
+                blankRun = 0
+                output.append(line)
+            }
+        }
+
+        // 6. Trim leading / trailing blank lines.
+        return output.joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Dismisses the keyboard and waits for it to animate down before
@@ -89,17 +151,43 @@ struct ComposeScriptSheet: View {
                             }
                         }
 
-                    // Clear button below editor
-                    Button {
-                        draftText = ""
-                    } label: {
-                        Label("Clear", systemImage: "xmark.circle.fill")
+                    // Action buttons row: Clean (left) | Clear (right)
+                    HStack {
+                        // Clean for Teleprompter — strips paste-in formatting artifacts.
+                        Button {
+                            draftText = cleanForTeleprompter(draftText)
+                            didClean = true
+                            Task {
+                                try? await Task.sleep(for: .seconds(1.5))
+                                didClean = false
+                            }
+                        } label: {
+                            Label(
+                                didClean ? "Cleaned" : "Clean for Teleprompter",
+                                systemImage: didClean ? "checkmark.circle.fill" : "wand.and.sparkles"
+                            )
                             .font(Theme.font16Regular)
-                            .foregroundStyle(Theme.white) // keep white
+                            .foregroundStyle(didClean ? Theme.green : Theme.white)
+                            .animation(.easeInOut(duration: 0.2), value: didClean)
+                        }
+                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
+                        .disabled(draftText.isEmpty)
+                        .accessibilityLabel("Clean script formatting")
+                        .accessibilityHint("Removes indents, bullets, and paste artifacts from Outlook or Word")
+
+                        Spacer()
+
+                        // Clear — wipes the editor entirely.
+                        Button {
+                            draftText = ""
+                        } label: {
+                            Label("Clear", systemImage: "xmark.circle.fill")
+                                .font(Theme.font16Regular)
+                                .foregroundStyle(Theme.white)
+                        }
+                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
+                        .disabled(draftText.isEmpty)
                     }
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .opacity(draftText.isEmpty ? 0.3 : 1.0)
-                    .disabled(draftText.isEmpty)
 
                     Spacer()
                 }

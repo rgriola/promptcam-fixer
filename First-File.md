@@ -251,6 +251,27 @@ Title: Guide Dog
 Text : This is the instructions page to walk through how to use Prompter Cam Fixer.
 ...
 
+... June 12 2026
+
+**_ Task _**
+Lets devise a plan to make these changes with some differences
+
+Full Screen Cover v Sheet -
+Keyboard Adjusts background on a Sheet?? why who knows.
+
+
+... June 25
+VU Meter Wrapping
+
+*** Task ***
+Add Transparent Background to VUMeterView. 
+
+
+*** Issue ***
+App does not easily recognize External Mic Input. Also I believe the Auto Focus on the Selfie Camera is interferring or the touch Auto Focus is interferring in Cine Mode. Cine Mode Auto Focus must always be on to work - this is an Apple requirement for that mode. 
+
+Ie if the App is in Cine mode at launch the Mic Input does not work. If it is standard, works fine and I can even switch to Cine Mode. Can you trace possible issues. No Coding. Just a plan.
+
 To - Do June 23 from June 16
 
 - Known Issues
@@ -259,26 +280,19 @@ To - Do June 23 from June 16
 
 - Need to reformat copy/paste text to layout correctly from Outlook Pasting
 - Converting Script to All Caps, Cap First, All lower
-- Remove ==OC== Markers in Script, Ask to reformat script
+- Remove ==OC== Markers in Script, Ask to reformat script 
+
+[ ] Audio input display - grab the name of the Mic set available.
 
 [Camera Roll] Needs to handle vertical + horizontal video layouts better. Horizontals overplay verticals, probably would be opposite if we were shooting horizontals
 
-Settings - does not show full Camera Recording Formats, just abbrevated ones.
+[ ] Teleprompter Text  - When scrolling and user touches screen text jumps. Not really and error just looks bad. 
 
-Add Light and Dark Themes.
-
-Teleprompter Text jumps when user touches screen. Need more gracefull easing.
-
-Focus Long Touch
-
-Some Theme styles need to be improved
-Some Layouts need new math so they cascade correctly ie VU Meter and Top
-
-Line Navbar (former header) Padding incorrect relation to Camera Preview across devices.
+[ ] Line Navbar (former header) Padding incorrect relation to Camera Preview across devices.
 
 swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove Sheet function. Note this may change what the user sees - Apple uses a Blur Effect for transition - Keep as is clean up styling
 
-Apeture Panel needs f styling, and default 5.6, Reset button floor setting of 5.6, maybe do stops like a camera.
+[x] Apeture Panel needs f styling, and default 5.6, Reset button floor setting of 5.6, maybe do stops like a camera.
 Custom Slider ?
 
 [x]Change Opacity to Text Contrast.
@@ -286,14 +300,23 @@ Custom Slider ?
 [x] reduced parameters Prompter Speed :: 32 fine speed,
 
 [ ] Add Support for Clicker start/stop. Voice Activated?
+[ ] Move Guide Dog to Settings Panel or Make Guide Dog the Settings Panel. 
+[ ] Recall Button icon needs a new design. 
+[ ] I want to move the Cine/Standard Button to the left. I don't like it in the format panel. 
+[ ] Figure out how to Connect Record and Scroll at the Same time. 
+[ ] Overlay for tools. 
+[ ] Camera Roll Button Add a Photo in a Circle to show its the library, 
+
+[ ] Go to 4 buttons on bottom. 
+[ ] Add Clean Camera/Audio output to HDMI
 
 #
 
-Reduce size of tap area for Mic Input.
+[x] Reduce size of tap area for Mic Input.
 
 - [ ] Add App Guide Pages. Think Handrails for Users
 - Insert Images drawn from App with Correct Styles
-- Change App Icon + Splash Screen
+- Change App Icon + Splash Screen 
 - Look at cleaner opening for Camera View.
   Script Returns become space + left justified.
 
@@ -347,79 +370,3 @@ Finished issues
   - Insert Images drawn from App with Correct Styles
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
-
-... June 12 2026
-
-**_ Task _**
-Lets devise a plan to make these changes with some differences
-
-Full Screen Cover v Sheet -
-Keyboard Adjusts background on a Sheet?? why who knows.
-
-
-... June 25
-VU Meter Wrapping
-
-*** Task ***
-Add Transparent Background to VUMeterView. 
-
-
-*** Issue ***
-App does not easily recognize External Mic Input. Also I believe the Auto Focus on the Selfie Camera is interferring or the touch Auto Focus is interferring in Cine Mode. Cine Mode Auto Focus must always be on to work - this is an Apple requirement for that mode. 
-
-Ie if the App is in Cine mode at launch the Mic Input does not work. If it is standard, works fine and I can even switch to Cine Mode. Can you trace possible issues. No Coding. Just a plan.
-
-
-Xcode Terminal:  All-front CINE scan: HD=true 4K=true FPS=[24, 30]
-Capabilities: wideAngle=Front Camera | Cinematic=true
-Capabilities: Cinematic=true StdRes=["HD", "4K"] StdFPS=[24, 30, 60] CineRes=["4K", "HD"] CineFPS=[24, 30]
-supported formats res=["HD", "4K"] fps=[24, 30, 60]
-device capabilities cine=true
-<<<< FigAudioSession(AV) >>>> signalled err=-19224 at <>:612
-<<<< AVCaptureFigVideoDevice >>>> Fig assert: "( sceneMonitoringStatus != ((void *)0) ) || backToNormal" at bail (AVCaptureFigVideoDevice.m:9139) - (err=0)
-AudioMeterService: engine started, format=<AVAudioFormat 0x117f80820:  1 ch,  48000 Hz, Float32>
-AudioMeterService: preferred input set to iPhone Microphone
-CameraService: audio device unchanged (iPhone Microphone)
-AudioMeterService: restarting engine (delay=0.800000s)
-AudioMeterService: engine stopped
-AudioMeterService: engine started, format=<AVAudioFormat 0x11acbc050:  1 ch,  48000 Hz, Float32>
-AudioMeterService: preferred input set to iPhone Microphone
-CameraService: audio device unchanged (iPhone Microphone)
-AudioMeterService: restarting engine (delay=0.800000s)
-AudioMeterService: engine stopped
-AudioMeterService: engine started, format=<AVAudioFormat 0x11acbc0f0:  1 ch,  48000 Hz, Float32>
-AVAudioSessionUtilities.mm:76    -- Endpoint Value Converter failed to find a match for string "Other"
-AVAudioSessionUtilities.mm:76    -- Endpoint Value Converter failed to find a match for string "Other"
-Touch Focus at point
-*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
-*** First throw call stack:
-(0x18716223c 0x183c31224 0x1ae483e20 0x105950080 0x105925770 0x1054ec544 0x105505ccc 0x1054f46c0 0x1054f535c 0x1055014c8 0x105500b74 0x1e62413b0 0x1e62408c0)
-libc++abi: terminating due to uncaught exception of type NSException
-*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
-*** First throw call stack:
-(0x18716223c 0x183c31224 0x1ae483e20 0x105950080 0x105925770 0x1054ec544 0x105505ccc 0x1054f46c0 0x1054f535c 0x1055014c8 0x105500b74 0x1e62413b0 0x1e62408c0)
-terminating due to uncaught exception of type NSException
-
-
-
-
-
-
-Issue with Multiple Taps : 
-*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
-*** First throw call stack:
-(0x18716223c 0x183c31224 0x1ae483e20 0x10143c080 0x101411770 0x100fdc544 0x100ff5ccc 0x100fe46c0 0x100fe535c 0x100ff14c8 0x100ff0b74 0x1e62413b0 0x1e62408c0)
-libc++abi: terminating due to uncaught exception of type NSException
-*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
-*** First throw call stack:
-(0x18716223c 0x183c31224 0x1ae483e20 0x10143c080 0x101411770 0x100fdc544 0x100ff5ccc 0x100fe46c0 0x100fe535c 0x100ff14c8 0x100ff0b74 0x1e62413b0 0x1e62408c0)
-terminating due to uncaught exception of type NSException
-
-
-In testing recorded video; 
-
-- When using one wireless mic the audio is recorded as Dual Mono with L holding the audio and R silent. When Using both Mics Audio is Recorded Separatly on Left and Right. 
-
-- When using the iPhone Mic it is one channel mono. 
-
-So the current Audio Recording works as intended already.  We just need the VU meter to show both channels when using a one or both mics. 
