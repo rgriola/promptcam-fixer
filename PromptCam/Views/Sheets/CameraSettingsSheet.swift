@@ -39,22 +39,39 @@ struct CameraSettingsSheet: View {
                 // MARK: - Formats Accordion
                 Section {
                     DisclosureGroup(isExpanded: $formatsExpanded) {
-                        // Standard formats
+
+                        // STANDARD sub-heading
+                        Text("Standard")
+                            .font(Theme.font12Medium)
+                            .foregroundStyle(Theme.secondaryText)
+                            .textCase(.uppercase)
+                            .listRowSeparator(.hidden)
+                            .padding(.top, 4)
+
                         ForEach(standardFormats, id: \.self) { format in
                             formatRow(format)
                         }
-                        // Cinematic formats — only shown when device supports the mode.
+
+                        // CINEMATIC sub-heading — only when device supports the mode.
                         if capabilities.supportsCinematicMode {
+                            Text("Cinematic")
+                                .font(Theme.font12Medium)
+                                .foregroundStyle(Theme.secondaryText)
+                                .textCase(.uppercase)
+                                .listRowSeparator(.hidden)
+                                .padding(.top, 8)
+
                             ForEach(cinematicFormats, id: \.self) { format in
                                 formatRow(format, icon: "circle.dotted.and.circle")
                             }
                         }
+
                     } label: {
                         Label("Video Formats", systemImage: "video.fill")
                             .font(Theme.font16Regular)
                             .foregroundStyle(Theme.white)
                     }
-                    .tint(Theme.accent)
+                    .tint(Theme.white)
                 } header: {
                     Text("Formats")
                         .foregroundStyle(Theme.primaryText)
@@ -128,22 +145,24 @@ struct CameraSettingsSheet: View {
     }
 
     /// Standard recording formats available on this device.
+    /// Produces entries like "HD 1920×1080 30p", "4K 3840×2160 24p".
     private var standardFormats: [String] {
         var formats: [String] = []
         for resolution in capabilities.standardResolutions {
             for frameRate in capabilities.standardFrameRates {
-                formats.append("\(resolution.rawValue) \(frameRate.rawValue)fps")
+                formats.append("\(resolution.rawValue) \(resolution.dimensionLabel) \(frameRate.rawValue)p")
             }
         }
         return formats
     }
 
     /// Cinematic recording formats available on this device.
+    /// Produces entries like "HD 1920×1080 24p", "4K 3840×2160 30p".
     private var cinematicFormats: [String] {
         var formats: [String] = []
         for resolution in capabilities.cinematicResolutions {
             for frameRate in capabilities.cinematicFrameRates {
-                formats.append("\(resolution.rawValue) \(frameRate.rawValue)fps")
+                formats.append("\(resolution.rawValue) \(resolution.dimensionLabel) \(frameRate.rawValue)p")
             }
         }
         return formats

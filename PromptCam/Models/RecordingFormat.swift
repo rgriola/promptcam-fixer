@@ -17,6 +17,14 @@ enum VideoResolution: String, CaseIterable, Codable, Sendable {
     case hd1080p = "HD"
     case uhd4K = "4K"
 
+    /// Full pixel dimension label for display, e.g. "1920×1080".
+    var dimensionLabel: String {
+        switch self {
+        case .hd1080p: return "1920×1080"
+        case .uhd4K:   return "3840×2160"
+        }
+    }
+
     var sessionPreset: AVCaptureSession.Preset {
         switch self {
         case .hd1080p: return .hd1920x1080
