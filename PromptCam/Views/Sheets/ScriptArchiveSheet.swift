@@ -58,6 +58,7 @@ struct ScriptArchiveSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
+        .preferredColorScheme(.dark)
         .presentationDetents([.medium])
         .onAppear {
             scripts = ScriptArchive.load()

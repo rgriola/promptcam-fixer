@@ -40,12 +40,13 @@ struct CameraSettingsSheet: View {
 
                 // MARK: - Formats Accordion
                 Section {
+                    
                     DisclosureGroup(isExpanded: $formatsExpanded) {
 
                         // STANDARD sub-heading
                         Text("Standard")
                             .font(Theme.font12Medium)
-                            .foregroundStyle(Theme.secondaryText)
+                            .foregroundStyle(Theme.primaryText)
                             .textCase(.uppercase)
                             .listRowSeparator(.hidden)
                             .padding(.top, 4)
@@ -58,7 +59,7 @@ struct CameraSettingsSheet: View {
                         if capabilities.supportsCinematicMode {
                             Text("Cinematic")
                                 .font(Theme.font12Medium)
-                                .foregroundStyle(Theme.secondaryText)
+                                .foregroundStyle(Theme.primaryText)
                                 .textCase(.uppercase)
                                 .listRowSeparator(.hidden)
                                 .padding(.top, 8)
@@ -71,15 +72,16 @@ struct CameraSettingsSheet: View {
                     } label: {
                         Label("Video Formats", systemImage: "video.fill")
                             .font(Theme.font16Regular)
-                            .foregroundStyle(Theme.white)
                     }
+
                 } header: {
                     Text("Formats")
                         .foregroundStyle(Theme.primaryText)
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
-                
+                .tint(Theme.white)
+
                 Section("Permissions") {
 
                     PermissionStatusRow(
@@ -134,6 +136,7 @@ struct CameraSettingsSheet: View {
             }
         }
         .presentationBackground(Theme.bgGrad)
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - Computed Properties

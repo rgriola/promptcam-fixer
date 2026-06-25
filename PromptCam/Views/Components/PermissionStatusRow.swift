@@ -49,7 +49,7 @@ struct PermissionStatusRow: View {
 
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(Theme.secondaryText)
+                    .foregroundStyle(Theme.white)
             }
         }
         .buttonStyle(.plain)
