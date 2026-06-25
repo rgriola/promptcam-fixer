@@ -35,20 +35,21 @@ struct CameraTopControlsView: View {
     var body: some View {
         // Header rows are intentionally compact to preserve preview space.
             HStack {
-                
+                 // Video Mode Badge (shows mode label + aperture when cinematic is active)
+                VideoModeBadgeView(
+                    mode: videoMode,
+                    apertureText: apertureText,
+                    onTapAperture: onTapAperture
+                )
+
+                Spacer()
+
                 // Change this to format Toggles HD > 4K | 24 - 30 + Cine
                 Button(action: onTapFormat) {
                     HStack(spacing: 0){
                         Text(resolutionLabel)
                             .font(Theme.mono16Medium)
                             .padding(.trailing, 4)
-                        /*
-                        Text("res")
-                            .font(Theme.font12Medium)
-                            .foregroundStyle(Theme.secondaryText)
-                            .padding(.trailing, 4)
-                        */
-
                         Text(fpsLabel)
                             .font(Theme.mono16Medium)
                             .padding(.trailing, 2)
@@ -61,23 +62,6 @@ struct CameraTopControlsView: View {
                 }
                 .accessibilityLabel("Format panel")
                 .accessibilityHint("Opens camera record format settings")
-
-                Spacer()
-
-                // Video Mode Badge (shows STD or CINE)
-                VideoModeBadgeView(mode: videoMode)
-
-                // Cinematic aperture button — only visible when cinematic mode + iOS 26+ aperture available.
-                if let apertureText {
-                    // removed spacer to being elements closer
-                    Button(action: onTapAperture) {
-                        Text(apertureText)
-                            .font(Theme.mono16Medium)
-                            .foregroundStyle(Theme.accent)
-                            .accessibilityLabel("Simulated aperture")
-                            .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
-                    }
-                }
 
 
                 Spacer()

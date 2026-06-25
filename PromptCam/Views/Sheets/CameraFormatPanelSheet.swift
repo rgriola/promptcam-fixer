@@ -45,16 +45,17 @@ struct CameraFormatPanelSheet: View {
                     }
                     .pickerStyle(.segmented)
                     .disabled(isRecording || !deviceCapabilities.supportsCinematicMode)
+                    .listRowBackground(Color.clear)
                 } header: {
                     Text("Video Mode")
                         .foregroundStyle(Theme.primaryText)
                 } footer: {
                     if recordingFormat.mode == .cinematic {
-                        Text("Cinematic mode captures depth data for portrait-style focus effects and requires specific hardware support.")
+                        Text("Cinematic - you are all Hollywood now. Allows bokeh changes after recording.")
                             .font(Theme.font12Regular)
                             .foregroundStyle(Theme.secondaryText)
                     } else {
-                        Text("Standard mode provides maximum flexibility for resolution and frame rate.")
+                        Text("Standard - for getting it done.")
                             .font(Theme.font12Regular)
                             .foregroundStyle(Theme.secondaryText)
                     }
@@ -83,6 +84,7 @@ struct CameraFormatPanelSheet: View {
                     }
                     .pickerStyle(.segmented)
                     .disabled(isRecording)
+                    .listRowBackground(Color.clear)
                 } header: {
                     Text("Resolution")
                         .foregroundStyle(Theme.primaryText)
@@ -111,6 +113,7 @@ struct CameraFormatPanelSheet: View {
                     }
                     .pickerStyle(.segmented)
                     .disabled(isRecording)
+                    .listRowBackground(Color.clear)
                 } header: {
                     Text("Frame Rate")
                         .foregroundStyle(Theme.primaryText)
@@ -133,6 +136,17 @@ struct CameraFormatPanelSheet: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .onAppear {
+                // Segmented pickers are backed by UIKit and ignore SwiftUI color modifiers.
+                // Override via UISegmentedControl.appearance() so they match the glass sheet.
+                UISegmentedControl.appearance().backgroundColor = UIColor.white.withAlphaComponent(0.12)
+                UISegmentedControl.appearance().selectedSegmentTintColor = UIColor.white.withAlphaComponent(0.35)
+                // Keep segment labels readable on the dark/glass background.
+                let normal: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white.withAlphaComponent(0.65)]
+                let selected: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white]
+                UISegmentedControl.appearance().setTitleTextAttributes(normal, for: .normal)
+                UISegmentedControl.appearance().setTitleTextAttributes(selected, for: .selected)
+            }
             .navigationTitle("Format")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)

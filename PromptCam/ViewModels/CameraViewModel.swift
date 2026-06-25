@@ -486,9 +486,14 @@ final class CameraViewModel {
                 self.cinematicApertureRange = nil
                 Log.viewmodel.info("Cinematic aperture: unavailable")
             } else {
-                self.cinematicApertureRange = minAp...maxAp
-                self.cinematicSimulatedAperture = defAp
-                Log.viewmodel.info("Cinematic aperture range f/\(minAp, privacy: .public)–f/\(maxAp, privacy: .public) default f/\(defAp, privacy: .public)")
+                // Clamp the lower bound to f/5.6 — the app intentionally avoids
+                // very shallow DoF settings (f/1.9–f/4.5) which look unnatural
+                // for teleprompter/presenter use. The hardware minimum is preserved
+                // as the floor in case a future device reports a higher minimum.
+                let appMin: Float = max(minAp, 5.6)
+                self.cinematicApertureRange = appMin...maxAp
+                self.cinematicSimulatedAperture = appMin   // default to f/5.6
+                Log.viewmodel.info("Cinematic aperture range f/\(appMin, privacy: .public)–f/\(maxAp, privacy: .public) (hw min f/\(minAp, privacy: .public), default f/\(defAp, privacy: .public))")
             }
         }
 

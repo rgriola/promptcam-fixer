@@ -254,13 +254,10 @@ struct CameraView: View {
                         CinematicAperturePanel(
                             aperture: $viewModel.cinematicSimulatedAperture,
                             apertureRange: apertureRange,
-                            defaultAperture: apertureRange.lowerBound +
-                                (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
+                            defaultAperture: apertureRange.lowerBound,  // f/5.6 after clamping
                             onReset: {
-                                let def = apertureRange.lowerBound +
-                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
-                                viewModel.setSimulatedAperture(def)
-                                Log.ui.debug("Aperture reset to default")
+                                viewModel.setSimulatedAperture(apertureRange.lowerBound)
+                                Log.ui.debug("Aperture reset to default (f/\(apertureRange.lowerBound))")
                             },
                             onAdjust: { value in
                                 viewModel.setSimulatedAperture(value)

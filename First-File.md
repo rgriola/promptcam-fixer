@@ -281,11 +281,11 @@ swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove
 Apeture Panel needs f styling, and default 5.6, Reset button floor setting of 5.6, maybe do stops like a camera.
 Custom Slider ?
 
-Change Opacity to Text Contrast.
+[x]Change Opacity to Text Contrast.
 
-Prompter Speed :: 32 fine speed,
+[x] reduced parameters Prompter Speed :: 32 fine speed,
 
-Add Support for Clicker start/stop. Voice Activated?
+[ ] Add Support for Clicker start/stop. Voice Activated?
 
 #
 
@@ -364,6 +364,46 @@ VU Meter Wrapping
 Add Transparent Background to VUMeterView. 
 
 
+*** Issue ***
+App does not easily recognize External Mic Input. Also I believe the Auto Focus on the Selfie Camera is interferring or the touch Auto Focus is interferring in Cine Mode. Cine Mode Auto Focus must always be on to work - this is an Apple requirement for that mode. 
+
+Ie if the App is in Cine mode at launch the Mic Input does not work. If it is standard, works fine and I can even switch to Cine Mode. Can you trace possible issues. No Coding. Just a plan.
+
+
+Xcode Terminal:  All-front CINE scan: HD=true 4K=true FPS=[24, 30]
+Capabilities: wideAngle=Front Camera | Cinematic=true
+Capabilities: Cinematic=true StdRes=["HD", "4K"] StdFPS=[24, 30, 60] CineRes=["4K", "HD"] CineFPS=[24, 30]
+supported formats res=["HD", "4K"] fps=[24, 30, 60]
+device capabilities cine=true
+<<<< FigAudioSession(AV) >>>> signalled err=-19224 at <>:612
+<<<< AVCaptureFigVideoDevice >>>> Fig assert: "( sceneMonitoringStatus != ((void *)0) ) || backToNormal" at bail (AVCaptureFigVideoDevice.m:9139) - (err=0)
+AudioMeterService: engine started, format=<AVAudioFormat 0x117f80820:  1 ch,  48000 Hz, Float32>
+AudioMeterService: preferred input set to iPhone Microphone
+CameraService: audio device unchanged (iPhone Microphone)
+AudioMeterService: restarting engine (delay=0.800000s)
+AudioMeterService: engine stopped
+AudioMeterService: engine started, format=<AVAudioFormat 0x11acbc050:  1 ch,  48000 Hz, Float32>
+AudioMeterService: preferred input set to iPhone Microphone
+CameraService: audio device unchanged (iPhone Microphone)
+AudioMeterService: restarting engine (delay=0.800000s)
+AudioMeterService: engine stopped
+AudioMeterService: engine started, format=<AVAudioFormat 0x11acbc0f0:  1 ch,  48000 Hz, Float32>
+AVAudioSessionUtilities.mm:76    -- Endpoint Value Converter failed to find a match for string "Other"
+AVAudioSessionUtilities.mm:76    -- Endpoint Value Converter failed to find a match for string "Other"
+Touch Focus at point
+*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
+*** First throw call stack:
+(0x18716223c 0x183c31224 0x1ae483e20 0x105950080 0x105925770 0x1054ec544 0x105505ccc 0x1054f46c0 0x1054f535c 0x1055014c8 0x105500b74 0x1e62413b0 0x1e62408c0)
+libc++abi: terminating due to uncaught exception of type NSException
+*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
+*** First throw call stack:
+(0x18716223c 0x183c31224 0x1ae483e20 0x105950080 0x105925770 0x1054ec544 0x105505ccc 0x1054f46c0 0x1054f535c 0x1055014c8 0x105500b74 0x1e62413b0 0x1e62408c0)
+terminating due to uncaught exception of type NSException
+
+
+
+
+
 
 Issue with Multiple Taps : 
 *** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[AVCaptureDevice setFocusMode:] Only continuous auto-focus can be used when capturing Cinematic Video.'
@@ -374,3 +414,12 @@ libc++abi: terminating due to uncaught exception of type NSException
 *** First throw call stack:
 (0x18716223c 0x183c31224 0x1ae483e20 0x10143c080 0x101411770 0x100fdc544 0x100ff5ccc 0x100fe46c0 0x100fe535c 0x100ff14c8 0x100ff0b74 0x1e62413b0 0x1e62408c0)
 terminating due to uncaught exception of type NSException
+
+
+In testing recorded video; 
+
+- When using one wireless mic the audio is recorded as Dual Mono with L holding the audio and R silent. When Using both Mics Audio is Recorded Separatly on Left and Right. 
+
+- When using the iPhone Mic it is one channel mono. 
+
+So the current Audio Recording works as intended already.  We just need the VU meter to show both channels when using a one or both mics. 
