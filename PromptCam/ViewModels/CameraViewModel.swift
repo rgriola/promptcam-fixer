@@ -48,6 +48,18 @@ enum CameraLockStatus: Equatable, Sendable {
             return "LOCK UNAVAILABLE"
         }
     }
+
+    /// Two-part display label for stacked badge layout.
+    /// `top` is the sensor abbreviation; `bottom` is the state word (or `nil` for single-line).
+    var displayParts: (top: String, bottom: String?) {
+        switch self {
+        case .auto:          return ("AUTO",  nil)
+        case .aeAfLocked:    return ("AE/AF", "Lock")
+        case .aeLocked:      return ("AE",    "Lock")
+        case .afLocked:      return ("AF",    "Lock")
+        case .unsupported:   return ("LOCK",  "UNAVAIL")
+        }
+    }
 }
 
 /// Central state owner for the camera screen.

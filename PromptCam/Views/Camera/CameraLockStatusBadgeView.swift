@@ -32,10 +32,17 @@ struct CameraLockStatusBadgeView: View {
     /// Toggle button that controls autofocus/exposure lock.
     var body: some View {
         Button(action: onToggle) {
-            Text(status.text)
-                .font(Theme.mono16Medium)
-                .foregroundStyle(statusColor)
-                .opacity(isDisabled ? 0.4 : 1.0)
+            let parts = status.displayParts
+            VStack(spacing: 0) {
+                Text(parts.top)
+                    .font(Theme.mono16Medium)
+                if let bottom = parts.bottom {
+                    Text(bottom)
+                        .font(Theme.mono10Medium)
+                }
+            }
+            .foregroundStyle(statusColor)
+            .opacity(isDisabled ? 0.4 : 1.0)
         }
         .disabled(status == .unsupported || isDisabled)
         .accessibilityLabel("Focus and exposure lock")
