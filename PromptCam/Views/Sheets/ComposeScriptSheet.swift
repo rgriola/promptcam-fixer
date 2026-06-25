@@ -66,20 +66,31 @@ struct ComposeScriptSheet: View {
         result = result.replacingOccurrences(of: "==OC==", with: "",
                                              options: [.caseInsensitive])
 
-        // 4. Per-line cleanup.
+        // 4. Per-line cleanup — uses CharacterSet.whitespaces to catch the full
+        //    Unicode whitespace set: \t, space, non-breaking space, en-space,
+        //    em-space, figure space, and other variants Outlook/Word insert.
+        let wsSet = CharacterSet.whitespaces   // does NOT include newlines
         let bulletPrefixes = ["\u{2022} ", "\u{00B7} ", "\u{25CF} ", "\u{25E6} ",
                               "- ", "* ", "\u{2013} ", "\u{2014} "]
+
+        func stripLeading(_ s: String) -> String {
+            String(s.unicodeScalars.drop(while: { wsSet.contains($0) }))
+        }
+        func stripTrailing(_ s: String) -> String {
+            var scalars = s.unicodeScalars
+            while let last = scalars.last, wsSet.contains(last) { scalars.removeLast() }
+            return String(scalars)
+        }
+
         let cleaned: [String] = result
             .components(separatedBy: "\n")
             .map { line in
-                var l = line
-                // Strip leading whitespace.
-                l = l.drop(while: { $0 == " " || $0 == "\t" }).description
-                // Strip trailing whitespace.
-                while l.last == " " || l.last == "\t" { l.removeLast() }
-                // Remove leading bullet / list prefix.
+                var l = stripLeading(line)
+                l = stripTrailing(l)
+                // Remove leading bullet / list prefix, then strip again in case
+                // extra whitespace follows the bullet character.
                 for prefix in bulletPrefixes where l.hasPrefix(prefix) {
-                    l = String(l.dropFirst(prefix.count))
+                    l = stripLeading(String(l.dropFirst(prefix.count)))
                     break
                 }
                 return l
