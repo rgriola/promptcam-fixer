@@ -227,7 +227,7 @@ struct ComposeScriptSheet: View {
                         Button {
                             showArchive = true
                         } label: {
-                            Image(systemName: "clock.arrow.circlepath")
+                            Image(systemName: "flame.gauge.open")
                         }
 
                         SaveToolbarButton(

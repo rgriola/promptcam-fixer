@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Native-like stacked record + scroll control cluster positioned
 /// between the header and footer chrome. The record button is centered
-/// with the scroll toggle offset to the left.
+/// with the scroll toggle offset to the right.
 struct RecordingClusterView: View {
     /// Whether capture is currently recording.
     let isRecording: Bool
@@ -26,8 +26,8 @@ struct RecordingClusterView: View {
                 .frame(width: 72, height: 72)
 
             ScrollToggleButton(isScrolling: isScrolling, action: onScrollTap)
-                .frame(width: 36, height: 36)
-                .offset(x: -72)
+                .frame(width: 40, height: 40)
+                .offset(x: 72)
         }
     }
 }
@@ -115,7 +115,7 @@ struct ScrollToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         ScrollToggleButton(isScrolling: false) {}
-            .frame(width: 36, height: 36)
+            .frame(width: 40, height: 40)
     }
 }
 
@@ -123,6 +123,6 @@ struct ScrollToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         ScrollToggleButton(isScrolling: true) {}
-            .frame(width: 36, height: 36)
+            .frame(width: 40, height: 40)
     }
 }
