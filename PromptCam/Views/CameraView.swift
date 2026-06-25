@@ -95,6 +95,8 @@ struct CameraView: View {
                         peak: viewModel.audioPeak,
                         isExternalMic: viewModel.isExternalMic,
                         isRecording: viewModel.isRecording,
+                        level2: viewModel.isStereoInput ? viewModel.audioLevel2 : nil,
+                        peak2:  viewModel.isStereoInput ? viewModel.audioPeak2  : nil,
                         sourceNameHint: viewModel.audioSourceHint
                     )
                     .frame(

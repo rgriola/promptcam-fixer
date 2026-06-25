@@ -59,9 +59,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// but read from the audio engine's render thread.
     private let callbackLock = NSLock()
 
-    private var _onLevelsUpdated: (@MainActor @Sendable (Float, Float) -> Void)?
-    /// Publishes `(averageLevel, peakLevel)` both normalized 0.0–1.0.
-    var onLevelsUpdated: (@MainActor @Sendable (Float, Float) -> Void)? {
+    private var _onLevelsUpdated: (@MainActor @Sendable (Float, Float, Float?, Float?) -> Void)?
+    /// Publishes `(ch1Level, ch1Peak, ch2Level?, ch2Peak?)` all normalized 0.0–1.0.
+    /// Ch2 values are non-nil only when a stereo input (e.g. dual-channel wireless receiver)
+    /// is active. Existing callers that only use the first two parameters continue to work.
+    var onLevelsUpdated: (@MainActor @Sendable (Float, Float, Float?, Float?) -> Void)? {
         get { callbackLock.withLock { _onLevelsUpdated } }
         set { callbackLock.withLock { _onLevelsUpdated = newValue } }
     }
@@ -93,9 +95,20 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Lock protecting metering state.
     private let stateLock = NSLock()
+
+    // MARK: Ch1 peak-hold state
     private var peakLevel: Float = 0.0
     private var peakTimestamp: TimeInterval = 0.0
     private var lastUIUpdate: TimeInterval = 0.0
+
+    // MARK: Ch2 peak-hold state (only used when isStereoInput)
+    private var peakLevel2: Float = 0.0
+    private var peakTimestamp2: TimeInterval = 0.0
+
+    /// True when the active audio input is a stereo device (channelCount ≥ 2).
+    /// Reset to false when the engine stops. Read by the ViewModel to control
+    /// whether a second VU meter bar is shown in the UI.
+    private(set) var isStereoInput: Bool = false
 
     /// Timestamp of the last buffer with level above `silenceFloor`.
     private var lastNonZeroBufferTime: TimeInterval = 0.0
@@ -183,6 +196,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             return
         }
 
+        // Detect stereo input and store for VU meter / ViewModel use.
+        let stereo = format.channelCount >= 2
+        isStereoInput = stereo
+        if stereo {
+            Log.camera.debug("AudioMeterService: stereo input detected — metering both channels")
+        }
+
         // Install tap — buffer size 1024 gives ~23ms at 44.1kHz.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.processBuffer(buffer)
@@ -211,6 +231,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
             audioEngine = nil
+            isStereoInput = false
             Log.camera.debug("AudioMeterService: engine stopped")
         }
     }
@@ -248,35 +269,55 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Processes a PCM buffer from the input tap — computes RMS, converts
     /// to dB, normalizes, applies peak hold, and publishes.
     ///
-    /// RMS is computed via `vDSP_rmsqv` (SIMD-accelerated) on channel 0.
+    /// When `isStereoInput` is true, channels 0 and 1 are metered independently
+    /// so the VU meter can display separate Ch1/Ch2 bars.
+    /// RMS is computed via `vDSP_rmsqv` (SIMD-accelerated).
     private func processBuffer(_ buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData else { return }
         let frameLength = vDSP_Length(buffer.frameLength)
         guard frameLength > 0 else { return }
 
-        // SIMD-accelerated RMS across channel 0.
+        // SIMD-accelerated RMS — Ch1 (channel 0, always present).
         var rms: Float = 0
         vDSP_rmsqv(channelData[0], 1, &rms, frameLength)
-
         let db: Float = rms > 0 ? 20.0 * log10f(rms) : Self.silenceThresholdDb
         let normalizedLevel = Self.normalizeDecibels(db)
 
-        // Update state.
+        // Ch2 (channel 1) — only when stereo input is active.
+        var normalizedLevel2: Float? = nil
+        if isStereoInput && buffer.format.channelCount >= 2 {
+            var rms2: Float = 0
+            vDSP_rmsqv(channelData[1], 1, &rms2, frameLength)
+            let db2: Float = rms2 > 0 ? 20.0 * log10f(rms2) : Self.silenceThresholdDb
+            normalizedLevel2 = Self.normalizeDecibels(db2)
+        }
+
         let now = CACurrentMediaTime()
 
         stateLock.lock()
 
-        // Peak hold logic.
+        // Ch1 peak hold.
         if normalizedLevel > peakLevel {
             peakLevel = normalizedLevel
             peakTimestamp = now
         } else if now - peakTimestamp > Self.peakHoldDuration {
-            // Decay peak toward current level.
             peakLevel += (normalizedLevel - peakLevel) * 0.15
         }
         let peak = peakLevel
 
-        // Silence watchdog: track last non-zero buffer.
+        // Ch2 peak hold (independent).
+        var peak2: Float? = nil
+        if let level2 = normalizedLevel2 {
+            if level2 > peakLevel2 {
+                peakLevel2 = level2
+                peakTimestamp2 = now
+            } else if now - peakTimestamp2 > Self.peakHoldDuration {
+                peakLevel2 += (level2 - peakLevel2) * 0.15
+            }
+            peak2 = peakLevel2
+        }
+
+        // Silence watchdog: track last non-zero buffer (Ch1 drives this).
         var fireSilenceAlert = false
         var fireSilenceRecovery = false
 
@@ -303,8 +344,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         // Publish to main thread.
         if shouldUpdate, let callback = onLevelsUpdated {
+            let l2 = normalizedLevel2
+            let p2 = peak2
             DispatchQueue.main.async {
-                Task { @MainActor in callback(normalizedLevel, peak) }
+                Task { @MainActor in callback(normalizedLevel, peak, l2, p2) }
             }
         }
 

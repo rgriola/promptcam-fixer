@@ -107,10 +107,16 @@ final class CameraViewModel {
 
     // MARK: - Audio Metering
 
-    /// Current average audio input level (0.0–1.0).
+    /// Current average audio input level Ch1 (0.0–1.0).
     var audioLevel: Float = 0
-    /// Current peak-hold audio level (0.0–1.0).
+    /// Current peak-hold audio level Ch1 (0.0–1.0).
     var audioPeak: Float = 0
+    /// Current average audio level Ch2 (0.0–1.0). Non-zero only when a stereo input is active.
+    var audioLevel2: Float = 0
+    /// Current peak-hold audio level Ch2 (0.0–1.0). Non-zero only when a stereo input is active.
+    var audioPeak2: Float = 0
+    /// True when the active audio input is a stereo device (e.g. dual-channel wireless receiver).
+    var isStereoInput: Bool = false
     /// Whether an external microphone is connected.
     var isExternalMic: Bool = false
     /// Marketing name of the external mic, if available.
@@ -496,9 +502,12 @@ final class CameraViewModel {
     private func setupAudioMeter() {
         let meter = AudioMeterService()
 
-        meter.onLevelsUpdated = { [weak self] average, peak in
-            self?.audioLevel = average
-            self?.audioPeak = peak
+        meter.onLevelsUpdated = { [weak self] ch1Level, ch1Peak, ch2Level, ch2Peak in
+            self?.audioLevel = ch1Level
+            self?.audioPeak = ch1Peak
+            self?.audioLevel2 = ch2Level ?? 0
+            self?.audioPeak2 = ch2Peak ?? 0
+            self?.isStereoInput = ch2Level != nil
         }
 
         meter.onRouteChanged = { [weak self] isExternal, name in
