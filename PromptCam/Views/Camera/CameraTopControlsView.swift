@@ -40,7 +40,7 @@ struct CameraTopControlsView: View {
                 Button(action: onTapFormat) {
                     HStack(spacing: 0){
                         Text(resolutionLabel)
-                            .font(Theme.font16Semibold)
+                            .font(Theme.mono16Medium)
                             .padding(.trailing, 4)
                         /*
                         Text("res")
@@ -50,7 +50,7 @@ struct CameraTopControlsView: View {
                         */
 
                         Text(fpsLabel)
-                            .font(Theme.font16Semibold)
+                            .font(Theme.mono16Medium)
                             .padding(.trailing, 2)
                         Text("fps")
                             .font(Theme.font12Medium)

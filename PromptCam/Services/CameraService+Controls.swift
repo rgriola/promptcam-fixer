@@ -9,9 +9,37 @@ import AVFoundation
 
 extension CameraService {
 
+    // MARK: - Cinematic Mode Guard
+
+    /// Returns true when the session is actively capturing in Cinematic Video mode.
+    ///
+    /// Apple requires `.continuousAutoFocus` at all times during cinematic capture.
+    /// Setting `.autoFocus` or `.locked` throws an uncatchable `NSInvalidArgumentException`.
+    /// Any focus/lock call must check this flag and skip the `focusMode` assignment.
+    ///
+    /// - iOS 26+: reads `isCinematicVideoCaptureEnabled` directly from the capture input.
+    /// - Pre-iOS 26: infers cinematic mode from the active format's depth data support
+    ///   (depth formats are only present on CINE-capable formats on TrueDepth cameras).
+    var isCinematicActive: Bool {
+        if #available(iOS 26.0, *) {
+            return videoInput?.isCinematicVideoCaptureEnabled == true
+        } else {
+            // Depth data support is the best pre-iOS-26 proxy for cinematic formats.
+            return videoDevice?.activeFormat.supportedDepthDataFormats.isEmpty == false
+        }
+    }
+
     func focus(at devicePoint: CGPoint) {
         sessionQueue.async {
             guard let device = self.videoDevice else { return }
+
+            // Cinematic Mode manages continuous AF automatically.
+            // Setting any other focus mode throws NSInvalidArgumentException.
+            guard !self.isCinematicActive else {
+                Log.camera.debug("CameraService: focus(at:) skipped — cinematic mode active")
+                return
+            }
+
             do {
                 try device.lockForConfiguration()
 
@@ -59,6 +87,14 @@ extension CameraService {
     func lockFocusExposure(at devicePoint: CGPoint, completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)? = nil) {
         sessionQueue.async {
             guard let device = self.videoDevice else {
+                self.publishLockOutcome(.unsupported, completion: completion)
+                return
+            }
+
+            // Cinematic Mode manages continuous AF automatically.
+            // Setting .locked or .autoFocus throws NSInvalidArgumentException.
+            guard !self.isCinematicActive else {
+                Log.camera.debug("CameraService: lockFocusExposure(at:) skipped — cinematic mode active")
                 self.publishLockOutcome(.unsupported, completion: completion)
                 return
             }

@@ -12,6 +12,7 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
     // MARK: - Preview Session
 
     let previewSession = AVCaptureSession()
+    let audioDevice: AVCaptureDevice? = nil
 
     // MARK: - Call Tracking
 
@@ -63,6 +64,10 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
 
     func stopRecording() {
         stopRecordingCalled = true
+    }
+
+    func reconfigureAudioInput() {
+        // No-op in mock
     }
 
     // MARK: - Format & Cinematic

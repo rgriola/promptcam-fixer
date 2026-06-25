@@ -16,6 +16,7 @@ struct ScriptArchiveSheet: View {
                         systemImage: "clock.arrow.circlepath",
                         description: Text("Saved scripts appear here for 7 days.")
                     )
+                    .foregroundStyle(Theme.white)
                 } else {
                     List {
                         ForEach(scripts) { script in
@@ -31,7 +32,7 @@ struct ScriptArchiveSheet: View {
 
                                     Text(script.relativeTimestamp)
                                         .font(Theme.font12Regular)
-                                        .foregroundStyle(Theme.secondaryText)
+                                        .foregroundStyle(Theme.primaryText)
                                 }
                                 .padding(.vertical, 4)
                             }

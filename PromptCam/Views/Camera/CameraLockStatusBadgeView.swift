@@ -21,9 +21,9 @@ struct CameraLockStatusBadgeView: View {
     private var statusColor: Color {
         switch status {
         case .auto:
-            return Theme.green
+            return Theme.white
         case .unsupported:
-            return Theme.yellow
+            return Theme.red
         case .aeAfLocked, .aeLocked, .afLocked:
             return Theme.yellow
         }

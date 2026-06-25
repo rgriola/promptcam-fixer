@@ -17,6 +17,11 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
     /// The capture session used by the preview layer.
     var previewSession: AVCaptureSession { get }
 
+    // MARK: - Audio
+
+    /// The audio capture device, if available. Used for gain control.
+    var audioDevice: AVCaptureDevice? { get }
+
     // MARK: - Callbacks (set by the ViewModel in bindCallbacks)
 
     var onRecordingStateChanged: (@MainActor @Sendable (Bool) -> Void)? { get set }
@@ -37,6 +42,7 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
 
     func startRecording()
     func stopRecording()
+    func reconfigureAudioInput()
 
     // MARK: - Format & Cinematic
 

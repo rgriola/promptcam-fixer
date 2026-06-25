@@ -86,6 +86,39 @@ struct CameraView: View {
                     .position(focusIndicatorPoint)
                 } */
 
+                // Layer 2.5: Audio VU meter on the left edge of the preview.
+                // Hidden when any modal sheet is open.
+                if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
+                    let meterHeight = layout.previewSize.height * 0.28
+                    VUMeterView(
+                        level: viewModel.audioLevel,
+                        peak: viewModel.audioPeak,
+                        isExternalMic: viewModel.isExternalMic,
+                        isRecording: viewModel.isRecording,
+                        sourceNameHint: viewModel.audioSourceHint
+                    )
+                    .frame(
+                        width: CameraLayout.vuMeterWidth,
+                        height: meterHeight
+                    )
+                    .background(
+                        Color.black.opacity(0.3)
+                        .cornerRadius(8)
+                        .padding(-10)
+                        )
+                    .position(
+                        x: CameraLayout.vuMeterHorizontalInset + 5,
+                        // Align bottom edge with record button bottom:
+                        // Record button center = previewHeight - 125, radius = 36
+                        // → button bottom = previewHeight - 89
+                        y: layout.previewSize.height - 89 - meterHeight / 2
+                    )
+                    .transition(.opacity)
+                    .onTapGesture {
+                        viewModel.openAudioSourcePicker()
+                    }
+                }
+
                 // Layer 3: Recording cluster positioned at bottom of camera preview
                 RecordingClusterView(
                     isRecording: viewModel.isRecording,
@@ -155,18 +188,12 @@ struct CameraView: View {
                        height: layout.teleprompterResetButtonSize)
                 .position(layout.teleprompterResetCenter)
 
-                // Layer 6: Teleprompter adjustment panel — slides up from below viewport.
+                // Layer 6: Teleprompter adjustment panel — standardised panel styling.
                 if showAdjustmentPanel {
-                    VStack {
-                        // Tap-off-screen dismiss area — covers everything above the panel.
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(Theme.panelSpring) {
-                                    showAdjustmentPanel = false
-                                }
-                                Log.ui.debug("adjustmentPanel dismissed via tap-outside")
-                            }
+                    StandardPanelOverlay(onDismiss: {
+                        showAdjustmentPanel = false
+                        Log.ui.debug("adjustmentPanel dismissed via tap-outside")
+                    }) {
                         TeleprompterAdjustmentPanel(
                             config: Binding(
                                 get: { viewModel.config },
@@ -178,88 +205,71 @@ struct CameraView: View {
                                     defaults.text = viewModel.config.text
                                     return defaults
                                 }())
+                            },
+                            onDismiss: {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    showAdjustmentPanel = false
+                                }
                             }
                         )
                     }
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
-                // Layer 8: EV adjustment panel — slides up from bottom.
+                // Layer 8: EV adjustment panel — standardised panel styling.
                 if showEVPanel {
-                    VStack(spacing: 0) {
-                        // Tap-off-screen dismiss area — covers everything above the panel
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(Theme.panelSpring) {
+                    StandardPanelOverlay(onDismiss: {
+                        showEVPanel = false
+                        Log.ui.debug("EV panel dismissed via tap-outside")
+                    }) {
+                        EVAdjustmentPanel(
+                            exposureBias: $exposureBias,
+                            exposureRange: exposureRange,
+                            onReset: {
+                                // Set absolute 0 — bypasses delta drift entirely
+                                viewModel.setExposure(to: 0)
+                                Log.ui.debug("EV reset to 0 (Auto)")
+                            },
+                            onAdjust: { newBias in
+                                // Absolute value — no delta tracking needed
+                                viewModel.setExposure(to: newBias)
+                            },
+                            onDismiss: {
+                                withAnimation(.easeOut(duration: 0.25)) {
                                     showEVPanel = false
                                 }
-                                Log.ui.debug("EV panel dismissed via tap-outside")
                             }
-                        
-                        // Panel container at bottom
-                        HStack {
-                            EVAdjustmentPanel(
-                                exposureBias: $exposureBias,
-                                exposureRange: exposureRange,
-                                onReset: {
-                                    // Set absolute 0 — bypasses delta drift entirely
-                                    viewModel.setExposure(to: 0)
-                                    Log.ui.debug("EV reset to 0 (Auto)")
-                                },
-                                onAdjust: { newBias in
-                                    // Absolute value — no delta tracking needed
-                                    viewModel.setExposure(to: newBias)
-                                }
-                            )
-                            .frame(width: 240)
-                            .padding(.leading, Theme.space12)
-                            
-                          //  Spacer()
-                        }
-                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
+                        )
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Layer 9: Cinematic aperture panel — mirrors EV panel layout.
+                // Layer 9: Cinematic aperture panel — standardised panel styling.
                 // Only rendered when cinematicApertureRange is non-nil (cinematic + iOS 26+).
                 if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
-                    VStack(spacing: 0) {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation(Theme.panelSpring) {
+                    StandardPanelOverlay(onDismiss: {
+                        showAperturePanel = false
+                        Log.ui.debug("Aperture panel dismissed via tap-outside")
+                    }) {
+                        CinematicAperturePanel(
+                            aperture: $viewModel.cinematicSimulatedAperture,
+                            apertureRange: apertureRange,
+                            defaultAperture: apertureRange.lowerBound +
+                                (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
+                            onReset: {
+                                let def = apertureRange.lowerBound +
+                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
+                                viewModel.setSimulatedAperture(def)
+                                Log.ui.debug("Aperture reset to default")
+                            },
+                            onAdjust: { value in
+                                viewModel.setSimulatedAperture(value)
+                            },
+                            onDismiss: {
+                                withAnimation(.easeOut(duration: 0.25)) {
                                     showAperturePanel = false
                                 }
-                                Log.ui.debug("Aperture panel dismissed via tap-outside")
                             }
-
-                        HStack {
-                            CinematicAperturePanel(
-                                aperture: $viewModel.cinematicSimulatedAperture,
-                                apertureRange: apertureRange,
-                                defaultAperture: apertureRange.lowerBound +
-                                    (apertureRange.upperBound - apertureRange.lowerBound) * 0.25,
-                                onReset: {
-                                    let def = apertureRange.lowerBound +
-                                        (apertureRange.upperBound - apertureRange.lowerBound) * 0.25
-                                    viewModel.setSimulatedAperture(def)
-                                    Log.ui.debug("Aperture reset to default")
-                                },
-                                onAdjust: { value in
-                                    viewModel.setSimulatedAperture(value)
-                                }
-                            )
-                            .frame(width: 260)
-                            .padding(.leading, Theme.space12)
-                        }
-                        .padding(.bottom, layout.safeBottomInset + Theme.space8)
+                        )
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
                 // Layer 7: Temporary warning banner (top center).
@@ -269,6 +279,47 @@ struct CameraView: View {
                     autoDismissAfter: 3.0,
                     isPresented: $viewModel.showFormatLockedWarning
                 )
+
+                // Layer 7.5: Audio route changed warning (e.g. mic disconnect
+                // during recording). Body text is provided by the view model.
+                TemporaryWarningBanner(
+                    message: viewModel.audioRouteChangedMessage,
+                    systemImage: "mic.slash.fill",
+                    autoDismissAfter: 4.0,
+                    isPresented: $viewModel.showAudioRouteChangedWarning
+                )
+
+                // Layer 7.6: Silence watchdog — sustained dead audio from
+                // an external mic (flaky cable, hardware mute, etc.).
+                TemporaryWarningBanner(
+                    message: "No audio signal detected. Check microphone connection.",
+                    systemImage: "waveform.badge.exclamationmark",
+                    autoDismissAfter: 6.0,
+                    isPresented: $viewModel.showAudioSilenceWarning
+                )
+
+                // Layer 10: Audio source picker — dims 10% and shows input
+                // choice when a mic is plugged in or removed.
+                if viewModel.showAudioSourcePicker {
+                    StandardPanelOverlay(onDismiss: {
+                        viewModel.showAudioSourcePicker = false
+                    }) {
+                        AudioSourcePickerView(
+                            inputs: viewModel.availableAudioInputs,
+                            activeInputName: viewModel.activeAudioInputName,
+                            onSelect: { port in
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    viewModel.selectAudioInput(port)
+                                }
+                            },
+                            onDismiss: {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    viewModel.showAudioSourcePicker = false
+                                }
+                            }
+                        )
+                    }
+                }
             }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
