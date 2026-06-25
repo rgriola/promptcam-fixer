@@ -47,13 +47,14 @@ struct CameraLockStatusBadgeView: View {
                 .accessibilityHidden(true)
 
                 // Real content — overlaid and centered inside the stable frame.
+                // Single-line (AUTO) centers vertically; two-line (locked) centers as a pair.
                 VStack(spacing: 0) {
                     Text(parts.top)
                         .font(parts.bottom == nil ? Theme.mono16Medium : Theme.mono12Medium)
-                    // Always render the bottom slot; invisible when AUTO.
-                    Text(parts.bottom ?? " ")
-                        .font(Theme.mono12Medium)
-                        .opacity(parts.bottom == nil ? 0 : 1)
+                    if let bottom = parts.bottom {
+                        Text(bottom)
+                            .font(Theme.mono12Medium)
+                    }
                 }
             }
             .foregroundStyle(statusColor)
