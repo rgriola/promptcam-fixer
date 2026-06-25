@@ -29,6 +29,37 @@ struct RecordingsService: Sendable {
         }.value
     }
 
+    /// Thumbnail for the most recently saved video — used by the camera-roll
+    /// button on the footer to mirror the iOS Camera app's thumbnail preview.
+    /// Returns `nil` when the library is empty, not authorized, or the fetch fails.
+    func latestVideoThumbnail(targetSize: CGSize) async -> UIImage? {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { return nil }
+
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.fetchLimit = 1
+
+        guard let asset = PHAsset.fetchAssets(with: .video, options: options).firstObject else {
+            return nil
+        }
+
+        return await withCheckedContinuation { continuation in
+            let imgOptions = PHImageRequestOptions()
+            imgOptions.deliveryMode = .fastFormat  // single callback, safe for continuation
+            imgOptions.isNetworkAccessAllowed = true
+            Self.cachingManager.requestImage(
+                for: asset,
+                targetSize: targetSize,
+                contentMode: .aspectFill,
+                options: imgOptions
+            ) { image, _ in
+                continuation.resume(returning: image)
+            }
+        }
+    }
+
+
     /// Resolves a recording id back to its underlying `PHAsset`.
     private func asset(for id: String) -> PHAsset? {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
