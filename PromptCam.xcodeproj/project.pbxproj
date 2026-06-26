@@ -11,6 +11,7 @@
 		0D0F77366217D4B1B4E6C142 /* RecordingsLibrarySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB551B9997DF32815A820B3F /* RecordingsLibrarySheet.swift */; };
 		135F477ECF06843A6EA1B4A1 /* TeleprompterConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */; };
 		13847D862F1F1D0169BFB707 /* CameraTopControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F55FD6F602D966B7207F6E /* CameraTopControlsView.swift */; };
+		1C6EEDCEDA41783589DF85C6 /* AVPlayerHostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCB522F1DE537426C9717D4 /* AVPlayerHostingView.swift */; };
 		253E723527CF658E8F67F41C /* RecordingsLibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 753F73EFB38C7673680AD164 /* RecordingsLibraryViewModel.swift */; };
 		25D1494F821C8636F73EB9C6 /* StandardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671D4AEC4E7F17E8F6B43702 /* StandardPanel.swift */; };
 		2E8632333D2153873B8963CE /* CameraFormatPanelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */; };
@@ -125,6 +126,7 @@
 		71440E54776D121738FE8505 /* TeleprompterDebugHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterDebugHUD.swift; sourceTree = "<group>"; };
 		7268218A2CC3AD4D761F72DD /* TeleprompterMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterMeasurement.swift; sourceTree = "<group>"; };
 		753F73EFB38C7673680AD164 /* RecordingsLibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsLibraryViewModel.swift; sourceTree = "<group>"; };
+		7FCB522F1DE537426C9717D4 /* AVPlayerHostingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AVPlayerHostingView.swift; sourceTree = "<group>"; };
 		8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
 		8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusRow.swift; sourceTree = "<group>"; };
 		923418788547770366446818 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
@@ -211,6 +213,7 @@
 			children = (
 				D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */,
 				451BB829FD09329B426D70AF /* RecordingThumbnailView.swift */,
+				7FCB522F1DE537426C9717D4 /* AVPlayerHostingView.swift */,
 			);
 			path = Recordings;
 			sourceTree = "<group>";
@@ -357,8 +360,6 @@
 			dependencies = (
 			);
 			name = PromptCam;
-			packageProductDependencies = (
-			);
 			productName = PromptCam;
 			productReference = B860643BC28289FBEEAD4BEB /* PromptCam.app */;
 			productType = "com.apple.product-type.application";
@@ -375,8 +376,6 @@
 				8C14754B3224D8C1DA56D276 /* PBXTargetDependency */,
 			);
 			name = PromptCamTests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamTests;
 			productReference = B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -393,8 +392,6 @@
 				588AFCE987247FAA4211833B /* PBXTargetDependency */,
 			);
 			name = PromptCamUITests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamUITests;
 			productReference = 14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -505,6 +502,7 @@
 				8822631F7E4FCED4165D036E /* Theme.swift in Sources */,
 				ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,
+				1C6EEDCEDA41783589DF85C6 /* AVPlayerHostingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
