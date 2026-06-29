@@ -23,13 +23,6 @@ struct CameraView: View {
     /// Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
 
-    // MARK: - Focus / Exposure Gesture State
-    /// Current focus indicator center in preview coordinates.
-    @State private var focusIndicatorPoint: CGPoint?
-    /// Controls visibility of the focus indicator.
-    @State private var showFocusIndicator = false
-    /// Task used to hide focus indicator after inactivity. Cancelled on re-tap or view disappear.
-    @State private var hideFocusTask: Task<Void, Never>?
     /// Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
 
@@ -72,15 +65,6 @@ struct CameraView: View {
                 .position(x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2)
                 .ignoresSafeArea(.container, edges: .top)
                 .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing camera preview
-
-                // Layer 2: Focus reticle + EV drag layer shown after tap/long-press.
-              /*  if showFocusIndicator, let focusIndicatorPoint {
-                    FocusIndicatorView(
-                        // turned off by Rod Griola June 11 keep for now. 
-                      showFocusIndicator: showFocusIndicator
-                    )
-                    .position(focusIndicatorPoint)
-                } */
 
                 // Layer 2.5: Audio VU meter on the left edge of the preview.
                 // Hidden when any modal sheet is open.
@@ -358,7 +342,6 @@ struct CameraView: View {
         .onDisappear {
             viewModel.onDisappear()
             viewModel.unlockFocusExposure()
-            cleanupFocusState()
         }
         // MARK: - State Observers
         .onChange(of: viewModel.activeSheet) { _, newValue in
@@ -370,17 +353,6 @@ struct CameraView: View {
                 withAnimation(Theme.panelSpring) {
                     showAperturePanel = false
                 }
-            }
-        }
-        .onChange(of: viewModel.lockStatus) { _, newStatus in
-            // Simplified: locked states keep reticle visible, unlocked states auto-hide.
-            if newStatus.isLocked {
-            //  turned off by Rod Griola jun 11 keep for now. 
-            //  showFocusIndicator = true
-                hideFocusTask?.cancel()
-                hideFocusTask = nil
-            } else {
-                scheduleFocusHide()
             }
         }
     }
@@ -457,9 +429,6 @@ struct CameraView: View {
             },
             onTapSettings: {
                 viewModel.openSettings()
-            },
-            onTapGuide: {
-                // Tour disabled — guide button reserved for future use.
             }
         )
     }
@@ -470,34 +439,8 @@ struct CameraView: View {
     private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint) {
         viewModel.focus(at: devicePoint)
         Log.ui.debug("Touch Focus at point")
-        updateFocusIndicatorPosition(viewPoint: viewPoint)
-        scheduleFocusHide()
     }
 
-    /// Positions and shows the focus indicator using preview touch coordinates.
-    /// Preview is top-anchored (y=0), so no extra Y offset is needed.
-    private func updateFocusIndicatorPosition(viewPoint: CGPoint) {
-        withAnimation(.easeOut(duration: 0.15)) {
-            focusIndicatorPoint = viewPoint
-            // turned off by Rod Griola Jun 11 keep for now. 
-           // showFocusIndicator = true
-        }
-    }
-
-    /// Schedules reticle fade-out for non-locked focus states.
-    private func scheduleFocusHide() {
-        guard !viewModel.lockStatus.isLocked else { return }
-
-        hideFocusTask?.cancel()
-        hideFocusTask = Task {
-            try? await Task.sleep(for: .seconds(2.0))
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 1.15)) {
-                showFocusIndicator = false
-            }
-        }
-    }
-    
     // MARK: - Lock Toggle Helpers
     
     /// Toggles AF/AE lock on/off. When locking, uses the last focus point
@@ -520,12 +463,6 @@ struct CameraView: View {
             viewModel.lockFocusExposure(at: CGPoint(x: 0.5, y: 0.5))
             Log.ui.info("AF/AE lock attempted via button at center")
         }
-    }
-    
-    /// Cancels pending focus/exposure work items on view disappearance.
-    private func cleanupFocusState() {
-        hideFocusTask?.cancel()
-        hideFocusTask = nil
     }
 
     // MARK: - Sheet Router
