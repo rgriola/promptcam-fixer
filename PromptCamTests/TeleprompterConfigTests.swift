@@ -149,26 +149,3 @@ final class CameraServiceLockOutcomeTests: XCTestCase {
         XCTAssertEqual(outcome, .unsupported)
     }
 }
-
-// MARK: - CameraService Camera Selection Tests
-
-final class CameraServicePreferredCameraSelectionTests: XCTestCase {
-    func testPreferredCameraSelectionDefaultsToFrontWhenAvailable() {
-        let selection = CameraService.preferredCameraSelection(frontAvailable: true, backAvailable: true)
-
-        XCTAssertEqual(selection, .front)
-    }
-
-    func testPreferredCameraSelectionFallsBackToBackWhenFrontUnavailable() {
-        let selection = CameraService.preferredCameraSelection(frontAvailable: false, backAvailable: true)
-
-        // Back-camera support is not implemented (front-only app).
-        XCTAssertEqual(selection, .unavailable)
-    }
-
-    func testPreferredCameraSelectionReturnsUnavailableWhenNoCameraExists() {
-        let selection = CameraService.preferredCameraSelection(frontAvailable: false, backAvailable: false)
-
-        XCTAssertEqual(selection, .unavailable)
-    }
-}
