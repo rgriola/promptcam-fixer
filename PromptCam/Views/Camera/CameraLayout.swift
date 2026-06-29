@@ -34,8 +34,8 @@ enum CameraLayout {
         return (previewHeight, bottomChromeHeight)
         }
 
-    // MARK: - Header Chrome
-    /// Horizontal inset for header controls (EV pill, grid, format panel).
+    // MARK: - Controls Row Chrome
+    /// Horizontal inset for controls row (video mode, format pill, EV, lock).
     static let headerHorizontalPadding: CGFloat = 16
 
     // MARK: - Recording Cluster

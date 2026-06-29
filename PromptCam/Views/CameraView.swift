@@ -49,14 +49,6 @@ struct CameraView: View {
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
     
-    // MARK: - Feature Tour State
-    /// Persists whether the user has completed their first-use tour.
-    @AppStorage("hasSeenTour") private var hasSeenTour = false
-    /// Drives step navigation for the coach-marks overlay.
-    @State private var tourCoordinator = TourCoordinator()
-    /// Global CGRect frames for spotlight targets, collected via TourAnchorKey.
-    @State private var tourFrames: [String: CGRect] = [:]
-
     // MARK: - Body
 
     var body: some View {
@@ -92,6 +84,7 @@ struct CameraView: View {
 
                 // Layer 2.5: Audio VU meter on the left edge of the preview.
                 // Hidden when any modal sheet is open.
+
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
                     let meterHeight = layout.previewSize.height * 0.28
                     VUMeterView(
@@ -123,7 +116,6 @@ struct CameraView: View {
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
                     }
-                    .tourAnchor("vu-meter")
                 }
 
                 // Layer 3: Recording cluster positioned at bottom of camera preview
@@ -151,7 +143,7 @@ struct CameraView: View {
                 
                 // Layer 4: Header and footer chrome constrained to space below preview
                 VStack(spacing: Theme.space12) {
-                    cameraHeader()
+                    cameraControlsRow()
                     .padding()
                     .background(Theme.black.opacity(0.1))
                     cameraFooter()
@@ -194,7 +186,7 @@ struct CameraView: View {
                 .frame(width: layout.teleprompterResetButtonSize,
                        height: layout.teleprompterResetButtonSize)
                 .position(layout.teleprompterResetCenter)
-                .tourAnchor("reset-script")
+
 
                 // Layer 6: Teleprompter adjustment panel — standardised panel styling.
                 if showAdjustmentPanel {
@@ -327,25 +319,9 @@ struct CameraView: View {
                 }
 
             }
-            .onPreferenceChange(TourAnchorKey.self) { tourFrames = $0 }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
-            // Feature Tour Overlay — sits outside the constrained ZStack so its
-            // .ignoresSafeArea() can freely expand to the full physical screen.
-            // tourAnchor frames use .global, and the overlay's own GeometryReader
-            // also uses .ignoresSafeArea(), keeping both in the same coordinate space.
-            .overlay {
-                if tourCoordinator.isActive {
-                    FeatureTourOverlay(
-                        coordinator: tourCoordinator,
-                        frames: tourFrames,
-                        onEnd: {
-                            hasSeenTour = true
-                        }
-                    )
-                }
-            }
         }
         // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
@@ -374,14 +350,7 @@ struct CameraView: View {
                 }
             )
         }
-        // First-use: auto-start the required feature tour after the camera initializes.
-        // 1.5s gives the camera session and anchor preference key time to settle on device.
-        .task {
-            if !hasSeenTour {
-                try? await Task.sleep(for: .milliseconds(1500))
-                tourCoordinator.start(required: true)
-            }
-        }
+
         // MARK: - Lifecycle
         .onAppear {
             viewModel.onAppear()
@@ -416,12 +385,11 @@ struct CameraView: View {
         }
     }
 
-    // MARK: - Header & Footer Builders
+    // MARK: - Controls Row & Footer Builders
 
-    /// Builds the top camera controls row and format quick panel.
-    /// - Parameter safeTopInset: Safe-area inset used to anchor controls below the notch.
-    /// - Returns: Configured top controls view.
-    private func cameraHeader() -> some View {
+    /// Builds the top camera controls row (video mode, format, EV, lock).
+    /// - Returns: Configured controls row view.
+    private func cameraControlsRow() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
@@ -430,7 +398,7 @@ struct CameraView: View {
             ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
             : nil
 
-        return CameraTopControlsView(
+        return CameraControlsRowView(
             evText: evText,
             lockStatus: viewModel.lockStatus,
             videoMode: viewModel.recordingFormat.mode,
@@ -491,9 +459,7 @@ struct CameraView: View {
                 viewModel.openSettings()
             },
             onTapGuide: {
-                guard !viewModel.isRecording else { return }
-                tourCoordinator.start()
-                Log.ui.debug("Feature tour started via Guide Dog")
+                // Tour disabled — guide button reserved for future use.
             }
         )
     }

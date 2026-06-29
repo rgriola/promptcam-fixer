@@ -28,7 +28,6 @@ struct RecordingClusterView: View {
             ScrollToggleButton(isScrolling: isScrolling, action: onScrollTap)
                 .frame(width: 40, height: 40)
                 .offset(x: 72)
-                .tourAnchor("scroll-button")
         }
     }
 }
