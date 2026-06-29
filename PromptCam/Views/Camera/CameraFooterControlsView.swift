@@ -23,7 +23,7 @@ struct CameraFooterControlsView: View {
 
     /// Footer control row for media import and utility actions.
     var body: some View {
-        HStack{
+        HStack(alignment: .top) {
             Spacer()
 
             // Camera-roll button: circular thumbnail of last recorded video.
@@ -34,48 +34,41 @@ struct CameraFooterControlsView: View {
             .accessibilityLabel("Open photo library")
             .accessibilityHint("Shows your most recently recorded video")
 
-
             Spacer()
 
-            footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
+            footerIconButton(systemName: "sparkle.text.clipboard", label: "Script", action: onTapScriptAssist)
                 .accessibilityLabel("Insert generated script")
 
-            
             Spacer()
 
-            footerIconButton(
-                systemName: "text.viewfinder", 
-                action: onTapAdjust)
+            footerIconButton(systemName: "text.viewfinder", label: "Prompter", action: onTapAdjust)
                 .accessibilityLabel("Teleprompter adjustments")
 
-
             Spacer()
 
-            footerIconButton(systemName: "gear", action: onTapSettings)
+            footerIconButton(systemName: "gear", label: "Settings", action: onTapSettings)
                 .accessibilityLabel("Open camera settings")
-            
+
             Spacer()
         }
-            .padding(.horizontal, Theme.space12)
-            .padding(.top, Theme.space4) 
-            .padding(.bottom, Theme.space8) // Separate from preview.
-           // .background(Theme.panelBg.opacity(0.9))
-            .frame(maxWidth: .infinity)
+        .padding(.horizontal, Theme.space12)
+        .padding(.top, Theme.space4)
+        .padding(.bottom, Theme.space8)
+        .frame(maxWidth: .infinity)
     }
 
-    /// Shared circular icon button used by footer controls.
-    /// - Parameters:
-    ///   - systemName: SF Symbol identifier for the icon.
-    ///   - action: Callback fired when the footer icon is tapped.
-    /// - Returns: Styled footer icon button.
-    private func footerIconButton(systemName: String, action: @escaping () -> Void) -> some View {
+    /// Shared icon + label button used by footer controls.
+    private func footerIconButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            ZStack {
+            VStack(spacing: 3) {
                 Image(systemName: systemName)
                     .font(Theme.icon24)
                     .foregroundStyle(Theme.white)
+                    .frame(width: CameraLayout.footerIconSize, height: CameraLayout.footerIconSize)
+                Text(label)
+                    .font(Theme.font10Regular)
+                    .foregroundStyle(Theme.secondaryText)
             }
-            .frame(width: CameraLayout.footerIconSize, height: CameraLayout.footerIconSize)
         }
     }
 }
