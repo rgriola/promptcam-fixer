@@ -423,23 +423,26 @@ struct CameraView: View {
                 scheduleFocusHide()
             }
         }
-        // MARK: - Tour Overlay (true sibling — fully decoupled from preference hierarchy)
-        // Lives in the outer ZStack as a sibling of the GeometryReader, not inside it.
-        // This prevents FeatureTourOverlay's insertion from triggering re-accumulation
-        // of TourAnchorKey preferences inside the inner camera ZStack.
-        if tourCoordinator.isActive {
-            FeatureTourOverlay(
-                coordinator: tourCoordinator,
-                frames: tourFrames,
-                onEnd: {
-                    hasSeenTour = true
-                    Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
-                }
-            )
-            .transition(.opacity)
-            .ignoresSafeArea()
-        }
         } // end outer ZStack
+        // MARK: - Tour Overlay
+        // .overlay{} on the OUTER ZStack guarantees compositing on top of all camera
+        // content. This overlay is NOT on the inner ZStack (which owns
+        // .onPreferenceChange(TourAnchorKey.self)), so inserting/removing the tour
+        // overlay cannot trigger preference re-accumulation or the 3s timeout.
+        .overlay {
+            if tourCoordinator.isActive {
+                FeatureTourOverlay(
+                    coordinator: tourCoordinator,
+                    frames: tourFrames,
+                    onEnd: {
+                        hasSeenTour = true
+                        Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
+                    }
+                )
+                .transition(.opacity)
+                .ignoresSafeArea()
+            }
+        }
     }
 
     // MARK: - Controls Row & Footer Builders
