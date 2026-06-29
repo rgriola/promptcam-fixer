@@ -9,12 +9,6 @@ enum FocusExposureLockOutcome: Equatable, Sendable {
     case unsupported
 }
 
-enum PreferredCameraSelection: Equatable, Sendable {
-    case front
-    case back
-    case unavailable
-}
-
 // MARK: - Device Capabilities
 
 /// Describes video format capabilities for the current device.
@@ -157,12 +151,6 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         set { callbackLock.withLock { _onFormatApplied = newValue } }
     }
 
-    private var _onSupportedFormatsQueried: (@MainActor @Sendable ([VideoResolution], [VideoFrameRate]) -> Void)?
-    var onSupportedFormatsQueried: (@MainActor @Sendable ([VideoResolution], [VideoFrameRate]) -> Void)? {
-        get { callbackLock.withLock { _onSupportedFormatsQueried } }
-        set { callbackLock.withLock { _onSupportedFormatsQueried = newValue } }
-    }
-
     private var _onDeviceCapabilitiesQueried: (@MainActor @Sendable (DeviceCapabilities) -> Void)?
     var onDeviceCapabilitiesQueried: (@MainActor @Sendable (DeviceCapabilities) -> Void)? {
         get { callbackLock.withLock { _onDeviceCapabilitiesQueried } }
@@ -187,13 +175,6 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         session.stopRunning()
         for input in session.inputs { session.removeInput(input) }
         for output in session.outputs { session.removeOutput(output) }
-    }
-
-    static func preferredCameraSelection(frontAvailable: Bool, backAvailable: Bool) -> PreferredCameraSelection {
-        if frontAvailable {
-            return .front
-        }
-        return .unavailable
     }
 
     /// Returns the preferred physical device for a given video mode.
@@ -434,13 +415,8 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
                 // Query device capabilities (includes mode-specific format support).
                 let capabilities = self.queryDeviceCapabilities()
-                
+
                 Task { @MainActor in
-                    // Legacy callback: derive flat arrays from the validated pairs.
-                    self.onSupportedFormatsQueried?(
-                        capabilities.resolutions(for: .standard),
-                        capabilities.frameRates(for: .standard)
-                    )
                     self.onDeviceCapabilitiesQueried?(capabilities)
                 }
             } catch {

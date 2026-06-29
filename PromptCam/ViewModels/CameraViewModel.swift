@@ -99,10 +99,6 @@ final class CameraViewModel {
     var teleprompterResetToken: Int = 0
     /// Current recording format (resolution + FPS). Persisted across launches.
     var recordingFormat: RecordingFormat
-    /// Hardware-supported resolutions for the active camera.
-    var supportedResolutions: [VideoResolution] = VideoResolution.allCases
-    /// Hardware-supported frame rates for the active camera.
-    var supportedFrameRates: [VideoFrameRate] = VideoFrameRate.allCases
     /// Device capabilities (mode support, resolution/fps per mode).
     var deviceCapabilities: DeviceCapabilities = DeviceCapabilities(
         supportsCinematicMode: false,
@@ -198,7 +194,7 @@ final class CameraViewModel {
         // Permissions are already granted by the onboarding page.
         cameraService.configureSession(format: recordingFormat)
         cameraService.startSession()
-        // Supported formats are received via onSupportedFormatsQueried callback
+        // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
 
@@ -445,26 +441,6 @@ final class CameraViewModel {
             Log.viewmodel.info("format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)")
         }
 
-        cameraService.onSupportedFormatsQueried = { [weak self] resolutions, frameRates in
-            guard let self else { return }
-            self.supportedResolutions = resolutions
-            self.supportedFrameRates = frameRates
-            Log.viewmodel.debug("supported formats res=\(resolutions.map(\.rawValue), privacy: .public) fps=\(frameRates.map(\.rawValue), privacy: .public)")
-
-            // If saved format isn't supported by this hardware, fall back.
-            if !resolutions.contains(self.recordingFormat.resolution) ||
-               !frameRates.contains(self.recordingFormat.frameRate) {
-                let fallback = RecordingFormat(
-                    resolution: resolutions.first ?? .hd1080p,
-                    frameRate: frameRates.contains(.fps30) ? .fps30 : (frameRates.first ?? .fps30),
-                    mode: .standard
-                )
-                self.recordingFormat = fallback
-                fallback.save()
-                Log.viewmodel.notice("format fell back to res=\(fallback.resolution.rawValue, privacy: .public) fps=\(fallback.frameRate.rawValue, privacy: .public)")
-            }
-        }
-
         cameraService.onDeviceCapabilitiesQueried = { [weak self] capabilities in
             guard let self else { return }
             self.deviceCapabilities = capabilities
@@ -535,7 +511,6 @@ final class CameraViewModel {
             // Detect direction using the boolean flag, which is immune to
             // the onInputsAvailable race condition.
             let disconnected = wasExternalBefore && !isExternal   // external → built-in
-            _ = !wasExternalBefore && isExternal                  // built-in → external (future use)
 
             // Always show an inline source-name hint beside the VU meter.
             self.showSourceHint(name)

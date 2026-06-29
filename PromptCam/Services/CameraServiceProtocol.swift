@@ -27,7 +27,6 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
     var onRecordingStateChanged: (@MainActor @Sendable (Bool) -> Void)? { get set }
     var onSessionRunningStateChanged: (@MainActor @Sendable (Bool) -> Void)? { get set }
     var onFormatApplied: (@MainActor @Sendable (RecordingFormat) -> Void)? { get set }
-    var onSupportedFormatsQueried: (@MainActor @Sendable ([VideoResolution], [VideoFrameRate]) -> Void)? { get set }
     var onDeviceCapabilitiesQueried: (@MainActor @Sendable (DeviceCapabilities) -> Void)? { get set }
     var onCinematicApertureAvailable: (@MainActor @Sendable (Float, Float, Float) -> Void)? { get set }
     var onError: (@MainActor @Sendable (CameraError) -> Void)? { get set }
