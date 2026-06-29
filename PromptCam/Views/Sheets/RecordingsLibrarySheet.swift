@@ -1,32 +1,28 @@
+import AVFoundation
 import Photos
+import PhotosUI
 import SwiftUI
 
 struct RecordingsLibrarySheet: View {
     @Environment(\.dismiss) private var dismiss
-    var viewModel: RecordingsLibraryViewModel
 
-    // Thumbnail cache — must be @State (not NSCache) so SwiftUI observes insertions
-    // and re-renders cells when thumbnails arrive. LazyVGrid naturally bounds the
-    // number of concurrent .task calls to visible cells.
-    @State private var thumbnails: [String: UIImage] = [:]
+    @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedRecording: Recording?
     @State private var videoURL: URL?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Theme.bgGrad.ignoresSafeArea()
-
-                if !viewModel.hasAccess {
-                    permissionDeniedView
-                } else if viewModel.isLoading {
-                    ProgressView().tint(Theme.primaryText)
-                } else if viewModel.recordings.isEmpty {
-                    emptyStateView
-                } else {
-                    recordingsGrid
-                }
+            PhotosPicker(
+                selection: $selectedItems,
+                maxSelectionCount: 1,
+                selectionBehavior: .default,
+                matching: .videos
+            ) {
+                EmptyView()
             }
+            .photosPickerStyle(.inline)
+            .photosPickerDisabledCapabilities(.selectionActions)
+            .tint(Theme.green)
             .navigationTitle("Camera Roll")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
@@ -35,101 +31,123 @@ struct RecordingsLibrarySheet: View {
                     CloseToolbarButton { dismiss() }
                 }
             }
-            .task { await viewModel.load() }
-            .fullScreenCover(item: $selectedRecording) { recording in
-                RecordingPlayerView(
-                    recording: recording,
-                    videoURL: videoURL,
-                    onDelete: { Task { await viewModel.delete(recording) } }
-                )
-            }
-            .onChange(of: selectedRecording) { _, newRec in
-                videoURL = nil
-                if let newRec {
-                    Task { videoURL = await viewModel.exportForSharing(newRec) }
-                }
+            .onChange(of: selectedItems) { _, items in
+                guard let item = items.first else { return }
+                Task { await openPlayer(for: item) }
             }
         }
-        .onDisappear {
-            viewModel.stopCaching()
+        .fullScreenCover(item: $selectedRecording, onDismiss: resetSelection) { recording in
+            RecordingPlayerView(
+                recording: recording,
+                videoURL: videoURL,
+                onDelete: {
+                    Task { await deleteRecording(recording) }
+                }
+            )
+        }
+        // Step 2 (fast path only): URL resolves after player is open
+        .onChange(of: selectedRecording) { _, newRecording in
+            guard newRecording != nil, videoURL == nil,
+                  let identifier = selectedItems.first?.itemIdentifier else { return }
+            let result = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+            guard let asset = result.firstObject else { return }
+            Task { videoURL = await resolveVideoURL(phAsset: asset) }
         }
     }
 
-    private var recordingsGrid: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 1),
-                    GridItem(.flexible(), spacing: 1),
-                    GridItem(.flexible(), spacing: 1)
-                ],
-                spacing: 1
-            ) {
-                ForEach(viewModel.recordings) { recording in
-                    RecordingThumbnailView(
-                        recording: recording,
-                        thumbnail: thumbnails[recording.id]
-                    ) {
-                        selectedRecording = recording
-                    }
-                    .task(id: recording.id) {
-                        guard thumbnails[recording.id] == nil else { return }
-                        let size = CGSize(width: 300, height: 300)
-                        if let img = await viewModel.thumbnail(for: recording, size: size) {
-                            thumbnails[recording.id] = img
-                        }
-                    }
-                    .onAppear {
-                        let size = CGSize(width: 300, height: 300)
-                        if let idx = viewModel.recordings.firstIndex(of: recording) {
-                            let start = max(0, idx - 10)
-                            let end = min(viewModel.recordings.count, idx + 10)
-                            let ids = viewModel.recordings[start..<end].map(\.id)
-                            viewModel.startCaching(ids: ids, size: size)
-                        }
-                    }
-                }
+    // MARK: - Open Player
+
+    /// Tries the PHAsset fast path first; falls back to Transferable file copy
+    /// so that the player always opens regardless of library access level or
+    /// whether itemIdentifier is available.
+    @MainActor
+    private func openPlayer(for item: PhotosPickerItem) async {
+        videoURL = nil
+
+        // ── Fast path: PHAsset ──────────────────────────────────────────────
+        if let identifier = item.itemIdentifier,
+           let asset = PHAsset.fetchAssets(
+               withLocalIdentifiers: [identifier], options: nil
+           ).firstObject
+        {
+            // Present the player immediately; URL loads via onChange(of: selectedRecording)
+            selectedRecording = Recording(asset: asset)
+            return
+        }
+
+        // ── Fallback: Transferable (copies file — works without PHAsset access) ──
+        if let movie = try? await item.loadTransferable(type: RecordingsMovieTransferable.self) {
+            let identifier = item.itemIdentifier ?? UUID().uuidString
+            let av = AVURLAsset(url: movie.url)
+            // Load metadata using non-deprecated async APIs
+            let cmDuration = (try? await av.load(.duration)) ?? .zero
+            let durationSecs = CMTimeGetSeconds(cmDuration)
+            let tracks = (try? await av.loadTracks(withMediaType: .video)) ?? []
+            let naturalSize = (try? await tracks.first?.load(.naturalSize)) ?? .zero
+            videoURL = movie.url
+            selectedRecording = Recording(
+                fallbackIdentifier: identifier,
+                duration: durationSecs.isNaN || durationSecs.isInfinite ? 0 : durationSecs,
+                pixelWidth: Int(naturalSize.width),
+                pixelHeight: Int(naturalSize.height)
+            )
+        }
+    }
+
+    // MARK: - URL Resolution (fast path step 2)
+
+    private func resolveVideoURL(phAsset: PHAsset) async -> URL? {
+        await withCheckedContinuation { continuation in
+            var resumed = false
+            let options = PHVideoRequestOptions()
+            options.isNetworkAccessAllowed = true   // stream from iCloud if needed
+            options.version = .current
+            options.deliveryMode = .highQualityFormat
+            PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) { avAsset, _, _ in
+                guard !resumed else { return }
+                resumed = true
+                continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
             }
         }
     }
 
-    private var permissionDeniedView: some View {
-        VStack(spacing: Theme.space16) {
-            Image(systemName: "photo.badge.exclamationmark")
-                .font(.system(size: 48))
-                .foregroundStyle(Theme.secondaryText)
-            Text("Photo Library Access Required")
-                .font(Theme.font20Semibold)
-                .foregroundStyle(Theme.primaryText)
-            Text("Grant PromptCam permission to read your videos in Settings.")
-                .font(Theme.font16Regular)
-                .foregroundStyle(Theme.secondaryText)
-                .multilineTextAlignment(.center)
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            .padding(.horizontal, Theme.space32)
-            .padding(.vertical, Theme.space8)
-            .background(Theme.accent, in: RoundedRectangle(cornerRadius: Theme.radiusSm))
-            .foregroundStyle(Theme.blackText)
-            .font(Theme.font16Semibold)
-        }
-        .padding(Theme.space32)
+    // MARK: - Delete / Reset
+
+    /// Clears picker selection on player dismiss so the same video can be tapped again immediately.
+    private func resetSelection() {
+        selectedItems = []
+        videoURL = nil
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: Theme.space16) {
-            Image(systemName: "video.slash")
-                .font(.system(size: 48))
-                .foregroundStyle(Theme.secondaryText)
-            Text("No Videos Found")
-                .font(Theme.font20Semibold)
-                .foregroundStyle(Theme.primaryText)
-            Text("Record a video to see it here.")
-                .font(Theme.font16Regular)
-                .foregroundStyle(Theme.secondaryText)
+    private func deleteRecording(_ recording: Recording) async {
+        let assets = PHAsset.fetchAssets(withLocalIdentifiers: [recording.id], options: nil)
+        try? await PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.deleteAssets(assets)
+        }
+        selectedRecording = nil
+        selectedItems = []
+        videoURL = nil
+    }
+}
+
+// MARK: - Transferable
+
+/// Copies a video from the photo library into a temp file.
+/// Used as fallback when PHAsset lookup fails (limited access or nil itemIdentifier).
+private struct RecordingsMovieTransferable: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { movie in
+            SentTransferredFile(movie.url)
+        } importing: { received in
+            let name = received.file.lastPathComponent
+            let subdir = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
+            let dest = subdir.appendingPathComponent(name)
+            try FileManager.default.copyItem(at: received.file, to: dest)
+            return Self(url: dest)
         }
     }
 }

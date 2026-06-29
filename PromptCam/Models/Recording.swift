@@ -1,3 +1,4 @@
+import AVFoundation
 import Photos
 
 /// Lightweight, Sendable view model of a video recording.
@@ -22,5 +23,15 @@ struct Recording: Identifiable, Hashable, Sendable {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    /// Fallback initialiser used when PHAsset is unavailable (Transferable path).
+    /// Metadata is loaded asynchronously by the caller before calling this init.
+    init(fallbackIdentifier: String, duration: TimeInterval = 0, pixelWidth: Int = 0, pixelHeight: Int = 0) {
+        self.id = fallbackIdentifier
+        self.duration = duration
+        self.creationDate = Date()
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
     }
 }
