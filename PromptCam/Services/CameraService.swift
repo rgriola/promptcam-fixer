@@ -1,6 +1,6 @@
 // May 30, 2026 - 4:23pm - GitHub Copilot
 // June 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add setExposure(to:) for reliable absolute reset
-import AVFoundation
+@preconcurrency import AVFoundation
 import Photos
 enum FocusExposureLockOutcome: Equatable, Sendable {
     case afAeLocked
@@ -172,9 +172,15 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     }
 
     deinit {
-        session.stopRunning()
-        for input in session.inputs { session.removeInput(input) }
-        for output in session.outputs { session.removeOutput(output) }
+        // AVCaptureSession mutations must run on sessionQueue. Capture the
+        // session reference locally so the closure does not capture self,
+        // which is being deallocated.
+        let session = self.session
+        sessionQueue.async {
+            session.stopRunning()
+            for input in session.inputs { session.removeInput(input) }
+            for output in session.outputs { session.removeOutput(output) }
+        }
     }
 
     /// Returns the preferred physical device for a given video mode.

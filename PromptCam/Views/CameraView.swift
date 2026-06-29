@@ -90,11 +90,11 @@ struct CameraView: View {
                         .padding(-10)
                         )
                     .position(
-                        x: CameraLayout.vuMeterHorizontalInset + 5,
-                        // Align bottom edge with record button bottom:
-                        // Record button center = previewHeight - 125, radius = 36
-                        // → button bottom = previewHeight - 89
-                        y: layout.previewSize.height - 89 - meterHeight / 2
+                        x: CameraLayout.vuMeterHorizontalInset + CameraLayout.vuMeterHorizontalNudge,
+                        // Align meter bottom with record-button bottom.
+                        y: layout.previewSize.height
+                            - CameraLayout.vuMeterBottomOffsetFromPreviewBottom
+                            - meterHeight / 2
                     )
                     .transition(.opacity)
                     .onTapGesture {
@@ -114,8 +114,8 @@ struct CameraView: View {
                         viewModel.toggleScrolling()
                     }
                 )
-                .position(x: proxy.size.width / 2, 
-                          y: layout.previewSize.height - 125)
+                .position(x: proxy.size.width / 2,
+                          y: layout.previewSize.height - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
                 
                 // Layer 3.5: Recording timer positioned above record button
                 RecordingTimerPanel(
@@ -123,7 +123,7 @@ struct CameraView: View {
                     isRecording: viewModel.isRecording
                 )
                 .position(x: proxy.size.width / 2,
-                          y: layout.previewSize.height - 200)
+                          y: layout.previewSize.height - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
                 
                 // Layer 4: Header and footer chrome constrained to space below preview
                 VStack(spacing: Theme.space12) {
@@ -134,7 +134,7 @@ struct CameraView: View {
                      .padding(.bottom, -10) 
                 }
                 .frame( maxWidth: .infinity, 
-                        maxHeight: layout.previewSize.height + 100,
+                        maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
                         alignment: .bottom)
 
                 // Screen height - camera preview height > remaninder 2000 - 1400 = 600 Or a ratio.   Subtracrt y = 1400, bottom of camera view Pin Record button to Camera View Bottom + 25 so it is pinned to the bottom of the camera view. 
@@ -157,7 +157,7 @@ struct CameraView: View {
                 .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
                 .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing teleprompter viewport
                 .position(  x: layout.teleprompterCenter.x,
-                            y: layout.teleprompterCenter.y - 75 // the 75 is the top offset
+                            y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
                             )
 
                 // Layer 5: Reset button anchored to the bottom edge of the teleprompter viewport.
