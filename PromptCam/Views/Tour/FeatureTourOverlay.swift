@@ -138,7 +138,9 @@ struct FeatureTourOverlay: View {
             HStack(spacing: 0) {
                 // Back
                 Button {
-                    coordinator.back()
+                    withAnimation(.spring(duration: 0.4)) {
+                        coordinator.back()
+                    }
                 } label: {
                     Label("Back", systemImage: "chevron.left")
                         .labelStyle(.titleAndIcon)
@@ -160,7 +162,9 @@ struct FeatureTourOverlay: View {
                 HStack(spacing: 14) {
                     if !coordinator.isRequired {
                         Button("Skip") {
-                            coordinator.end()
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                coordinator.end()
+                            }
                             onEnd()
                         }
                         .font(Theme.font12Semibold)
@@ -169,10 +173,14 @@ struct FeatureTourOverlay: View {
 
                     Button {
                         if coordinator.isLast {
-                            coordinator.end()
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                coordinator.end()
+                            }
                             onEnd()
                         } else {
-                            coordinator.next()
+                            withAnimation(.spring(duration: 0.4)) {
+                                coordinator.next()
+                            }
                         }
                     } label: {
                         HStack(spacing: 4) {

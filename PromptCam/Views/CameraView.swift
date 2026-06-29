@@ -345,23 +345,26 @@ struct CameraView: View {
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
-            // Feature Tour Overlay — animation and transition live here, NOT in the model,
-            // so that @Observable property mutations stay synchronous and don't inject an
-            // animation context that poisons SwiftUI preference-key accumulation.
-            .overlay {
-                if tourCoordinator.isActive {
-                    FeatureTourOverlay(
-                        coordinator: tourCoordinator,
-                        frames: tourFrames,
-                        onEnd: {
-                            hasSeenTour = true
-                            Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
-                        }
-                    )
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.3), value: tourCoordinator.isActive)
-                    .zIndex(100)
-                }
+        }
+        // MARK: - Tour Overlay
+        // Placed at GeometryReader level — OUTSIDE the inner ZStack that owns
+        // .onPreferenceChange(TourAnchorKey.self). Inserting FeatureTourOverlay
+        // as an .overlay{} on the inner ZStack caused SwiftUI to re-accumulate
+        // ALL TourAnchorKey preferences from that subtree (6 GeometryReader-backed
+        // anchors), reliably hitting the 3-second accumulation timeout and leaving
+        // the touch-absorbing Color.clear active with the dimLayer at opacity-0.
+        .overlay {
+            if tourCoordinator.isActive {
+                FeatureTourOverlay(
+                    coordinator: tourCoordinator,
+                    frames: tourFrames,
+                    onEnd: {
+                        hasSeenTour = true
+                        Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
+                    }
+                )
+                .transition(.opacity)
+                .ignoresSafeArea()
             }
         }
         // MARK: - Alerts & Pickers
@@ -396,7 +399,11 @@ struct CameraView: View {
         .task {
             if !hasSeenTour {
                 try? await Task.sleep(for: .milliseconds(1500))
-                tourCoordinator.start(required: true)
+                // withAnimation here (not in the model) provides the transition context
+                // for .transition(.opacity) on the overlay without poisoning preference accumulation.
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    tourCoordinator.start(required: true)
+                }
             }
         }
         // MARK: - Lifecycle
@@ -512,7 +519,11 @@ struct CameraView: View {
                     return
                 }
                 Log.ui.debug("[Tour] Guide Dog tapped — isActive=\(tourCoordinator.isActive, privacy: .public) frames=\(tourFrames.keys.sorted().joined(separator: ","), privacy: .public)")
-                tourCoordinator.start()
+                // withAnimation provides the transition context for .transition(.opacity)
+                // on the overlay. The model method itself is synchronous.
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    tourCoordinator.start()
+                }
             }
         )
     }
