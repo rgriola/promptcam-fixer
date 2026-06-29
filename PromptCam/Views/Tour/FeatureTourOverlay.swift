@@ -64,10 +64,12 @@ struct FeatureTourOverlay: View {
                 }
             }
         }
-        // NOTE: No .ignoresSafeArea() here.
-        // The GeometryReader must use safe-area-inset dimensions to match the
-        // "cameraOverlay" coordinate space where tourAnchor frames are measured.
-        // Full-screen dimming is handled by Color.black.ignoresSafeArea() inside dimLayer.
+        // .ignoresSafeArea() is REQUIRED here.
+        // tourAnchor frames use .global (origin = physical screen top-left).
+        // This GeometryReader must also report full-screen dimensions so that
+        // the spotlight position and tooltip position share the same origin.
+        // The dimLayer ZStack also uses .ignoresSafeArea(), making all three consistent.
+        .ignoresSafeArea()
     }
 
     // MARK: - Dim Layer

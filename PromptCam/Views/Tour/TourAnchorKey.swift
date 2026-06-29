@@ -13,17 +13,17 @@ struct TourAnchorKey: PreferenceKey {
 }
 
 extension View {
-    /// Registers this view's frame under `id` in the `"cameraOverlay"` coordinate space
-    /// for the feature tour to use as a spotlight target.
+    /// Registers this view's global-coordinate frame under `id` for the feature tour to spotlight.
     ///
-    /// Using a named coordinate space (set on the CameraView ZStack) ensures frames
-    /// and overlay positions share the same origin, avoiding safe-area offset mismatches.
+    /// Uses `.global` coordinate space so the frame origin is at the physical screen top-left.
+    /// `FeatureTourOverlay` also uses `.ignoresSafeArea()` on its GeometryReader, which reports
+    /// full-screen (physical) dimensions — keeping both in the same coordinate space.
     func tourAnchor(_ id: String) -> some View {
         self.background(
             GeometryReader { geo in
                 Color.clear.preference(
                     key: TourAnchorKey.self,
-                    value: [id: geo.frame(in: .named("cameraOverlay"))]
+                    value: [id: geo.frame(in: .global)]
                 )
             }
         )
