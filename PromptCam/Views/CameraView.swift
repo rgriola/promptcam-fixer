@@ -326,8 +326,16 @@ struct CameraView: View {
                     }
                 }
 
-                // Layer 11: Feature Tour Overlay — topmost ZStack layer.
-                // Dims all content and spotlights the current step's anchor element.
+            }
+            .onPreferenceChange(TourAnchorKey.self) { tourFrames = $0 }
+            .background(Theme.bgGrad) // background for main view ZStack
+            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            // Feature Tour Overlay — sits outside the constrained ZStack so its
+            // .ignoresSafeArea() can freely expand to the full physical screen.
+            // tourAnchor frames use .global, and the overlay's own GeometryReader
+            // also uses .ignoresSafeArea(), keeping both in the same coordinate space.
+            .overlay {
                 if tourCoordinator.isActive {
                     FeatureTourOverlay(
                         coordinator: tourCoordinator,
@@ -338,11 +346,6 @@ struct CameraView: View {
                     )
                 }
             }
-            .coordinateSpace(name: "cameraOverlay")
-            .onPreferenceChange(TourAnchorKey.self) { tourFrames = $0 }
-            .background(Theme.bgGrad) // background for main view ZStack
-            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
-            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
