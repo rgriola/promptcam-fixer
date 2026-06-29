@@ -86,7 +86,7 @@ struct CameraControlsRowView: View {
             )
         }
         .padding(.horizontal, Theme.space12)
-        .padding(.bottom, Theme.space8)
+        //.padding(.bottom, Theme.space8)
         .frame(maxWidth: .infinity)
     }
 
