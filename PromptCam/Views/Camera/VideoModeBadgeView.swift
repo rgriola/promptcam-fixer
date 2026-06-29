@@ -30,33 +30,39 @@ struct VideoModeBadgeView: View {
         }
     }
 
-    private var modeText: String {
-        switch mode {
-        case .standard:  return "STANDARD"
-        case .cinematic: return "CINE"
-        }
-    }
-
     // MARK: - Body
 
     var body: some View {
-        HStack(spacing: 6) {
-            // Mode label — always visible.
-            Text(modeText)
+        HStack(spacing: 5) {
+            // Camera icon — always visible, color reflects current mode.
+            Image(systemName: "video.fill")
                 .font(Theme.mono16Medium)
                 .foregroundStyle(modeColor)
                 .accessibilityLabel("Video mode")
                 .accessibilityValue(mode.displayLabel)
 
-            // Aperture button — only visible in cinematic mode on supported devices.
-            if let apertureText, let onTapAperture {
-                Button(action: onTapAperture) {
-                    Text(apertureText)
-                        .font(Theme.mono16Medium)
-                        .foregroundStyle(Theme.accent)
+            // Mode suffix: "REG" for standard, "C" + aperture for cinematic.
+            if mode == .standard {
+                Text("REG")
+                    .font(Theme.mono16Medium)
+                    .foregroundStyle(Theme.primaryText)
+            } else {
+                Text("C")
+                    .font(Theme.mono16Medium)
+                    .foregroundStyle(Theme.accent)
+
+                // Aperture button — only on supported devices (iOS 26+).
+                if let apertureText, let onTapAperture {
+                    Button(action: onTapAperture) {
+                        Text(apertureText)
+                            .font(Theme.mono16Medium)
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Simulated aperture")
+                    .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
                 }
-                .accessibilityLabel("Simulated aperture")
-                .accessibilityHint("Adjusts depth-of-field blur in cinematic mode")
             }
         }
     }

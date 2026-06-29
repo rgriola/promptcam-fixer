@@ -35,61 +35,59 @@ struct CameraControlsRowView: View {
 
     /// Header layout containing EV, lock status, grid, and format controls.
     var body: some View {
-        // Header rows are intentionally compact to preserve preview space.
-            HStack {
-                 // Video Mode Badge (shows mode label + aperture when cinematic is active)
-                VideoModeBadgeView(
-                    mode: videoMode,
-                    apertureText: apertureText,
-                    onTapAperture: onTapAperture
-                )
+        HStack {
+            // Video Mode Badge — sizes to content, vertically centered.
+            VideoModeBadgeView(
+                mode: videoMode,
+                apertureText: apertureText,
+                onTapAperture: onTapAperture
+            )
+            .fixedSize()
 
-                Spacer()
+            Spacer()
 
-                // Change this to format Toggles HD > 4K | 24 - 30 + Cine
-                Button(action: onTapFormat) {
-                    HStack(spacing: 0){
-                        Text(resolutionLabel)
-                            .font(Theme.mono16Medium)
-                            .padding(.trailing, 4)
-                        Text(fpsLabel)
-                            .font(Theme.mono16Medium)
-                            .padding(.trailing, 2)
-                        Text("fps")
-                            .font(Theme.font12Medium)
-                            .foregroundStyle(Theme.secondaryText)
-                            .padding(.trailing, 4)
-                    }
-                    .foregroundStyle(Theme.primaryText) // Font colors and style.
-                }
-                .accessibilityLabel("Format panel")
-                .accessibilityHint("Opens camera record format settings")
-
-
-                Spacer()
-                // Move to Bottom to Control EV with Dial
-                Button(action: onTapEV) {
-                    Text("EV \(evText)")
+            // Format pill: resolution + fps
+            Button(action: onTapFormat) {
+                HStack(spacing: 0) {
+                    Text(resolutionLabel)
                         .font(Theme.mono16Medium)
-                        .foregroundStyle(Theme.white)
-                        .accessibilityLabel("Exposure value")
-                        .accessibilityHint("Shows current exposure")
+                        .padding(.trailing, 4)
+                    Text(fpsLabel)
+                        .font(Theme.mono16Medium)
+                        .padding(.trailing, 2)
+                    Text("fps")
+                        .font(Theme.font12Medium)
+                        .foregroundStyle(Theme.secondaryText)
+                        .padding(.trailing, 4)
                 }
-
-                
-
-                Spacer()
-
-                // Change to Toggle Lock and Auto
-                CameraLockStatusBadgeView(
-                    status: lockStatus,
-                    onToggle: onTapLock,
-                    isDisabled: videoMode == .cinematic
-                )
+                .foregroundStyle(Theme.primaryText)
             }
-            .padding(.horizontal, Theme.space12)
-            .padding(.bottom, Theme.space8)
-            .frame(maxWidth: .infinity)
+            .accessibilityLabel("Format panel")
+            .accessibilityHint("Opens camera record format settings")
+
+            Spacer()
+
+            // EV button
+            Button(action: onTapEV) {
+                Text("EV \(evText)")
+                    .font(Theme.mono16Medium)
+                    .foregroundStyle(Theme.white)
+                    .accessibilityLabel("Exposure value")
+                    .accessibilityHint("Shows current exposure")
+            }
+
+            Spacer()
+
+            // Lock toggle
+            CameraLockStatusBadgeView(
+                status: lockStatus,
+                onToggle: onTapLock,
+                isDisabled: videoMode == .cinematic
+            )
+        }
+        .padding(.horizontal, Theme.space12)
+        .padding(.bottom, Theme.space8)
+        .frame(maxWidth: .infinity)
     }
 
 }
