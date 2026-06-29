@@ -49,25 +49,11 @@ struct CameraView: View {
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
     
-    // MARK: - Feature Tour State
-    /// Persists whether the user has completed their first-use tour.
-    @AppStorage("hasSeenTour") private var hasSeenTour = false
-    /// Drives step navigation for the coach-marks overlay.
-    @State private var tourCoordinator = TourCoordinator()
-    /// Global CGRect frames for spotlight targets, collected via TourAnchorKey.
-    @State private var tourFrames: [String: CGRect] = [:]
-
     // MARK: - Body
 
     var body: some View {
         @Bindable var viewModel = viewModel
-        // Outer ZStack: camera content sits in a GeometryReader; the tour overlay
-        // is a TRUE sibling at this level — completely outside the inner ZStack that
-        // owns .onPreferenceChange(TourAnchorKey.self). This is the only reliable way
-        // to prevent SwiftUI from re-accumulating all 6 anchor preferences when the
-        // overlay enters the tree, which caused the 3-second timeout and frozen UI.
-        return ZStack {
-        GeometryReader { proxy in
+        return GeometryReader { proxy in
             let layout = CameraScreenLayout(
                 containerSize: proxy.size,
                 safeAreaInsets: proxy.safeAreaInsets // pad for notch
@@ -98,16 +84,6 @@ struct CameraView: View {
 
                 // Layer 2.5: Audio VU meter on the left edge of the preview.
                 // Hidden when any modal sheet is open.
-                // The tourAnchor is placed on a permanent zero-size overlay so
-                // frames["vu-meter"] is always populated, even when the meter
-                // is hidden by the sheet condition below.
-                Color.clear
-                    .frame(width: CameraLayout.vuMeterWidth, height: 1)
-                    .position(
-                        x: CameraLayout.vuMeterHorizontalInset + 5,
-                        y: layout.previewSize.height - 89 - (layout.previewSize.height * 0.28) / 2
-                    )
-                    .tourAnchor("vu-meter")
 
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
                     let meterHeight = layout.previewSize.height * 0.28
@@ -210,7 +186,7 @@ struct CameraView: View {
                 .frame(width: layout.teleprompterResetButtonSize,
                        height: layout.teleprompterResetButtonSize)
                 .position(layout.teleprompterResetCenter)
-                .tourAnchor("reset-script")
+
 
                 // Layer 6: Teleprompter adjustment panel — standardised panel styling.
                 if showAdjustmentPanel {
@@ -343,11 +319,6 @@ struct CameraView: View {
                 }
 
             }
-            .onPreferenceChange(TourAnchorKey.self) { frames in
-                let ids = frames.keys.sorted().joined(separator: ", ")
-                Log.ui.debug("[Tour] tourFrames updated — anchors=[ \(ids, privacy: .public) ]")
-                tourFrames = frames
-            }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -379,18 +350,7 @@ struct CameraView: View {
                 }
             )
         }
-        // First-use: auto-start the required feature tour after the camera initializes.
-        // 1.5s gives the camera session and anchor preference key time to settle on device.
-        .task {
-            if !hasSeenTour {
-                try? await Task.sleep(for: .milliseconds(1500))
-                // withAnimation here (not in the model) provides the transition context
-                // for .transition(.opacity) on the overlay without poisoning preference accumulation.
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    tourCoordinator.start(required: true)
-                }
-            }
-        }
+
         // MARK: - Lifecycle
         .onAppear {
             viewModel.onAppear()
@@ -421,26 +381,6 @@ struct CameraView: View {
                 hideFocusTask = nil
             } else {
                 scheduleFocusHide()
-            }
-        }
-        } // end outer ZStack
-        // MARK: - Tour Overlay
-        // .overlay{} on the OUTER ZStack guarantees compositing on top of all camera
-        // content. This overlay is NOT on the inner ZStack (which owns
-        // .onPreferenceChange(TourAnchorKey.self)), so inserting/removing the tour
-        // overlay cannot trigger preference re-accumulation or the 3s timeout.
-        .overlay {
-            if tourCoordinator.isActive {
-                FeatureTourOverlay(
-                    coordinator: tourCoordinator,
-                    frames: tourFrames,
-                    onEnd: {
-                        hasSeenTour = true
-                        Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
-                    }
-                )
-                .transition(.opacity)
-                .ignoresSafeArea()
             }
         }
     }
@@ -519,16 +459,7 @@ struct CameraView: View {
                 viewModel.openSettings()
             },
             onTapGuide: {
-                guard !viewModel.isRecording else {
-                    Log.ui.info("[Tour] Guide Dog blocked — recording in progress")
-                    return
-                }
-                Log.ui.debug("[Tour] Guide Dog tapped — isActive=\(tourCoordinator.isActive, privacy: .public) frames=\(tourFrames.keys.sorted().joined(separator: ","), privacy: .public)")
-                // withAnimation provides the transition context for .transition(.opacity)
-                // on the overlay. The model method itself is synchronous.
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    tourCoordinator.start()
-                }
+                // Tour disabled — guide button reserved for future use.
             }
         )
     }
