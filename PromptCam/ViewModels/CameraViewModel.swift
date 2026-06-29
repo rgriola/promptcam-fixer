@@ -180,9 +180,7 @@ final class CameraViewModel {
     private let permissionService: PermissionService
     @ObservationIgnored private var audioMeterService: AudioMeterService?
 
-    /// Shared with RecordingsLibrarySheet — pre-fetched on appear so the
-    /// Camera Roll opens instantly.
-    let recordingsLibraryViewModel = RecordingsLibraryViewModel()
+
 
     init(
         cameraService: CameraServiceProtocol = CameraService(),
@@ -206,9 +204,7 @@ final class CameraViewModel {
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
 
-        // Pre-fetch recordings list + first page of thumbnails in the background
-        // so the Camera Roll sheet opens instantly.
-        Task { await recordingsLibraryViewModel.prefetch() }
+
     }
 
     func onDisappear() {
@@ -429,15 +425,8 @@ final class CameraViewModel {
         cameraService.onRecordingStateChanged = { [weak self] isRecording in
             guard let self else { return }
             self.isRecording = isRecording
-            // When recording stops, the video is saved to the photo library
-            // asynchronously. Wait a moment then refresh the Camera Roll
-            // so the new recording appears without restarting the app.
-            if !isRecording {
-                Task {
-                    try? await Task.sleep(for: .seconds(1.5))
-                    await self.recordingsLibraryViewModel.refresh()
-                }
-            }
+            // When recording stops the video is saved to the photo library.
+            // PhotosPicker reflects the library automatically — no manual refresh needed.
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
@@ -548,7 +537,7 @@ final class CameraViewModel {
             // Detect direction using the boolean flag, which is immune to
             // the onInputsAvailable race condition.
             let disconnected = wasExternalBefore && !isExternal   // external → built-in
-            let connected    = !wasExternalBefore && isExternal   // built-in → external
+            _ = !wasExternalBefore && isExternal                  // built-in → external (future use)
 
             // Always show an inline source-name hint beside the VU meter.
             self.showSourceHint(name)

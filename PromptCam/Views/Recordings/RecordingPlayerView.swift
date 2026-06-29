@@ -31,7 +31,7 @@ struct RecordingPlayerView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Theme.bgGrad.ignoresSafeArea()
 
             // ── Video Surface ──────────────────────────────────────────────
             if let player {
@@ -67,7 +67,6 @@ struct RecordingPlayerView: View {
         } message: {
             Text("This video will be permanently deleted.")
         }
-        .preferredColorScheme(.dark)
     }
 
     // MARK: - Subviews
@@ -231,12 +230,15 @@ struct RecordingPlayerView: View {
         // Periodic time observer — updates scrubber every 0.1 s.
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         let token = p.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak p] time in
-            guard let p else { return }
-            currentTime = time.seconds
-            isPlaying = p.rate > 0
-            // Auto-hide controls after video ends.
-            if time.seconds >= duration - 0.2 {
-                isPlaying = false
+            // queue: .main guarantees main-thread execution — assumeIsolated is safe here.
+            MainActor.assumeIsolated {
+                guard let p else { return }
+                currentTime = time.seconds
+                isPlaying = p.rate > 0
+                // Auto-hide controls after video ends.
+                if time.seconds >= duration - 0.2 {
+                    isPlaying = false
+                }
             }
         }
         timeObserverToken = token
