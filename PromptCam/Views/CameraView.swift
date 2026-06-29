@@ -49,9 +49,13 @@ struct CameraView: View {
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
     
-    // MARK: - Instructions Sheet State
-    /// Controls visibility of the instructions guide sheet.
-    @State private var showInstructions: Bool = false
+    // MARK: - Feature Tour State
+    /// Persists whether the user has completed their first-use tour.
+    @AppStorage("hasSeenTour") private var hasSeenTour = false
+    /// Drives step navigation for the coach-marks overlay.
+    @State private var tourCoordinator = TourCoordinator()
+    /// Global CGRect frames for spotlight targets, collected via TourAnchorKey.
+    @State private var tourFrames: [String: CGRect] = [:]
 
     // MARK: - Body
 
@@ -119,6 +123,7 @@ struct CameraView: View {
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
                     }
+                    .tourAnchor("vu-meter")
                 }
 
                 // Layer 3: Recording cluster positioned at bottom of camera preview
@@ -189,6 +194,7 @@ struct CameraView: View {
                 .frame(width: layout.teleprompterResetButtonSize,
                        height: layout.teleprompterResetButtonSize)
                 .position(layout.teleprompterResetCenter)
+                .tourAnchor("reset-script")
 
                 // Layer 6: Teleprompter adjustment panel — standardised panel styling.
                 if showAdjustmentPanel {
@@ -319,7 +325,21 @@ struct CameraView: View {
                         )
                     }
                 }
+
+                // Layer 11: Feature Tour Overlay — topmost ZStack layer.
+                // Dims all content and spotlights the current step's anchor element.
+                if tourCoordinator.isActive {
+                    FeatureTourOverlay(
+                        coordinator: tourCoordinator,
+                        frames: tourFrames,
+                        onEnd: {
+                            hasSeenTour = true
+                        }
+                    )
+                }
             }
+            .coordinateSpace(name: "cameraOverlay")
+            .onPreferenceChange(TourAnchorKey.self) { tourFrames = $0 }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -351,8 +371,13 @@ struct CameraView: View {
                 }
             )
         }
-        .sheet(isPresented: $showInstructions) {
-            InstructionsView()
+        // First-use: auto-start the required feature tour after the camera initializes.
+        // 1.5s gives the camera session and anchor preference key time to settle on device.
+        .task {
+            if !hasSeenTour {
+                try? await Task.sleep(for: .milliseconds(1500))
+                tourCoordinator.start(required: true)
+            }
         }
         // MARK: - Lifecycle
         .onAppear {
@@ -463,8 +488,9 @@ struct CameraView: View {
                 viewModel.openSettings()
             },
             onTapGuide: {
-                showInstructions = true
-                Log.ui.debug("Instructions sheet opened")
+                guard !viewModel.isRecording else { return }
+                tourCoordinator.start()
+                Log.ui.debug("Feature tour started via Guide Dog")
             }
         )
     }

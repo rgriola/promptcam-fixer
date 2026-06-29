@@ -16,6 +16,10 @@
 		25D1494F821C8636F73EB9C6 /* StandardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671D4AEC4E7F17E8F6B43702 /* StandardPanel.swift */; };
 		2E8632333D2153873B8963CE /* CameraFormatPanelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */; };
 		30AFC37CC8CAC118741BDE9B /* TeleprompterCenterResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62386ADCCFC7E9387894F205 /* TeleprompterCenterResetButton.swift */; };
+		30E9427FF8F8052F0EA03CBC /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAD98081F97314A6B81EA0A /* FeatureTourOverlay.swift */; };
+		444FA6487AEF75ED4996B73B /* TourAnchorKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B31AF624E0171F53ED491B4 /* TourAnchorKey.swift */; };
+		A8FE2CBDB0EF65F544826378 /* TourStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A203BFA1F74B8EF4D505E02 /* TourStep.swift */; };
+		EC31461F98B26F6CC5EF80B4 /* TourCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2866B9A68A27A177F4BD9E17 /* TourCoordinator.swift */; };
 		3110BDD3348F0913A0E362F7 /* PermissionsOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463E5A1C4A78819AE4720942 /* PermissionsOnboardingView.swift */; };
 		315EB17E07A1DE5E04BA8963 /* CameraService+Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */; };
 		32027F533DD7867B0C6F4A7B /* RecordingPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */; };
@@ -127,6 +131,10 @@
 		7268218A2CC3AD4D761F72DD /* TeleprompterMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterMeasurement.swift; sourceTree = "<group>"; };
 		753F73EFB38C7673680AD164 /* RecordingsLibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsLibraryViewModel.swift; sourceTree = "<group>"; };
 		7FCB522F1DE537426C9717D4 /* AVPlayerHostingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AVPlayerHostingView.swift; sourceTree = "<group>"; };
+		2866B9A68A27A177F4BD9E17 /* TourCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TourCoordinator.swift; sourceTree = "<group>"; };
+		5A203BFA1F74B8EF4D505E02 /* TourStep.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TourStep.swift; sourceTree = "<group>"; };
+		6B31AF624E0171F53ED491B4 /* TourAnchorKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TourAnchorKey.swift; sourceTree = "<group>"; };
+		DAAD98081F97314A6B81EA0A /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
 		8079D0D305F4F4108338BD27 /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
 		8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusRow.swift; sourceTree = "<group>"; };
 		923418788547770366446818 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
@@ -257,8 +265,19 @@
 				628180596DB41D6B220F0E4B /* Recordings */,
 				FFA724722F40BA515AD820A7 /* Sheets */,
 				9225B9A9D8032E86EC700DED /* Teleprompter */,
+				263718B0CD3F5A2E1A8D90F1 /* Tour */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		263718B0CD3F5A2E1A8D90F1 /* Tour */ = {
+			isa = PBXGroup;
+			children = (
+				6B31AF624E0171F53ED491B4 /* TourAnchorKey.swift */,
+				DAAD98081F97314A6B81EA0A /* FeatureTourOverlay.swift */,
+			);
+			name = Tour;
+			path = Tour;
 			sourceTree = "<group>";
 		};
 		959EA3D47CF576057E3AB9E0 /* ViewModels */ = {
@@ -292,8 +311,19 @@
 				260A828C38B379D7070292C3 /* ScriptArchive.swift */,
 				20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */,
 				D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */,
+				BF4719A2E3C6D0158F2A7731 /* Tour */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		BF4719A2E3C6D0158F2A7731 /* Tour */ = {
+			isa = PBXGroup;
+			children = (
+				5A203BFA1F74B8EF4D505E02 /* TourStep.swift */,
+				2866B9A68A27A177F4BD9E17 /* TourCoordinator.swift */,
+			);
+			name = Tour;
+			path = Tour;
 			sourceTree = "<group>";
 		};
 		C9D361E474202E90CC567831 /* PromptCamUITests */ = {
@@ -503,6 +533,10 @@
 				ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,
 				1C6EEDCEDA41783589DF85C6 /* AVPlayerHostingView.swift in Sources */,
+				A8FE2CBDB0EF65F544826378 /* TourStep.swift in Sources */,
+				EC31461F98B26F6CC5EF80B4 /* TourCoordinator.swift in Sources */,
+				444FA6487AEF75ED4996B73B /* TourAnchorKey.swift in Sources */,
+				30E9427FF8F8052F0EA03CBC /* FeatureTourOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
