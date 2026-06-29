@@ -12,6 +12,20 @@ struct AudioSourcePickerView: View {
     let onSelect: (AVAudioSessionPortDescription?) -> Void
     let onDismiss: () -> Void
 
+    /// Cache: maps port UID → AVCaptureDevice.localizedName.
+    /// Built once when the view initializes so we don't re-query
+    /// AVCaptureDevice on every render cycle.
+    private let captureDeviceNames: [String: String] = {
+        let session = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone],
+            mediaType: .audio,
+            position: .unspecified
+        )
+        return Dictionary(uniqueKeysWithValues: session.devices.map {
+            ($0.uniqueID, $0.localizedName)
+        })
+    }()
+
     var body: some View {
         StandardPanel(
             title: "Audio Sources",
@@ -34,6 +48,20 @@ struct AudioSourcePickerView: View {
 
     @ViewBuilder
     private func audioInputRow(_ port: AVAudioSessionPortDescription) -> some View {
+        // Use the AVCaptureDevice product name when available (e.g. "DJI Mini Mic 3").
+        // Fall back to portName (e.g. "Wireless Mic Rx") when no capture device matches.
+        let displayName = captureDeviceNames[port.uid] ?? port.portName
+
+        // Show portName as a sub-label only when it adds information
+        // (i.e. it differs from the resolved product name).
+        let subtitle: String = {
+            if let productName = captureDeviceNames[port.uid],
+               productName != port.portName {
+                return port.portName         // e.g. "Wireless Mic Rx" under "DJI Mini Mic 3"
+            }
+            return portTypeLabel(port.portType) // e.g. "Built-in Microphone"
+        }()
+
         let isActive = port.portName == activeInputName
 
         Button {
@@ -46,11 +74,11 @@ struct AudioSourcePickerView: View {
                     .frame(width: 28)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(port.portName)
+                    Text(displayName)
                         .font(Theme.font16Medium)
                         .foregroundStyle(Theme.primaryText)
 
-                    Text(portTypeLabel(port.portType))
+                    Text(subtitle)
                         .font(Theme.font10Regular)
                         .foregroundStyle(Theme.tertiaryText)
                 }
