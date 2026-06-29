@@ -53,7 +53,22 @@ struct CameraView: View {
             )
 
             ZStack {
-                // Layer 1: Live camera preview, top-anchored and ignoring the top safe area
+
+                // Layer 1: Chrome Controls, placed first to be below Camera Preview
+                VStack(spacing: Theme.space12) {
+                    cameraControlsRow()
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
+                    .background(Theme.black.opacity(0.1))
+                    cameraFooter()
+                      //  .padding(.bottom)
+                }
+                .frame( maxWidth: .infinity, 
+                        maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
+                        alignment: .bottom)
+
+
+                // Layer 2: Live camera preview, top-anchored and ignoring the top safe area
                 // so it extends under the status bar / Dynamic Island.
                 CameraPreviewView(
                     session: viewModel.session,
@@ -117,7 +132,7 @@ struct CameraView: View {
                 .position(x: proxy.size.width / 2,
                           y: layout.previewSize.height - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
                 
-                // Layer 3.5: Recording timer positioned above record button
+                // Layer 4: Recording timer positioned above record button
                 RecordingTimerPanel(
                     duration: viewModel.recordingDuration,
                     isRecording: viewModel.isRecording
@@ -126,18 +141,9 @@ struct CameraView: View {
                           y: layout.previewSize.height - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
                 
                 // Layer 4: Header and footer chrome constrained to space below preview
-                VStack(spacing: Theme.space12) {
-                    cameraControlsRow()
-                    .padding()
-                    .background(Theme.black.opacity(0.1))
-                    cameraFooter()
-                        .padding(.bottom, -10)
-                }
-                .frame( maxWidth: .infinity, 
-                        maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
-                        alignment: .bottom)
+                
 
-                // Layer 4: Bottom-anchored teleprompter viewport.
+                // Layer 5: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
@@ -157,7 +163,7 @@ struct CameraView: View {
                             y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
                             )
 
-                // Layer 5: Reset button anchored to the bottom edge of the teleprompter viewport.
+                // Layer 6: Reset button anchored to the bottom edge of the teleprompter viewport.
                 TeleprompterCenterResetButton(
                     isDisabled: viewModel.isRecording,
                     action: {
@@ -169,7 +175,7 @@ struct CameraView: View {
                 .position(layout.teleprompterResetCenter)
 
 
-                // Layer 6: Teleprompter adjustment panel — standardised panel styling.
+                // Layer 7: Teleprompter adjustment panel — standardised panel styling.
                 if showAdjustmentPanel {
                     StandardPanelOverlay(onDismiss: {
                         showAdjustmentPanel = false
@@ -250,7 +256,7 @@ struct CameraView: View {
                     }
                 }
 
-                // Layer 7: Temporary warning banner (top center).
+                // Layer 10: Temporary warning banner (top center).
                 TemporaryWarningBanner(
                     message: "Stop recording to change format.",
                     systemImage: "exclamationmark.triangle.fill",
@@ -258,7 +264,7 @@ struct CameraView: View {
                     isPresented: $viewModel.showFormatLockedWarning
                 )
 
-                // Layer 7.5: Audio route changed warning (e.g. mic disconnect
+                // Layer 11: Audio route changed warning (e.g. mic disconnect
                 // during recording). Body text is provided by the view model.
                 TemporaryWarningBanner(
                     message: viewModel.audioRouteChangedMessage,
@@ -267,7 +273,7 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioRouteChangedWarning
                 )
 
-                // Layer 7.6: Silence watchdog — sustained dead audio from
+                // Layer 12: Silence watchdog — sustained dead audio from
                 // an external mic (flaky cable, hardware mute, etc.).
                 TemporaryWarningBanner(
                     message: "No audio signal detected. Check microphone connection.",
@@ -276,7 +282,7 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioSilenceWarning
                 )
 
-                // Layer 10: Audio source picker — dims 10% and shows input
+                // Layer 13: Audio source picker — dims 10% and shows input
                 // choice when a mic is plugged in or removed.
                 if viewModel.showAudioSourcePicker {
                     StandardPanelOverlay(onDismiss: {

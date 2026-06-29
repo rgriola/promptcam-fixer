@@ -51,6 +51,7 @@ xcodebuild test \
 ```
 
 Coverage focus areas:
+
 - `DeviceCapabilitiesTests` — `isSupported`, `adjusted` clamping rules, resolution / fps queries
 - `RecordingFormatTests` — UserDefaults round-trip + corruption resilience
 - `TeleprompterConfigTests` / `TeleprompterGeometryTests` — config clamping + geometry math

@@ -27,17 +27,14 @@ struct CameraFooterControlsView: View {
             Spacer()
 
             // Camera-roll button: circular thumbnail of last recorded video.
-            // Wrapped in a VStack so its top edge aligns with the icon tops
-            // of the labeled buttons in the same HStack row.
-            VStack {
-                LibraryThumbnailButton(
-                    size: CameraLayout.footerIconSize,
-                    action: onTapPhotoLibrary
-                )
-                .accessibilityLabel("Open photo library")
-                .accessibilityHint("Shows your most recently recorded video")
-                Spacer(minLength: 0)
-            }
+            // HStack(alignment: .top) aligns its top edge with the icon tops
+            // of the labeled buttons.
+            LibraryThumbnailButton(
+                size: CameraLayout.footerIconSize,
+                action: onTapPhotoLibrary
+            )
+            .accessibilityLabel("Open photo library")
+            .accessibilityHint("Shows your most recently recorded video")
 
             Spacer()
 
