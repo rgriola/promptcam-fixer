@@ -144,7 +144,7 @@ extension CameraService {
         // Scan ALL front-facing cameras for CINE formats — different devices carry CINE
         // on different hardware (TrueDepth on iPhone 13, UltraWide on iPhone 17 Pro).
         let frontDiscovery = AVCaptureDevice.DiscoverySession(
-            deviceTypes: allVideoDeviceTypes(),
+            deviceTypes: Self.allVideoDeviceTypes(),
             mediaType: .video,
             position: .front
         )
@@ -342,7 +342,7 @@ extension CameraService {
     /// Logs all available formats for every camera (front + back) on first session configure.
     /// Output appears in Xcode console and Console.app under subsystem com.rgriola.promptcam.
     func logAllCameraFormats() {
-        let deviceTypes = allVideoDeviceTypes()
+        let deviceTypes = Self.allVideoDeviceTypes()
         
         for position in [AVCaptureDevice.Position.front, .back] {
             let session = AVCaptureDevice.DiscoverySession(
@@ -405,20 +405,17 @@ extension CameraService {
     }
     
     /// Returns all video device types supported on the current iOS version.
-    func allVideoDeviceTypes() -> [AVCaptureDevice.DeviceType] {
+    /// Deployment target is iOS 18, so the iOS 13 multi-camera types are always available.
+    static func allVideoDeviceTypes() -> [AVCaptureDevice.DeviceType] {
         var types: [AVCaptureDevice.DeviceType] = [
             .builtInWideAngleCamera,
-            .builtInTrueDepthCamera
+            .builtInTrueDepthCamera,
+            .builtInUltraWideCamera,
+            .builtInTelephotoCamera,
+            .builtInDualCamera,
+            .builtInDualWideCamera,
+            .builtInTripleCamera
         ]
-        if #available(iOS 13.0, *) {
-            types.append(contentsOf: [
-                .builtInUltraWideCamera,
-                .builtInTelephotoCamera,
-                .builtInDualCamera,
-                .builtInDualWideCamera,
-                .builtInTripleCamera
-            ])
-        }
         if #available(iOS 17.0, *) {
             types.append(.builtInLiDARDepthCamera)
         }

@@ -198,7 +198,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         }
 
         let discoverySession = AVCaptureDevice.DiscoverySession(
-            deviceTypes: allVideoDeviceTypes(),
+            deviceTypes: Self.allVideoDeviceTypes(),
             mediaType: .video,
             position: .front
         )
@@ -481,14 +481,5 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         Task { @MainActor in
             completion(outcome)
         }
-    }
-}
-
-// MARK: - Float Extension
-
-extension Float {
-    /// Returns the value clamped to the given range.
-    func clamped(to range: ClosedRange<Float>) -> Float {
-        return min(max(self, range.lowerBound), range.upperBound)
     }
 }

@@ -137,9 +137,6 @@ struct CameraView: View {
                         maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
                         alignment: .bottom)
 
-                // Screen height - camera preview height > remaninder 2000 - 1400 = 600 Or a ratio.   Subtracrt y = 1400, bottom of camera view Pin Record button to Camera View Bottom + 25 so it is pinned to the bottom of the camera view. 
-                // Vstack for Conrols. 
-
                 // Layer 4: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     config: viewModel.config,
