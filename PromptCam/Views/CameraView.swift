@@ -131,7 +131,7 @@ struct CameraView: View {
                     .padding()
                     .background(Theme.black.opacity(0.1))
                     cameraFooter()
-                     .padding(.bottom, -10) 
+                        .frame(height: CameraLayout.footerHeight)
                 }
                 .frame( maxWidth: .infinity, 
                         maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
