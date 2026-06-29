@@ -36,7 +36,6 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
     var onRecordingStateChanged: (@MainActor @Sendable (Bool) -> Void)?
     var onSessionRunningStateChanged: (@MainActor @Sendable (Bool) -> Void)?
     var onFormatApplied: (@MainActor @Sendable (RecordingFormat) -> Void)?
-    var onSupportedFormatsQueried: (@MainActor @Sendable ([VideoResolution], [VideoFrameRate]) -> Void)?
     var onDeviceCapabilitiesQueried: (@MainActor @Sendable (DeviceCapabilities) -> Void)?
     var onCinematicApertureAvailable: (@MainActor @Sendable (Float, Float, Float) -> Void)?
     var onError: (@MainActor @Sendable (CameraError) -> Void)?
