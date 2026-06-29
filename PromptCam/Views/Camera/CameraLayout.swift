@@ -60,10 +60,6 @@ enum CameraLayout {
     /// Shared circular icon button diameter for footer controls.
     static let footerIconSize: CGFloat = 44
 
-    /// Fixed height of the footer row: top padding + icon + spacing + label + bottom padding.
-    /// Locking this prevents the controls row above from shifting when label text changes.
-    static let footerHeight: CGFloat = 72
-
     /// Extra vertical room allotted to the controls/footer VStack beyond the
     /// preview height. Lets the chrome extend slightly below the preview frame.
     static let controlChromeMaxHeightExtra: CGFloat = 100
