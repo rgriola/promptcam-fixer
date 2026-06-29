@@ -42,6 +42,16 @@ enum CameraLayout {
     /// Bottom spacing between record cluster and footer bar.
     static let recordingBottomPadding: CGFloat = 18
 
+    /// Vertical offset of the record button center from the preview's bottom edge.
+    /// Record button center sits at `previewHeight - recordButtonCenterOffsetFromPreviewBottom`.
+    static let recordButtonCenterOffsetFromPreviewBottom: CGFloat = 125
+
+    /// Diameter of the record button hit target. Used to derive its bottom edge.
+    static let recordButtonDiameter: CGFloat = 72
+
+    /// Vertical offset of the recording timer center from the preview's bottom edge.
+    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 200
+
     // MARK: - Footer Chrome
 
     /// Moves footer controls lower to align with approved design.
@@ -49,6 +59,10 @@ enum CameraLayout {
 
     /// Shared circular icon button diameter for footer controls.
     static let footerIconSize: CGFloat = 44
+
+    /// Extra vertical room allotted to the controls/footer VStack beyond the
+    /// preview height. Lets the chrome extend slightly below the preview frame.
+    static let controlChromeMaxHeightExtra: CGFloat = 100
 
     // MARK: - Teleprompter
     /// Sets teleprompter viewport height (length knob).
@@ -58,6 +72,10 @@ enum CameraLayout {
     /// Increase to move the teleprompter down; decrease to move it up.
     /// Value is clamped at runtime so the viewport stays fully inside the preview.
     static let teleprompterCenterFromPreviewTop: CGFloat = 0
+
+    /// Vertical nudge applied to the teleprompter viewport center, raising it
+    /// above the resolved layout center so it clears top chrome.
+    static let teleprompterCenterTopOffset: CGFloat = 75
 
     /// This move the horiz pos of both text and button
     static let teleprompterResetEdgeInset: CGFloat = 25
@@ -73,8 +91,19 @@ enum CameraLayout {
     /// Horizontal inset from the left edge of the preview.
     static let vuMeterHorizontalInset: CGFloat = 20
 
+    /// Small additional rightward nudge applied to the VU meter horizontal
+    /// position so its visual center clears the preview edge padding.
+    static let vuMeterHorizontalNudge: CGFloat = 5
+
     /// Top and bottom padding inside the preview for the meter.
     static let vuMeterVerticalPadding: CGFloat = 200
+
+    /// Vertical offset of the VU meter's bottom edge from the preview's bottom edge.
+    /// Derived so the meter bottom aligns with the record button's bottom edge:
+    /// recordButtonCenterOffsetFromPreviewBottom - (recordButtonDiameter / 2).
+    static var vuMeterBottomOffsetFromPreviewBottom: CGFloat {
+        recordButtonCenterOffsetFromPreviewBottom - (recordButtonDiameter / 2)
+    }
 }
 
 // MARK: - Resolved Layout

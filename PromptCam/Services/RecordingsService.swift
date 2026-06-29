@@ -111,8 +111,11 @@ struct RecordingsService: Sendable {
             let raw = (resource.originalFilename as NSString).pathExtension
             return raw.isEmpty ? "mov" : raw
         }()
+        // PHAsset.localIdentifier contains '/' which is invalid in path components;
+        // sanitize to keep filenames stable and unique across runs.
+        let safeId = recording.id.replacingOccurrences(of: "/", with: "-")
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PromptCam-\(abs(recording.id.hashValue)).\(ext)")
+            .appendingPathComponent("PromptCam-\(safeId).\(ext)")
 
         if FileManager.default.fileExists(atPath: url.path) { return url }
 
