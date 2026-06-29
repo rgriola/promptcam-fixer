@@ -1,13 +1,9 @@
 // PromptCam — Feature Tour Overlay
 // June 26, 2026 - Full-screen coach-marks overlay using hole-punch technique.
-//
-// Architecture:
-// - A ZStack with `.compositingGroup()` renders a dark dim layer and uses `.blendMode(.destinationOut)`
-//   to punch a transparent hole at the current step's anchor frame, letting the real UI show through.
-// - A tooltip card is positioned above or below the spotlight, adapting to available screen space.
-// - All touch events outside the tooltip buttons are swallowed to prevent accidental camera interaction.
-//
+// June 29, 2026 - Added explicit frame on dimLayer ZStack before compositingGroup to
+//                 guarantee a non-zero compositing context regardless of animation state.
 import SwiftUI
+import OSLog
 
 /// Full-screen guided tour overlay that spotlights one camera control at a time.
 ///
@@ -29,7 +25,11 @@ struct FeatureTourOverlay: View {
 
     private var spotlightRect: CGRect? {
         guard let step = coordinator.currentStep else { return nil }
-        return frames[step.id]
+        let frame = frames[step.id]
+        if frame == nil {
+            Log.ui.warning("[Tour] anchor '\(step.id, privacy: .public)' has no registered frame — tooltip will use fallback position")
+        }
+        return frame
     }
 
     /// Spotlight rect expanded by padding for visual breathing room.
@@ -54,6 +54,10 @@ struct FeatureTourOverlay: View {
                 // Tooltip card — always shown when a step is active.
                 // Renders with a centered fallback position when the anchor frame isn’t ready yet.
                 if let step = coordinator.currentStep {
+                    let _ = { () -> Void in
+                        let hasFrame = paddedSpotlight != nil
+                        Log.ui.debug("[Tour] rendering step '\(step.id, privacy: .public)' — hasFrame=\(hasFrame, privacy: .public)")
+                    }()
                     tooltipCard(step: step, spotlight: paddedSpotlight, screenSize: geo.size)
                         .frame(width: min(geo.size.width - 40, 400))
                         .position(
@@ -80,7 +84,6 @@ struct FeatureTourOverlay: View {
         ZStack {
             // Dark semi-transparent fill.
             Color.black.opacity(0.78)
-                .ignoresSafeArea()
 
             // Rounded-rectangle cutout using destination-out blend mode.
             // The compositingGroup on the outer ZStack flattens this into a bitmap
@@ -94,6 +97,12 @@ struct FeatureTourOverlay: View {
                     .animation(.spring(duration: 0.45), value: s.midY)
             }
         }
+        // Explicit maxWidth/maxHeight BEFORE compositingGroup ensures the compositing
+        // context has a guaranteed non-zero size. Without this, if the ZStack's
+        // natural size is zero (e.g. due to an interrupted opacity animation),
+        // the entire dim layer renders as an invisible zero-area compositing layer.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
         .compositingGroup()
         .ignoresSafeArea()
     }

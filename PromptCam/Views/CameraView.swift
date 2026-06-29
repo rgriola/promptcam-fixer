@@ -337,14 +337,17 @@ struct CameraView: View {
                 }
 
             }
-            .onPreferenceChange(TourAnchorKey.self) { tourFrames = $0 }
+            .onPreferenceChange(TourAnchorKey.self) { frames in
+                let ids = frames.keys.sorted().joined(separator: ", ")
+                Log.ui.debug("[Tour] tourFrames updated — anchors=[ \(ids, privacy: .public) ]")
+                tourFrames = frames
+            }
             .background(Theme.bgGrad) // background for main view ZStack
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
-            // Feature Tour Overlay — sits outside the constrained ZStack so its
-            // .ignoresSafeArea() can freely expand to the full physical screen.
-            // tourAnchor frames use .global, and the overlay's own GeometryReader
-            // also uses .ignoresSafeArea(), keeping both in the same coordinate space.
+            // Feature Tour Overlay — animation and transition live here, NOT in the model,
+            // so that @Observable property mutations stay synchronous and don't inject an
+            // animation context that poisons SwiftUI preference-key accumulation.
             .overlay {
                 if tourCoordinator.isActive {
                     FeatureTourOverlay(
@@ -352,8 +355,12 @@ struct CameraView: View {
                         frames: tourFrames,
                         onEnd: {
                             hasSeenTour = true
+                            Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
                         }
                     )
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: tourCoordinator.isActive)
+                    .zIndex(100)
                 }
             }
         }
@@ -500,9 +507,12 @@ struct CameraView: View {
                 viewModel.openSettings()
             },
             onTapGuide: {
-                guard !viewModel.isRecording else { return }
+                guard !viewModel.isRecording else {
+                    Log.ui.info("[Tour] Guide Dog blocked — recording in progress")
+                    return
+                }
+                Log.ui.debug("[Tour] Guide Dog tapped — isActive=\(tourCoordinator.isActive, privacy: .public) frames=\(tourFrames.keys.sorted().joined(separator: ","), privacy: .public)")
                 tourCoordinator.start()
-                Log.ui.debug("Feature tour started via Guide Dog")
             }
         )
     }

@@ -1,7 +1,10 @@
 // PromptCam — Feature Tour Coordinator
 // June 26, 2026 - @Observable coordinator that drives step navigation and tour state.
+// June 29, 2026 - Removed withAnimation from model methods (caused animation-context
+//                poisoning when @Observable mutation triggered mid-preference-accumulation).
 import SwiftUI
 import Observation
+import OSLog
 
 /// Manages active state and step navigation for the feature tour.
 ///
@@ -47,37 +50,45 @@ final class TourCoordinator {
     func start(steps: [TourStep] = TourCatalog.essentials, required: Bool = false) {
         // Guard against re-entry: a second tap while the tour is already visible
         // would otherwise reset currentIndex mid-animation and corrupt state.
-        guard !isActive else { return }
+        guard !isActive else {
+            Log.ui.warning("[Tour] start() blocked — already active (step \(self.currentIndex, privacy: .public))")
+            return
+        }
         self.steps = steps
         self.currentIndex = 0
         self.isRequired = required
-        withAnimation(.easeInOut(duration: 0.3)) {
-            self.isActive = true
-        }
+        // NOTE: No withAnimation here. Setting isActive synchronously lets SwiftUI
+        // apply the .transition() defined at the call site (CameraView overlay)
+        // without injecting an animation context that poisons preference-key accumulation.
+        self.isActive = true
+        Log.ui.debug("[Tour] started — steps=\(steps.count, privacy: .public) required=\(required, privacy: .public)")
     }
 
     /// Advance to the next step, or end the tour if already on the last step.
     func next() {
         guard !isLast else { end(); return }
-        withAnimation(.spring(duration: 0.4)) {
-            currentIndex += 1
-        }
+        // Animation context lives here, not in the model — driving index change
+        // triggers view updates which animate via .animation(value:) at the overlay.
+        currentIndex += 1
+        Log.ui.debug("[Tour] next → step \(self.currentIndex, privacy: .public) of \(self.steps.count, privacy: .public)")
     }
 
     /// Go back to the previous step. No-op on the first step.
     func back() {
-        guard !isFirst else { return }
-        withAnimation(.spring(duration: 0.4)) {
-            currentIndex -= 1
+        guard !isFirst else {
+            Log.ui.warning("[Tour] back() called on first step — no-op")
+            return
         }
+        currentIndex -= 1
+        Log.ui.debug("[Tour] back → step \(self.currentIndex, privacy: .public) of \(self.steps.count, privacy: .public)")
     }
 
     /// Dismiss the tour overlay.
     func end() {
-        withAnimation(.easeOut(duration: 0.25)) {
-            isActive = false
-        }
+        // Synchronous — animation is handled by the .transition() at the view layer.
+        isActive = false
         // Reset step so the next start() always opens cleanly at step 1.
         currentIndex = 0
+        Log.ui.debug("[Tour] ended — isActive=false, index reset to 0")
     }
 }
