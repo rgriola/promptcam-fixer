@@ -51,16 +51,10 @@ struct AudioSourcePickerView: View {
         // Use the AVCaptureDevice product name when available (e.g. "DJI Mini Mic 3").
         // Fall back to portName (e.g. "Wireless Mic Rx") when no capture device matches.
         let displayName = captureDeviceNames[port.uid] ?? port.portName
-
-        // Show portName as a sub-label only when it adds information
-        // (i.e. it differs from the resolved product name).
-        let subtitle: String = {
-            if let productName = captureDeviceNames[port.uid],
-               productName != port.portName {
-                return port.portName         // e.g. "Wireless Mic Rx" under "DJI Mini Mic 3"
-            }
-            return portTypeLabel(port.portType) // e.g. "Built-in Microphone"
-        }()
+        
+        // portTypeLabel now has full port context so it can embed the
+        // device-specific name (e.g. "USB · Wireless Mic Rx") when needed.
+        let subtitle = portTypeLabel(port)
 
         let isActive = port.portName == activeInputName
 
@@ -123,13 +117,19 @@ struct AudioSourcePickerView: View {
         }
     }
 
-    private func portTypeLabel(_ portType: AVAudioSession.Port) -> String {
-        switch portType {
+    private func portTypeLabel(_ port: AVAudioSessionPortDescription) -> String {
+        switch port.portType {
         case .builtInMic:
             return "Built-in Microphone"
         case .headsetMic:
             return "Wired Headset"
         case .usbAudio:
+            // If a product name was resolved, annotate with the USB class
+            // descriptor so the creator sees both layers of identity.
+            // e.g. "USB · Wireless Mic Rx" beneath "DJI Mini Mic 3".
+            if captureDeviceNames[port.uid] != nil {
+                return "USB · \(port.portName)"
+            }
             return "USB Audio"
         case .bluetoothHFP:
             return "Bluetooth Hands-Free"
