@@ -61,7 +61,13 @@ struct CameraView: View {
 
     var body: some View {
         @Bindable var viewModel = viewModel
-        return GeometryReader { proxy in
+        // Outer ZStack: camera content sits in a GeometryReader; the tour overlay
+        // is a TRUE sibling at this level — completely outside the inner ZStack that
+        // owns .onPreferenceChange(TourAnchorKey.self). This is the only reliable way
+        // to prevent SwiftUI from re-accumulating all 6 anchor preferences when the
+        // overlay enters the tree, which caused the 3-second timeout and frozen UI.
+        return ZStack {
+        GeometryReader { proxy in
             let layout = CameraScreenLayout(
                 containerSize: proxy.size,
                 safeAreaInsets: proxy.safeAreaInsets // pad for notch
@@ -346,27 +352,6 @@ struct CameraView: View {
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        // MARK: - Tour Overlay
-        // Placed at GeometryReader level — OUTSIDE the inner ZStack that owns
-        // .onPreferenceChange(TourAnchorKey.self). Inserting FeatureTourOverlay
-        // as an .overlay{} on the inner ZStack caused SwiftUI to re-accumulate
-        // ALL TourAnchorKey preferences from that subtree (6 GeometryReader-backed
-        // anchors), reliably hitting the 3-second accumulation timeout and leaving
-        // the touch-absorbing Color.clear active with the dimLayer at opacity-0.
-        .overlay {
-            if tourCoordinator.isActive {
-                FeatureTourOverlay(
-                    coordinator: tourCoordinator,
-                    frames: tourFrames,
-                    onEnd: {
-                        hasSeenTour = true
-                        Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
-                    }
-                )
-                .transition(.opacity)
-                .ignoresSafeArea()
-            }
-        }
         // MARK: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
             viewModel.cameraError != nil
@@ -438,6 +423,23 @@ struct CameraView: View {
                 scheduleFocusHide()
             }
         }
+        // MARK: - Tour Overlay (true sibling — fully decoupled from preference hierarchy)
+        // Lives in the outer ZStack as a sibling of the GeometryReader, not inside it.
+        // This prevents FeatureTourOverlay's insertion from triggering re-accumulation
+        // of TourAnchorKey preferences inside the inner camera ZStack.
+        if tourCoordinator.isActive {
+            FeatureTourOverlay(
+                coordinator: tourCoordinator,
+                frames: tourFrames,
+                onEnd: {
+                    hasSeenTour = true
+                    Log.ui.debug("[Tour] onEnd fired — hasSeenTour=true")
+                }
+            )
+            .transition(.opacity)
+            .ignoresSafeArea()
+        }
+        } // end outer ZStack
     }
 
     // MARK: - Controls Row & Footer Builders

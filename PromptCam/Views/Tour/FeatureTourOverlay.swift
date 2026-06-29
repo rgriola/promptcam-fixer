@@ -82,8 +82,11 @@ struct FeatureTourOverlay: View {
     @ViewBuilder
     private func dimLayer(spotlight: CGRect?) -> some View {
         ZStack {
-            // Dark semi-transparent fill.
+            // Dark semi-transparent fill — .ignoresSafeArea() here ensures the black
+            // extends into the dynamic island and home indicator regions even when the
+            // ZStack itself is sized to the safe-area content area.
             Color.black.opacity(0.78)
+                .ignoresSafeArea()
 
             // Rounded-rectangle cutout using destination-out blend mode.
             // The compositingGroup on the outer ZStack flattens this into a bitmap
@@ -97,12 +100,6 @@ struct FeatureTourOverlay: View {
                     .animation(.spring(duration: 0.45), value: s.midY)
             }
         }
-        // Explicit maxWidth/maxHeight BEFORE compositingGroup ensures the compositing
-        // context has a guaranteed non-zero size. Without this, if the ZStack's
-        // natural size is zero (e.g. due to an interrupted opacity animation),
-        // the entire dim layer renders as an invisible zero-area compositing layer.
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
         .compositingGroup()
         .ignoresSafeArea()
     }
