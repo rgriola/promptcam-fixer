@@ -35,11 +35,13 @@ struct CameraFooterControlsView: View {
             )
             .accessibilityLabel("Open photo library")
             .accessibilityHint("Shows your most recently recorded video")
+            .tourAnchor("library-button")
 
             Spacer()
 
             footerIconButton(systemName: "sparkle.text.clipboard", action: onTapScriptAssist)
                 .accessibilityLabel("Insert generated script")
+                .tourAnchor("script-button")
             
             Spacer()
 
@@ -47,6 +49,7 @@ struct CameraFooterControlsView: View {
                 systemName: "text.viewfinder", 
                 action: onTapAdjust)
                 .accessibilityLabel("Teleprompter adjustments")
+                .tourAnchor("adjust-button")
 
             Spacer()
 

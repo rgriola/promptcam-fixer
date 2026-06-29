@@ -1,13 +1,15 @@
-// PromptCam — Top Header Controls
+// PromptCam — Camera Controls Row
 // Extracted from CameraView.swift (refactor June 1, 2026)
 // June 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add onTapLock callback for lock toggle button
+// June 29, 2026 - Renamed CameraTopControlsView → CameraControlsRowView (controls live at bottom, above footer)
 import SwiftUI
 
-// MARK: - Top Header Controls
+// MARK: - Camera Controls Row
 
-/// Top-row camera controls: EV pill (left), lock status badge (center),
-/// grid toggle (right), and format quick-panel (second row, left).
-struct CameraTopControlsView: View {
+/// Camera controls row: video mode badge (left), format pill (center),
+/// EV button (center-right), and lock badge (right).
+/// Renders as the upper of the two bottom chrome rows, directly above CameraFooterControlsView.
+struct CameraControlsRowView: View {
     /// Formatted EV display value shown in the left pill.
     let evText: String
     /// Current focus/exposure lock state shown in the center badge.

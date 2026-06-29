@@ -45,6 +45,9 @@ final class TourCoordinator {
     ///   - steps: Steps to walk through. Defaults to `TourCatalog.essentials`.
     ///   - required: When `true` the Skip button is hidden. Use for the first-use tour.
     func start(steps: [TourStep] = TourCatalog.essentials, required: Bool = false) {
+        // Guard against re-entry: a second tap while the tour is already visible
+        // would otherwise reset currentIndex mid-animation and corrupt state.
+        guard !isActive else { return }
         self.steps = steps
         self.currentIndex = 0
         self.isRequired = required
@@ -74,5 +77,7 @@ final class TourCoordinator {
         withAnimation(.easeOut(duration: 0.25)) {
             isActive = false
         }
+        // Reset step so the next start() always opens cleanly at step 1.
+        currentIndex = 0
     }
 }

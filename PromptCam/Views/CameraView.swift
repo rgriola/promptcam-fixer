@@ -92,6 +92,17 @@ struct CameraView: View {
 
                 // Layer 2.5: Audio VU meter on the left edge of the preview.
                 // Hidden when any modal sheet is open.
+                // The tourAnchor is placed on a permanent zero-size overlay so
+                // frames["vu-meter"] is always populated, even when the meter
+                // is hidden by the sheet condition below.
+                Color.clear
+                    .frame(width: CameraLayout.vuMeterWidth, height: 1)
+                    .position(
+                        x: CameraLayout.vuMeterHorizontalInset + 5,
+                        y: layout.previewSize.height - 89 - (layout.previewSize.height * 0.28) / 2
+                    )
+                    .tourAnchor("vu-meter")
+
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
                     let meterHeight = layout.previewSize.height * 0.28
                     VUMeterView(
@@ -123,7 +134,6 @@ struct CameraView: View {
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
                     }
-                    .tourAnchor("vu-meter")
                 }
 
                 // Layer 3: Recording cluster positioned at bottom of camera preview
@@ -151,7 +161,7 @@ struct CameraView: View {
                 
                 // Layer 4: Header and footer chrome constrained to space below preview
                 VStack(spacing: Theme.space12) {
-                    cameraHeader()
+                    cameraControlsRow()
                     .padding()
                     .background(Theme.black.opacity(0.1))
                     cameraFooter()
@@ -416,12 +426,11 @@ struct CameraView: View {
         }
     }
 
-    // MARK: - Header & Footer Builders
+    // MARK: - Controls Row & Footer Builders
 
-    /// Builds the top camera controls row and format quick panel.
-    /// - Parameter safeTopInset: Safe-area inset used to anchor controls below the notch.
-    /// - Returns: Configured top controls view.
-    private func cameraHeader() -> some View {
+    /// Builds the top camera controls row (video mode, format, EV, lock).
+    /// - Returns: Configured controls row view.
+    private func cameraControlsRow() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
@@ -430,7 +439,7 @@ struct CameraView: View {
             ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
             : nil
 
-        return CameraTopControlsView(
+        return CameraControlsRowView(
             evText: evText,
             lockStatus: viewModel.lockStatus,
             videoMode: viewModel.recordingFormat.mode,
