@@ -106,10 +106,8 @@ final class CameraViewModel {
     /// Device capabilities (mode support, resolution/fps per mode).
     var deviceCapabilities: DeviceCapabilities = DeviceCapabilities(
         supportsCinematicMode: false,
-        standardResolutions: [.hd1080p],
-        standardFrameRates: [.fps30],
-        cinematicResolutions: [],
-        cinematicFrameRates: []
+        standardFormats: [RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)],
+        cinematicFormats: []
     )
     /// Aperture range reported by the active cinematic format (iOS 26+ only).
     /// Nil when cinematic mode is inactive or device/OS does not support it.

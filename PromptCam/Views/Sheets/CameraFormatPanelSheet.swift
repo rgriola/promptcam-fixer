@@ -93,7 +93,8 @@ struct CameraFormatPanelSheet: View {
                 // MARK: - Frame Rate Section
                 
                 Section {
-                    let validFrameRates = deviceCapabilities.frameRates(for: recordingFormat.mode)
+                    // Only enable fps values valid for the currently selected resolution.
+                    let validFrameRates = deviceCapabilities.frameRates(for: recordingFormat.mode, resolution: recordingFormat.resolution)
                     
                     Picker("Frame Rate", selection: Binding(
                         get: { recordingFormat.frameRate },

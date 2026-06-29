@@ -45,7 +45,7 @@ enum VideoFrameRate: Int, CaseIterable, Codable, Sendable {
 
 // MARK: - Recording Format
 
-struct RecordingFormat: Equatable, Codable, Sendable {
+struct RecordingFormat: Equatable, Hashable, Codable, Sendable {
     var resolution: VideoResolution
     var frameRate: VideoFrameRate
     var mode: VideoMode

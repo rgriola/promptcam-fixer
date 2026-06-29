@@ -137,26 +137,24 @@ extension CameraService {
     /// Queries the device's full capabilities including cinematic mode support.
     /// Returns mode-specific format availability for proper UI validation.
     func queryDeviceCapabilities() -> DeviceCapabilities {
-        // Standard capabilities come from the wide-angle camera.
+        // Standard capabilities come from the wide-angle front camera.
         let wideAngle = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
             ?? videoDevice
 
         // Scan ALL front-facing cameras for CINE formats — different devices carry CINE
-        // on different hardware generations (TrueDepth on iPhone 13, UltraWide on iPhone 17 Pro).
+        // on different hardware (TrueDepth on iPhone 13, UltraWide on iPhone 17 Pro).
         let frontDiscovery = AVCaptureDevice.DiscoverySession(
             deviceTypes: allVideoDeviceTypes(),
             mediaType: .video,
             position: .front
         )
 
-        // HD/4K threshold: midpoint between 1920x1080 (2.1MP) and 3840x2160 (8.3MP).
+        // HD/4K pixel threshold (midpoint between 1080p and 4K).
         let hdThreshold: Int64 = 5_184_000
-        let hdTarget: Int64 = 1920 * 1080
-        let k4Target: Int64 = 3840 * 2160
 
-        var hasHDCine = false
-        var has4KCine = false
-        var cinematicFrameRates = Set<VideoFrameRate>()
+        // MARK: Cinematic format discovery
+        // For each CINE-capable format, record the (resolution, fps) pairs it supports.
+        var cinematicPairSet = Set<RecordingFormat>()
         var supportsCinematic = false
 
         for device in frontDiscovery.devices {
@@ -169,76 +167,91 @@ extension CameraService {
                 supportsCinematic = true
                 let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
                 let pixels = Int64(dim.width) * Int64(dim.height)
-
-                if pixels <= hdThreshold { hasHDCine = true } else { has4KCine = true }
+                let resolution: VideoResolution = pixels <= hdThreshold ? .hd1080p : .uhd4K
 
                 for range in fmt.videoSupportedFrameRateRanges {
                     for rate in VideoFrameRate.allCases {
                         if Double(rate.rawValue) >= range.minFrameRate &&
                            Double(rate.rawValue) <= range.maxFrameRate {
-                            cinematicFrameRates.insert(rate)
+                            cinematicPairSet.insert(
+                                RecordingFormat(resolution: resolution, frameRate: rate, mode: .cinematic)
+                            )
                         }
                     }
                 }
             }
         }
 
-        // If there are CINE formats but none fit the threshold cleanly (e.g. all large),
-        // fall back to treating the smallest as HD.
-        if supportsCinematic && !hasHDCine && !has4KCine { hasHDCine = true }
+        // Fallback: if CINE-capable but no pairs matched the threshold, assume HD 24/30p.
+        if supportsCinematic && cinematicPairSet.isEmpty {
+            cinematicPairSet.insert(RecordingFormat(resolution: .hd1080p, frameRate: .fps24, mode: .cinematic))
+            cinematicPairSet.insert(RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .cinematic))
+        }
 
-        var cinematicResolutions: [VideoResolution] = []
-        if hasHDCine { cinematicResolutions.append(.hd1080p) }
-        if has4KCine { cinematicResolutions.append(.uhd4K) }
+        let cinematicFormats = cinematicPairSet.sorted {
+            if $0.resolution.rawValue != $1.resolution.rawValue { return $0.resolution.rawValue < $1.resolution.rawValue }
+            return $0.frameRate.rawValue < $1.frameRate.rawValue
+        }
 
-        Log.camera.info("All-front CINE scan: HD=\(hasHDCine, privacy: .public) 4K=\(has4KCine, privacy: .public) FPS=\(cinematicFrameRates.map(\.rawValue).sorted(), privacy: .public)")
-        _ = hdTarget; _ = k4Target  // suppress unused warnings
+        Log.camera.info("CINE pairs: \(cinematicFormats.map { "\($0.resolution.rawValue) \($0.frameRate.rawValue)p" }, privacy: .public)")
 
+        // MARK: Standard format discovery
+        // For each format on the wide-angle camera, record (resolution, fps) pairs.
         guard let device = wideAngle else {
-            Log.camera.warning("No wide-angle device available for capability query")
+            Log.camera.warning("No wide-angle device — returning minimal capabilities")
             return DeviceCapabilities(
                 supportsCinematicMode: supportsCinematic,
-                standardResolutions: [.hd1080p],
-                standardFrameRates: [.fps30],
-                cinematicResolutions: cinematicResolutions.isEmpty ? [.hd1080p] : cinematicResolutions,
-                cinematicFrameRates: cinematicFrameRates.isEmpty ? [.fps24, .fps30] : cinematicFrameRates.sorted { $0.rawValue < $1.rawValue }
+                standardFormats: [RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)],
+                cinematicFormats: cinematicFormats
             )
         }
 
-        Log.camera.info("Capabilities: wideAngle=\(device.localizedName, privacy: .public) | Cinematic=\(supportsCinematic, privacy: .public)")
+        var standardPairSet = Set<RecordingFormat>()
+        let can4K = session.canSetSessionPreset(.hd4K3840x2160)
 
-        // Standard mode: resolution (session-preset based).
-        var standardResolutions: [VideoResolution] = [.hd1080p]
-        if session.canSetSessionPreset(.hd4K3840x2160) {
-            standardResolutions.append(.uhd4K)
-        }
+        for fmt in device.formats {
+            let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
+            let pixels = Int64(dim.width) * Int64(dim.height)
 
-        // Standard mode: scan wide-angle formats for supported frame rates.
-        var standardFrameRates = Set<VideoFrameRate>()
-        for deviceFormat in device.formats {
-            for range in deviceFormat.videoSupportedFrameRateRanges {
+            // Map to our resolution buckets; skip anything that isn't HD or 4K.
+            let resolution: VideoResolution
+            if pixels <= hdThreshold {
+                resolution = .hd1080p
+            } else if can4K {
+                resolution = .uhd4K
+            } else {
+                continue
+            }
+
+            for range in fmt.videoSupportedFrameRateRanges {
                 for rate in VideoFrameRate.allCases {
                     if Double(rate.rawValue) >= range.minFrameRate &&
                        Double(rate.rawValue) <= range.maxFrameRate {
-                        standardFrameRates.insert(rate)
+                        standardPairSet.insert(
+                            RecordingFormat(resolution: resolution, frameRate: rate, mode: .standard)
+                        )
                     }
                 }
             }
         }
 
-        let capabilities = DeviceCapabilities(
+        // Always guarantee at least HD 30p.
+        if standardPairSet.isEmpty {
+            standardPairSet.insert(RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard))
+        }
+
+        let standardFormats = standardPairSet.sorted {
+            if $0.resolution.rawValue != $1.resolution.rawValue { return $0.resolution.rawValue < $1.resolution.rawValue }
+            return $0.frameRate.rawValue < $1.frameRate.rawValue
+        }
+
+        Log.camera.info("STD pairs: \(standardFormats.map { "\($0.resolution.rawValue) \($0.frameRate.rawValue)p" }, privacy: .public)")
+
+        return DeviceCapabilities(
             supportsCinematicMode: supportsCinematic,
-            standardResolutions: standardResolutions,
-            standardFrameRates: standardFrameRates.sorted { $0.rawValue < $1.rawValue },
-            cinematicResolutions: cinematicResolutions.isEmpty && supportsCinematic ? [.hd1080p] : cinematicResolutions.sorted { $0.rawValue < $1.rawValue },
-            cinematicFrameRates: cinematicFrameRates.isEmpty && supportsCinematic
-                ? [.fps24, .fps30]
-                : cinematicFrameRates.sorted { $0.rawValue < $1.rawValue }
+            standardFormats: standardFormats,
+            cinematicFormats: cinematicFormats
         )
-
-        Log.camera.info("Capabilities: Cinematic=\(supportsCinematic, privacy: .public) StdRes=\(standardResolutions.map(\.rawValue), privacy: .public) StdFPS=\(capabilities.standardFrameRates.map(\.rawValue), privacy: .public) CineRes=\(capabilities.cinematicResolutions.map(\.rawValue), privacy: .public) CineFPS=\(capabilities.cinematicFrameRates.map(\.rawValue), privacy: .public)")
-
-        return capabilities
     }
 
     // MARK: - Cinematic Format Discovery

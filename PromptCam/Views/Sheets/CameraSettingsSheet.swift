@@ -51,7 +51,7 @@ struct CameraSettingsSheet: View {
                             .listRowSeparator(.hidden)
                             .padding(.top, 4)
 
-                        ForEach(standardFormats, id: \.self) { format in
+                        ForEach(capabilities.standardFormats, id: \.self) { format in
                             formatRow(format)
                         }
 
@@ -64,7 +64,7 @@ struct CameraSettingsSheet: View {
                                 .listRowSeparator(.hidden)
                                 .padding(.top, 8)
 
-                            ForEach(cinematicFormats, id: \.self) { format in
+                            ForEach(capabilities.cinematicFormats, id: \.self) { format in
                                 formatRow(format, icon: "circle.dotted.and.circle")
                             }
                         }
@@ -153,37 +153,13 @@ struct CameraSettingsSheet: View {
         return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
-    /// Standard recording formats available on this device.
-    /// Produces entries like "HD 1920×1080 30p", "4K 3840×2160 24p".
-    private var standardFormats: [String] {
-        var formats: [String] = []
-        for resolution in capabilities.standardResolutions {
-            for frameRate in capabilities.standardFrameRates {
-                formats.append("\(resolution.rawValue) \(resolution.dimensionLabel) \(frameRate.rawValue)p")
-            }
-        }
-        return formats
-    }
-
-    /// Cinematic recording formats available on this device.
-    /// Produces entries like "HD 1920×1080 24p", "4K 3840×2160 30p".
-    private var cinematicFormats: [String] {
-        var formats: [String] = []
-        for resolution in capabilities.cinematicResolutions {
-            for frameRate in capabilities.cinematicFrameRates {
-                formats.append("\(resolution.rawValue) \(resolution.dimensionLabel) \(frameRate.rawValue)p")
-            }
-        }
-        return formats
-    }
-
-    /// Reusable format row with icon.
-    private func formatRow(_ format: String, icon: String = "video.fill") -> some View {
+    /// Reusable format row — renders from a validated RecordingFormat pair.
+    private func formatRow(_ format: RecordingFormat, icon: String = "video.fill") -> some View {
         HStack(spacing: Theme.space8) {
             Image(systemName: icon)
                 .foregroundStyle(Theme.purple)
                 .frame(width: 20)
-            Text(format)
+            Text("\(format.resolution.rawValue) \(format.resolution.dimensionLabel) \(format.frameRate.rawValue)p")
                 .font(Theme.font16Regular)
                 .foregroundStyle(Theme.white)
         }

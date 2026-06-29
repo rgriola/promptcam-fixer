@@ -21,58 +21,79 @@ enum PreferredCameraSelection: Equatable, Sendable {
 struct DeviceCapabilities: Equatable, Sendable {
     /// Whether the device supports cinematic mode (depth capture).
     let supportsCinematicMode: Bool
-    
-    /// Supported resolutions for standard video mode.
-    let standardResolutions: [VideoResolution]
-    
-    /// Supported frame rates for standard video mode.
-    let standardFrameRates: [VideoFrameRate]
-    
-    /// Supported resolutions for cinematic mode (typically only 1080p).
-    let cinematicResolutions: [VideoResolution]
-    
-    /// Supported frame rates for cinematic mode (typically 24/30fps only).
-    let cinematicFrameRates: [VideoFrameRate]
-    
-    /// Returns supported resolutions for a given mode.
+
+    /// All valid (resolution, frameRate) pairs for standard mode,
+    /// confirmed by interrogating `AVCaptureDevice.formats` directly.
+    /// This is the single source of truth — no cross-product inference.
+    let standardFormats: [RecordingFormat]
+
+    /// All valid (resolution, frameRate) pairs for cinematic mode,
+    /// confirmed by interrogating `AVCaptureDevice.formats` directly.
+    let cinematicFormats: [RecordingFormat]
+
+    // MARK: - Derived helpers
+
+    /// All unique resolutions available for a given mode (order: HD before 4K).
     func resolutions(for mode: VideoMode) -> [VideoResolution] {
-        mode == .cinematic ? cinematicResolutions : standardResolutions
+        let pairs = mode == .cinematic ? cinematicFormats : standardFormats
+        var seen = Set<VideoResolution>()
+        var result: [VideoResolution] = []
+        for pair in pairs where seen.insert(pair.resolution).inserted {
+            result.append(pair.resolution)
+        }
+        return result
     }
-    
-    /// Returns supported frame rates for a given mode.
+
+    /// All unique frame rates available for a given mode, regardless of resolution.
     func frameRates(for mode: VideoMode) -> [VideoFrameRate] {
-        mode == .cinematic ? cinematicFrameRates : standardFrameRates
+        let pairs = mode == .cinematic ? cinematicFormats : standardFormats
+        var seen = Set<VideoFrameRate>()
+        var result: [VideoFrameRate] = []
+        for pair in pairs where seen.insert(pair.frameRate).inserted {
+            result.append(pair.frameRate)
+        }
+        return result
     }
-    
-    /// Returns whether a specific format combination is supported.
+
+    /// Frame rates valid for a **specific** resolution in a given mode.
+    /// Used by the Format Picker to disable fps values that don't work at the selected resolution.
+    func frameRates(for mode: VideoMode, resolution: VideoResolution) -> [VideoFrameRate] {
+        let pairs = mode == .cinematic ? cinematicFormats : standardFormats
+        var seen = Set<VideoFrameRate>()
+        var result: [VideoFrameRate] = []
+        for pair in pairs where pair.resolution == resolution && seen.insert(pair.frameRate).inserted {
+            result.append(pair.frameRate)
+        }
+        return result
+    }
+
+    /// Returns whether a specific format combination is confirmed by hardware.
     func isSupported(_ format: RecordingFormat) -> Bool {
-        let resolutions = resolutions(for: format.mode)
-        let frameRates = frameRates(for: format.mode)
-        return resolutions.contains(format.resolution) && frameRates.contains(format.frameRate)
+        let pairs = format.mode == .cinematic ? cinematicFormats : standardFormats
+        return pairs.contains { $0.resolution == format.resolution && $0.frameRate == format.frameRate }
     }
-    
+
     /// Adjusts a format to the nearest valid combination for this device.
     func adjusted(_ format: RecordingFormat) -> RecordingFormat {
         var adjusted = format
-        
-        // If cinematic mode not supported, fall back to standard.
+
+        // Fall back to standard if cinematic is not supported.
         if format.mode == .cinematic && !supportsCinematicMode {
             adjusted.mode = .standard
         }
-        
+
         let validResolutions = resolutions(for: adjusted.mode)
-        let validFrameRates = frameRates(for: adjusted.mode)
-        
-        // Adjust resolution if not supported.
+        // Clamp resolution to a supported value.
         if !validResolutions.contains(adjusted.resolution) {
             adjusted.resolution = validResolutions.first ?? .hd1080p
         }
-        
-        // Adjust frame rate if not supported.
+
+        // Clamp frame rate to one valid for the (possibly adjusted) resolution.
+        let validFrameRates = frameRates(for: adjusted.mode, resolution: adjusted.resolution)
         if !validFrameRates.contains(adjusted.frameRate) {
             adjusted.frameRate = validFrameRates.first ?? .fps30
         }
-        
+
         return adjusted
     }
 }
@@ -415,8 +436,11 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 let capabilities = self.queryDeviceCapabilities()
                 
                 Task { @MainActor in
-                    // For backward compatibility, also call the old supported formats callback.
-                    self.onSupportedFormatsQueried?(capabilities.standardResolutions, capabilities.standardFrameRates)
+                    // Legacy callback: derive flat arrays from the validated pairs.
+                    self.onSupportedFormatsQueried?(
+                        capabilities.resolutions(for: .standard),
+                        capabilities.frameRates(for: .standard)
+                    )
                     self.onDeviceCapabilitiesQueried?(capabilities)
                 }
             } catch {
