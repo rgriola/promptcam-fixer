@@ -135,6 +135,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// callback so we can confirm data is actually flowing into the tap.
     private var hasLoggedFirstBuffer = false
 
+    /// Timer that polls AVAudioSession.currentRoute as a safety net.
+    /// iOS does not reliably post routeChangeNotification for USB devices
+    /// with portType 'Other' (e.g. DJI Wireless Mic Rx), so we poll the
+    /// current input UID once per second and trigger the same handling
+    /// path when it changes.
+    private var routePollTimer: Timer?
+
+    /// UID of the input port last seen by the poller. Used to detect
+    /// changes that iOS notifications miss.
+    private var lastSeenInputUID: String?
+
     // MARK: - Init
 
     override init() {
@@ -430,6 +441,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         stopMonitoringRoute()
         Log.camera.info("AudioMeterService: route observer registered")
 
+        // Seed the polling baseline so the first tick doesn't fire spuriously.
+        lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
+
         // Use queue:nil so the notification is delivered on the posting thread
         // immediately, without waiting for OperationQueue.main which can be
         // delayed by RunLoop mode changes during camera preview rendering.
@@ -454,6 +468,32 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         // Publish initial state.
         evaluateCurrentRoute()
+
+        // Start the polling fallback. 1Hz is rare enough to be cheap but
+        // fast enough that users perceive the switch as immediate.
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.pollRouteForChange()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        routePollTimer = timer
+    }
+
+    /// Polling fallback for route changes that iOS notifications miss.
+    /// Compares the current input port UID to the last seen value and
+    /// triggers the same auto-switch logic if it differs.
+    private func pollRouteForChange() {
+        let currentUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
+        guard currentUID != lastSeenInputUID else { return }
+        let previousUID = lastSeenInputUID
+        lastSeenInputUID = currentUID
+        Log.camera.info("AudioMeterService: poller detected route change uid \(previousUID ?? "nil", privacy: .public) → \(currentUID ?? "nil", privacy: .public)")
+
+        // Reuse the notification handler so a single code path drives both
+        // notification-driven and polling-driven route changes. Pass the
+        // best-guess reason: a new port appeared → newDeviceAvailable, the
+        // current port disappeared → oldDeviceUnavailable.
+        let reason: AVAudioSession.RouteChangeReason = currentUID != nil ? .newDeviceAvailable : .oldDeviceUnavailable
+        handleRouteChange(reasonRaw: reason.rawValue)
     }
 
     /// Handles an audio route change by detecting the new input, explicitly
@@ -479,6 +519,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.info("AudioMeterService: newDeviceAvailable — auto-switching to \(externalPort?.portName ?? "(none found)", privacy: .public)")
             if let port = externalPort {
                 selectInput(port)
+                lastSeenInputUID = port.uid
             } else {
                 evaluateCurrentRoute()
             }
@@ -489,6 +530,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             let builtIn = findBuiltInInput()
             Log.camera.info("AudioMeterService: oldDeviceUnavailable — falling back to \(builtIn?.portName ?? "system default", privacy: .public)")
             selectInput(builtIn)  // nil resets to system default
+            lastSeenInputUID = builtIn?.uid
 
         case .override, .routeConfigurationChange:
             evaluateCurrentRoute()
@@ -537,6 +579,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Stops observing audio route and interruption changes.
     func stopMonitoringRoute() {
+        routePollTimer?.invalidate()
+        routePollTimer = nil
         if let observer = routeObserver {
             NotificationCenter.default.removeObserver(observer)
             routeObserver = nil
