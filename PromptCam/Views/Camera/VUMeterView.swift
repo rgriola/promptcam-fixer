@@ -175,6 +175,9 @@ private struct VUBarView: View {
     @State private var clipLatched: Bool = false
     @State private var clipClearTask: Task<Void, Never>?
     @State private var lastSignalTime: Date = Date()
+    /// Driven by .task(id: lastSignalTime) so SwiftUI re-renders correctly
+    /// when the grace period elapses — Date() in body is not reactive.
+    @State private var isNoSignal: Bool = false
 
     private static let levelGradient = LinearGradient(
         stops: [
@@ -195,8 +198,6 @@ private struct VUBarView: View {
         let fillHeight   = clampedLevel * barHeight
         let peakY        = topPad + barHeight - (clampedPeak * barHeight)
 
-        let timeSinceSignal = Date().timeIntervalSince(lastSignalTime)
-        let isNoSignal = !isRecording && timeSinceSignal >= noSignalGracePeriod
         let meterOpacity: Double = isNoSignal ? 0.4 : 1.0
 
         ZStack {
@@ -247,7 +248,22 @@ private struct VUBarView: View {
             }
         }
         .onChange(of: level) { _, newLevel in
-            if newLevel >= noSignalThreshold { lastSignalTime = Date() }
+            if newLevel >= noSignalThreshold {
+                lastSignalTime = Date()
+                isNoSignal = false
+            }
+        }
+        .onChange(of: isRecording) { _, recording in
+            // Clear no-signal state immediately when recording starts.
+            if recording { isNoSignal = false }
+        }
+        // Restarts whenever lastSignalTime updates (i.e. on any real signal).
+        // After the grace period with no new signal, marks the meter as no-signal.
+        .task(id: lastSignalTime) {
+            try? await Task.sleep(for: .seconds(noSignalGracePeriod))
+            if !isRecording {
+                isNoSignal = true
+            }
         }
         .onDisappear {
             clipClearTask?.cancel()
@@ -255,6 +271,7 @@ private struct VUBarView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: clipLatched)
         .animation(.easeInOut(duration: 0.3),  value: isRecording)
+        .animation(.easeInOut(duration: 0.5),  value: isNoSignal)
     }
 }
 

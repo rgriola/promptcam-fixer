@@ -527,20 +527,21 @@ final class CameraViewModel {
                     self.showAudioRouteChangedWarning = true
                 }
             } else {
-                // Not recording — safe to swap the capture session.
+                // Not recording — auto-switch the capture session immediately.
+                // This mirrors what happens when the user taps an input in the
+                // picker; no picker confirmation step needed.
+                self.cameraService.reconfigureAudioInput()
+
                 if disconnected {
-                    // External mic was removed: warn the creator.
+                    // Mic was unplugged: show a brief warning so the user
+                    // knows recording would now use the built-in mic.
                     self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
                     withAnimation(.easeInOut(duration: 0.3)) {
                         self.showAudioRouteChangedWarning = true
                     }
                 }
-                // Show picker for both connect and disconnect so user
-                // can confirm or override the new source.
-                withAnimation(.easeOut(duration: 0.25)) {
-                    self.showAudioSourcePicker = true
-                }
-                self.cameraService.reconfigureAudioInput()
+                // Source hint already shown above via showSourceHint(name).
+                // Picker remains accessible by tapping the VU meter.
             }
         }
 
