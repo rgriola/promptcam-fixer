@@ -10,12 +10,23 @@ struct RecordingPlayerView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// The recording currently loaded in the player.
     let recording: Recording
     let videoURL: URL?
     let onDelete: () -> Void
 
+    /// Carousel data — first 8 recent recordings passed from the ViewModel.
+    /// Empty by default so the view is backward-compatible with existing callers.
+    var recentRecordings: [Recording] = []
+    /// Loads a thumbnail for a carousel cell on demand.
+    var thumbnailLoader: ((Recording) async -> UIImage?)? = nil
+    /// Called when the user taps a different video in the carousel.
+    var onSelectRecording: ((Recording, URL?) async -> Void)? = nil
+
     // MARK: - Player State
 
+    @State private var activeRecording: Recording
+    @State private var activeURL: URL?
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
@@ -26,6 +37,24 @@ struct RecordingPlayerView: View {
 
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
+
+    init(
+        recording: Recording,
+        videoURL: URL?,
+        onDelete: @escaping () -> Void,
+        recentRecordings: [Recording] = [],
+        thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
+        onSelectRecording: ((Recording, URL?) async -> Void)? = nil
+    ) {
+        self.recording = recording
+        self.videoURL = videoURL
+        self.onDelete = onDelete
+        self.recentRecordings = recentRecordings
+        self.thumbnailLoader = thumbnailLoader
+        self.onSelectRecording = onSelectRecording
+        self._activeRecording = State(initialValue: recording)
+        self._activeURL = State(initialValue: videoURL)
+    }
 
     // MARK: - Body
 
@@ -50,7 +79,7 @@ struct RecordingPlayerView: View {
             }
         }
         // ── Player Lifecycle ───────────────────────────────────────────────
-        .task(id: videoURL) {
+        .task(id: activeURL) {
             await loadPlayer()
         }
         .onDisappear {
@@ -86,6 +115,23 @@ struct RecordingPlayerView: View {
             topBar
             Spacer()
             bottomControls
+            // Carousel sits below the playback controls, above the home indicator.
+            if !recentRecordings.isEmpty, let loader = thumbnailLoader {
+                RecordingCarouselView(
+                    recordings: recentRecordings,
+                    activeRecordingID: activeRecording.id,
+                    thumbnailLoader: loader,
+                    onSelect: { selected in
+                        Task {
+                            if let handler = onSelectRecording {
+                                await handler(selected, nil)
+                            }
+                            activeRecording = selected
+                            activeURL = nil  // triggers loading state while URL resolves
+                        }
+                    }
+                )
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: showControls)
     }
@@ -211,7 +257,7 @@ struct RecordingPlayerView: View {
 
     @MainActor
     private func loadPlayer() async {
-        guard let url = videoURL else { return }
+        guard let url = activeURL else { return }
 
         // Tear down any previous player cleanly.
         teardownPlayer()

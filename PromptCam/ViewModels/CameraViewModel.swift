@@ -2,6 +2,7 @@
 // June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
 import AVFoundation
 import Combine
+import Photos
 import SwiftUI
 
 enum CameraSheetRoute: String, Identifiable, Sendable {
@@ -162,6 +163,19 @@ final class CameraViewModel {
     @ObservationIgnored private var queuedSheet: CameraSheetRoute?
     @ObservationIgnored private var lastPresentedSheet: CameraSheetRoute?
 
+    // MARK: - Direct Player State
+
+    /// The most recently recorded video, pre-fetched so the player opens immediately.
+    var latestRecording: Recording?
+    /// Resolved URL for `latestRecording` — ready before the player opens.
+    var latestVideoURL: URL?
+    /// First 8 recordings for the carousel, pre-warmed by PHCachingImageManager.
+    var recentRecordings: [Recording] = []
+    /// Controls direct player sheet presentation.
+    var showDirectPlayer = false
+
+    @ObservationIgnored private let recordingsService = RecordingsService()
+
     // MARK: - Style Persistence Keys
     private enum StyleKey {
         static let fontSize   = "tp.fontSize"
@@ -197,8 +211,7 @@ final class CameraViewModel {
         // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
-
-
+        Task { await prefetchLatestRecording() }
     }
 
     func onDisappear() {
@@ -229,7 +242,50 @@ final class CameraViewModel {
     }
 
     func openPhotoLibrary() {
-        presentSheet(.recordingsLibrary)
+        openDirectPlayer()
+    }
+
+    /// Opens the direct player on the most recent recording.
+    /// If the latest recording isn't ready yet, falls back to the library sheet.
+    func openDirectPlayer() {
+        if latestRecording != nil {
+            showDirectPlayer = true
+        } else {
+            // Fallback: no recording exists yet
+            presentSheet(.recordingsLibrary)
+        }
+    }
+
+    /// Fetches the latest recording and pre-resolves its URL so the player
+    /// opens without delay. Also seeds the carousel with the first 8 recordings.
+    func prefetchLatestRecording() async {
+        let latest = recordingsService.fetchLatestRecording()
+        latestRecording = latest
+
+        // Resolve URL in background so it's ready when player opens.
+        if let latest {
+            latestVideoURL = await recordingsService.resolveURL(for: latest)
+        }
+
+        // Fetch first 8 for carousel — don't need the full library.
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.fetchLimit = 8
+        let fetch = PHAsset.fetchAssets(with: .video, options: options)
+        var first8: [Recording] = []
+        fetch.enumerateObjects { asset, _, _ in first8.append(Recording(asset: asset)) }
+        recentRecordings = first8
+
+        // Pre-warm carousel thumbnails.
+        if !first8.isEmpty {
+            let carouselSize = CGSize(width: 144, height: 144)
+            recordingsService.startCaching(ids: first8.map(\.id), targetSize: carouselSize)
+        }
+    }
+
+    /// Call after a recording finishes saving to refresh the player state.
+    func refreshLatestRecording() {
+        Task { await prefetchLatestRecording() }
     }
 
     
@@ -420,7 +476,10 @@ final class CameraViewModel {
             guard let self else { return }
             self.isRecording = isRecording
             // When recording stops the video is saved to the photo library.
-            // PhotosPicker reflects the library automatically — no manual refresh needed.
+            // Refresh the latest recording so the direct player is ready immediately.
+            if !isRecording {
+                self.refreshLatestRecording()
+            }
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
