@@ -131,6 +131,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Work item for debouncing rapid route-change restarts.
     private var restartWorkItem: DispatchWorkItem?
 
+    /// Cleared on each engine start; set true on the first processBuffer
+    /// callback so we can confirm data is actually flowing into the tap.
+    private var hasLoggedFirstBuffer = false
+
     // MARK: - Init
 
     override init() {
@@ -184,6 +188,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         stateLock.lock()
         lastNonZeroBufferTime = CACurrentMediaTime()
         silenceAlertFired = false
+        hasLoggedFirstBuffer = false
         stateLock.unlock()
 
         let engine = AVAudioEngine()
@@ -195,6 +200,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.error("AudioMeterService: invalid input format sr=\(format.sampleRate) ch=\(format.channelCount)")
             return
         }
+
+        // Log full format so we can verify the correct device is connected.
+        let session = AVAudioSession.sharedInstance()
+        let activeInputName = session.currentRoute.inputs.first?.portName ?? "none"
+        let activeInputType = session.currentRoute.inputs.first?.portType.rawValue ?? "unknown"
+        let preferredName   = session.preferredInput?.portName ?? "(system default)"
+        Log.camera.info("AudioMeterService: startMetering activeInput=\(activeInputName, privacy: .public) portType=\(activeInputType, privacy: .public) preferred=\(preferredName, privacy: .public) format=\(format.channelCount)ch@\(format.sampleRate)Hz")
 
         // Detect stereo input and store for VU meter / ViewModel use.
         let stereo = format.channelCount >= 2
@@ -225,10 +237,37 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             engine.inputNode.removeTap(onBus: 0)
             restartEngine(delay: 1.5)
         }
+
+        // Re-register route observer if it was removed (e.g. stopMetering was
+        // called by onDisappear and the engine was later restarted without going
+        // through setupAudioMeter again). Does not re-evaluate route — restartEngine
+        // handles that after confirming the engine is running.
+        if routeObserver == nil {
+            Log.camera.warning("AudioMeterService: route observer was nil after startMetering — re-registering")
+            routeObserver = NotificationCenter.default.addObserver(
+                forName: AVAudioSession.routeChangeNotification,
+                object: nil,
+                queue: nil
+            ) { [weak self] notification in
+                let reasonRaw = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+                DispatchQueue.main.async { self?.handleRouteChange(reasonRaw: reasonRaw) }
+            }
+        }
+        if interruptionObserver == nil {
+            interruptionObserver = NotificationCenter.default.addObserver(
+                forName: AVAudioSession.interruptionNotification,
+                object: nil,
+                queue: nil
+            ) { [weak self] notification in
+                let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+                DispatchQueue.main.async { self?.handleInterruption(typeRaw: typeRaw) }
+            }
+        }
     }
 
     /// Stops the audio engine and removes the input tap.
     func stopMetering() {
+        Log.camera.info("AudioMeterService: stopMetering called — engine and route observer will be removed")
         restartWorkItem?.cancel()
         restartWorkItem = nil
         tearDownEngine()
@@ -293,6 +332,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         guard let channelData = buffer.floatChannelData else { return }
         let frameLength = vDSP_Length(buffer.frameLength)
         guard frameLength > 0 else { return }
+
+        // Log the very first buffer after each engine start to confirm
+        // data is actually flowing into the tap.
+        if !hasLoggedFirstBuffer {
+            hasLoggedFirstBuffer = true
+            Log.camera.info("AudioMeterService: first buffer received — tap is live. format=\(buffer.format.channelCount, privacy: .public)ch frameLength=\(buffer.frameLength, privacy: .public)")
+        }
 
         // SIMD-accelerated RMS — Ch1 (channel 0, always present).
         var rms: Float = 0
@@ -382,21 +428,28 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// route state.
     func startMonitoringRoute() {
         stopMonitoringRoute()
+        Log.camera.info("AudioMeterService: route observer registered")
 
+        // Use queue:nil so the notification is delivered on the posting thread
+        // immediately, without waiting for OperationQueue.main which can be
+        // delayed by RunLoop mode changes during camera preview rendering.
+        // We dispatch explicitly to the main queue inside each handler.
         routeObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
-            queue: .main
+            queue: nil
         ) { [weak self] notification in
-            self?.handleRouteChange(notification)
+            let reasonRaw = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+            DispatchQueue.main.async { self?.handleRouteChange(reasonRaw: reasonRaw) }
         }
 
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: nil,
-            queue: .main
+            queue: nil
         ) { [weak self] notification in
-            self?.handleInterruption(notification)
+            let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            DispatchQueue.main.async { self?.handleInterruption(typeRaw: typeRaw) }
         }
 
         // Publish initial state.
@@ -405,29 +458,37 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Handles an audio route change by detecting the new input, explicitly
     /// setting it as preferred, and restarting the engine.
-    private func handleRouteChange(_ notification: Notification) {
-        let reasonRaw = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 0
-        let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw) ?? .unknown
+    private func handleRouteChange(reasonRaw: UInt?) {
+        let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw ?? 0) ?? .unknown
 
         Log.camera.debug("AudioMeterService: route changed, reason=\(reason.rawValue)")
+
+        // Log all currently available inputs so we can see what the device sees.
+        let allInputs = AVAudioSession.sharedInstance().availableInputs ?? []
+        let inputSummary = allInputs.map { "\($0.portName)(\($0.portType.rawValue))" }.joined(separator: ", ")
+        let currentIn = AVAudioSession.sharedInstance().currentRoute.inputs.first
+        Log.camera.info("AudioMeterService: route change detail reason=\(reason.rawValue, privacy: .public) currentInput=\(currentIn?.portName ?? "none", privacy: .public) available=[\(inputSummary, privacy: .public)]")
 
         // Only act on reasons that change the input device.
         switch reason {
         case .newDeviceAvailable:
-            // A new mic was plugged in — find and select it.
-            autoSelectExternalInput()
-            evaluateCurrentRoute()
-            guard audioEngine != nil else { return }
-            // Use a longer delay (1.2s) so USB devices have time to fully
-            // register with the iOS audio system before we connect the engine.
-            restartEngine(delay: 1.2)
+            // A new mic was plugged in. Use selectInput() — the same path
+            // as manual picker selection — so the engine restarts reliably
+            // via the exact mechanism that is known to work.
+            let externalPort = findExternalInput()
+            Log.camera.info("AudioMeterService: newDeviceAvailable — auto-switching to \(externalPort?.portName ?? "(none found)", privacy: .public)")
+            if let port = externalPort {
+                selectInput(port)
+            } else {
+                evaluateCurrentRoute()
+            }
 
         case .oldDeviceUnavailable:
-            // A mic was unplugged — fall back to built-in.
-            autoSelectBuiltInInput()
-            evaluateCurrentRoute()
-            guard audioEngine != nil else { return }
-            restartEngine(delay: 0.8)
+            // A mic was unplugged. Switch back to built-in via selectInput()
+            // for the same reliable restart path.
+            let builtIn = findBuiltInInput()
+            Log.camera.info("AudioMeterService: oldDeviceUnavailable — falling back to \(builtIn?.portName ?? "system default", privacy: .public)")
+            selectInput(builtIn)  // nil resets to system default
 
         case .override, .routeConfigurationChange:
             evaluateCurrentRoute()
@@ -439,46 +500,43 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         }
     }
 
+    /// Returns the first available external input port, or nil if none found.
+    private func findExternalInput() -> AVAudioSessionPortDescription? {
+        let session = AVAudioSession.sharedInstance()
+        guard let availableInputs = session.availableInputs else { return nil }
+        for input in availableInputs {
+            Log.camera.debug("AudioMeterService: candidate '\(input.portName, privacy: .public)' portType=\(input.portType.rawValue, privacy: .public) isExternal=\(Self.isExternalMicPort(input.portType), privacy: .public)")
+            if Self.isExternalMicPort(input.portType) { return input }
+        }
+        Log.camera.warning("AudioMeterService: findExternalInput found no external candidate in \(availableInputs.count, privacy: .public) inputs")
+        return nil
+    }
+
+    /// Returns the built-in microphone port, or nil to fall back to system default.
+    private func findBuiltInInput() -> AVAudioSessionPortDescription? {
+        AVAudioSession.sharedInstance().availableInputs?.first(where: { $0.portType == .builtInMic })
+    }
+
     /// Scans available inputs for an external mic and sets it as preferred.
     private func autoSelectExternalInput() {
-        let session = AVAudioSession.sharedInstance()
-        guard let availableInputs = session.availableInputs else { return }
-
-        // Look for external mic types using the deny-list approach.
-        for input in availableInputs {
-            if Self.isExternalMicPort(input.portType) {
-                do {
-                    try session.setPreferredInput(input)
-                    Log.camera.debug("AudioMeterService: auto-selected external input: \(input.portName)")
-                } catch {
-                    Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
-                }
-                return
-            }
+        guard let port = findExternalInput() else { return }
+        do {
+            try AVAudioSession.sharedInstance().setPreferredInput(port)
+            Log.camera.info("AudioMeterService: auto-selected external input: \(port.portName, privacy: .public)")
+        } catch {
+            Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
         }
     }
 
     /// Sets the built-in microphone as the preferred input.
     private func autoSelectBuiltInInput() {
         let session = AVAudioSession.sharedInstance()
-        guard let availableInputs = session.availableInputs else { return }
-
-        for input in availableInputs where input.portType == .builtInMic {
-            do {
-                try session.setPreferredInput(input)
-                Log.camera.debug("AudioMeterService: auto-selected built-in mic: \(input.portName)")
-            } catch {
-                Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
-            }
-            return
-        }
-
-        // If no built-in found, reset to system default.
+        let builtIn = findBuiltInInput()
         do {
-            try session.setPreferredInput(nil)
-            Log.camera.debug("AudioMeterService: reset to system default input")
+            try session.setPreferredInput(builtIn)  // nil resets to system default
+            Log.camera.debug("AudioMeterService: auto-selected built-in mic: \(builtIn?.portName ?? "system default")")
         } catch {
-            Log.camera.error("AudioMeterService: setPreferredInput(nil) failed – \(error.localizedDescription)")
+            Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
         }
     }
 
@@ -492,9 +550,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     }
 
     /// Handles an audio session interruption (phone call, Siri, etc.).
-    private func handleInterruption(_ notification: Notification) {
-        let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 0
-        let type = AVAudioSession.InterruptionType(rawValue: typeRaw) ?? .began
+    private func handleInterruption(typeRaw: UInt?) {
+        let type = AVAudioSession.InterruptionType(rawValue: typeRaw ?? 0) ?? .began
 
         if type == .ended {
             Log.camera.debug("AudioMeterService: interruption ended — restarting engine")
@@ -515,6 +572,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         if let observer = routeObserver {
             NotificationCenter.default.removeObserver(observer)
             routeObserver = nil
+            Log.camera.info("AudioMeterService: route observer removed")
         }
         if let observer = interruptionObserver {
             NotificationCenter.default.removeObserver(observer)
