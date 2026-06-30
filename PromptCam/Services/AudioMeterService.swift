@@ -214,6 +214,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.debug("AudioMeterService: engine started, format=\(format)")
         } catch {
             Log.camera.error("AudioMeterService: engine start failed – \(error.localizedDescription)")
+            // Remove the tap from the orphaned engine so it doesn't leak,
+            // then schedule a recovery attempt once the session settles.
+            engine.inputNode.removeTap(onBus: 0)
+            restartEngine(delay: 1.5)
         }
     }
 
@@ -258,8 +262,15 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             // would kill the capture session's audio connection.
             self.startMetering()
 
-            // Re-publish available inputs and route state.
-            self.evaluateCurrentRoute()
+            // Only re-publish route state if the engine actually started.
+            // If startMetering() failed, it has already scheduled its own
+            // retry via restartEngine(delay: 1.5). Calling evaluateCurrentRoute()
+            // while audioEngine is nil would fire onRouteChanged → ViewModel
+            // → reconfigureAudioInput() → another route-change notification,
+            // creating a cascade of restarts on a dead engine.
+            if self.audioEngine != nil {
+                self.evaluateCurrentRoute()
+            }
         }
         restartWorkItem = work
 
@@ -342,24 +353,19 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         stateLock.unlock()
 
-        // Publish to main thread.
+        // Publish to main thread — Task { @MainActor } schedules directly
+        // on the main actor without the extra DispatchQueue hop.
         if shouldUpdate, let callback = onLevelsUpdated {
             let l2 = normalizedLevel2
             let p2 = peak2
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(normalizedLevel, peak, l2, p2) }
-            }
+            Task { @MainActor [callback] in callback(normalizedLevel, peak, l2, p2) }
         }
 
         // Silence watchdog callbacks (outside the lock).
         if fireSilenceAlert, let callback = onSilenceWatchdog {
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(true) }
-            }
+            Task { @MainActor [callback] in callback(true) }
         } else if fireSilenceRecovery, let callback = onSilenceWatchdog {
-            DispatchQueue.main.async {
-                Task { @MainActor in callback(false) }
-            }
+            Task { @MainActor [callback] in callback(false) }
         }
     }
 
