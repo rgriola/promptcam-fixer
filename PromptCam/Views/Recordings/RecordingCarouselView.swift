@@ -1,17 +1,22 @@
 // PromptCam — Recording Carousel
-// Centered paging carousel below the player timeline.
-// Active item is centered; neighbors stage left and right.
-// Uses ScrollViewReader + .scrollTargetBehavior(.viewAligned) for
-// native iOS paging snap (iOS 17+, deployment target is iOS 18).
+// Fixed-center carousel: the active item is always at screen center.
+// Uses a DragGesture on an offset HStack rather than a ScrollView so
+// the snap target is the CENTER of each cell, not its leading edge.
+//
+// Offset math:
+//   centerInitial = (screenWidth - cellWidth) / 2
+//   HStack.offset  = centerInitial + baseOffset + dragOffset
+//
+//   When baseOffset = -i * slotWidth, item i's center sits at:
+//   (screenWidth - cellWidth)/2 + cellWidth/2 = screenWidth/2  ✓
 import Photos
 import SwiftUI
 
-/// A horizontally scrolling, center-snapping carousel of video thumbnails.
+/// A fixed-center horizontal carousel of video thumbnails.
 ///
-/// - The active recording is centered in the frame and shown at full scale.
-/// - Neighboring recordings peek in from either side at reduced opacity/scale.
-/// - Selecting any cell calls `onSelect` and the caller drives the centering
-///   by updating `activeRecordingID`, which triggers an animated scroll.
+/// The active recording's cell is permanently anchored at screen center.
+/// Dragging moves adjacent cells into center; on release the nearest cell
+/// spring-snaps to center and `onSelect` is called for that recording.
 struct RecordingCarouselView: View {
 
     let recordings: [Recording]
@@ -19,54 +24,90 @@ struct RecordingCarouselView: View {
     let thumbnailLoader: (Recording) async -> UIImage?
     let onSelect: (Recording) -> Void
 
-    // Cell dimensions — taller than the old strip to give the centered
-    // item visual weight comparable to the native iOS player.
     private let cellWidth:  CGFloat = 84
     private let cellHeight: CGFloat = 84
     private let spacing:    CGFloat = 10
+    private var slotWidth:  CGFloat { cellWidth + spacing }
+
+    /// Offset index: baseOffset = -i * slotWidth centers item i.
+    @State private var baseOffset: CGFloat = 0
+    /// Live drag translation added on top of baseOffset.
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
-            // Side inset so the first and last cells can be centered.
-            let sideInset = (geo.size.width - cellWidth) / 2
+            // Offset so item 0's left edge starts at (screenWidth-cellWidth)/2,
+            // placing item 0's center at screenWidth/2.
+            let centerInitial = (geo.size.width - cellWidth) / 2
+            let totalOffset   = centerInitial + baseOffset + dragOffset
 
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: spacing) {
-                        ForEach(recordings) { recording in
-                            let isActive = recording.id == activeRecordingID
-                            CarouselCell(
-                                recording: recording,
-                                isActive: isActive,
-                                cellWidth: cellWidth,
-                                cellHeight: cellHeight,
-                                thumbnailLoader: thumbnailLoader
-                            )
-                            .id(recording.id)
-                            .scaleEffect(isActive ? 1.0 : 0.82)
-                            .opacity(isActive ? 1.0 : 0.55)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
-                            .onTapGesture { onSelect(recording) }
+            HStack(spacing: spacing) {
+                ForEach(Array(recordings.enumerated()), id: \.element.id) { index, recording in
+                    let isActive = recording.id == activeRecordingID
+
+                    CarouselCell(
+                        recording: recording,
+                        isActive: isActive,
+                        cellWidth: cellWidth,
+                        cellHeight: cellHeight,
+                        thumbnailLoader: thumbnailLoader
+                    )
+                    .scaleEffect(isActive ? 1.0 : 0.82)
+                    .opacity(isActive ? 1.0 : 0.55)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
+                    .onTapGesture {
+                        guard !isActive else { return }
+                        onSelect(recording)
+                    }
+                }
+            }
+            .offset(x: totalOffset)
+            .contentShape(Rectangle())
+            // Drag scrolls the strip; velocity-aware snap on lift.
+            .gesture(
+                DragGesture(minimumDistance: 5)
+                    .onChanged { value in
+                        dragOffset = value.translation.width
+                    }
+                    .onEnded { value in
+                        let velocity    = value.velocity.width
+                        let rawIndex    = -(baseOffset + dragOffset) / slotWidth
+                        var targetIndex: Int
+
+                        if velocity > 300 {
+                            targetIndex = Int(floor(rawIndex))      // flick right → prev
+                        } else if velocity < -300 {
+                            targetIndex = Int(ceil(rawIndex))       // flick left → next
+                        } else {
+                            targetIndex = Int(round(rawIndex))
                         }
+                        targetIndex = max(0, min(recordings.count - 1, targetIndex))
+
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            baseOffset = -CGFloat(targetIndex) * slotWidth
+                            dragOffset = 0
+                        }
+                        onSelect(recordings[targetIndex])
                     }
-                    .padding(.horizontal, sideInset)
-                    // Registers each cell as a scroll target for view-aligned snapping.
-                    .scrollTargetLayout()
-                }
-                // Snap to the nearest cell center on lift.
-                .scrollTargetBehavior(.viewAligned)
-                .onAppear {
-                    // Scroll to active without animation on first appearance.
-                    proxy.scrollTo(activeRecordingID, anchor: .center)
-                }
-                .onChange(of: activeRecordingID) { _, newID in
+            )
+            // Scroll active item to center when selection changes from outside.
+            .onChange(of: activeRecordingID) { _, newID in
+                if let index = recordings.firstIndex(where: { $0.id == newID }) {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        proxy.scrollTo(newID, anchor: .center)
+                        baseOffset = -CGFloat(index) * slotWidth
+                        dragOffset = 0
                     }
+                }
+            }
+            .onAppear {
+                // No animation on initial positioning.
+                if let index = recordings.firstIndex(where: { $0.id == activeRecordingID }) {
+                    baseOffset = -CGFloat(index) * slotWidth
                 }
             }
         }
         .frame(height: cellHeight + Theme.space16)
+        .clipped()  // hide overflow cells that extend beyond the visible strip
         .background(
             LinearGradient(
                 colors: [.clear, .black.opacity(0.75)],
@@ -90,7 +131,6 @@ private struct CarouselCell: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Thumbnail or placeholder
             Group {
                 if let thumb = thumbnail {
                     Image(uiImage: thumb)
@@ -115,7 +155,6 @@ private struct CarouselCell: View {
                     )
             }
 
-            // Duration badge
             Text(recording.formattedDuration)
                 .font(Theme.font10Medium)
                 .foregroundStyle(Theme.white)
