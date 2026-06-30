@@ -1,12 +1,17 @@
 // PromptCam — Recording Carousel
-// Horizontal strip of video thumbnails shown below the player timeline.
-// Pre-warmed thumbnails mean cells render instantly without visible loading.
+// Centered paging carousel below the player timeline.
+// Active item is centered; neighbors stage left and right.
+// Uses ScrollViewReader + .scrollTargetBehavior(.viewAligned) for
+// native iOS paging snap (iOS 17+, deployment target is iOS 18).
 import Photos
 import SwiftUI
 
-/// A horizontal strip of video thumbnails for quick access to recent recordings.
-/// Selecting a thumbnail calls `onSelect` so the parent player can swap the video
-/// without dismissing and reopening the sheet.
+/// A horizontally scrolling, center-snapping carousel of video thumbnails.
+///
+/// - The active recording is centered in the frame and shown at full scale.
+/// - Neighboring recordings peek in from either side at reduced opacity/scale.
+/// - Selecting any cell calls `onSelect` and the caller drives the centering
+///   by updating `activeRecordingID`, which triggers an animated scroll.
 struct RecordingCarouselView: View {
 
     let recordings: [Recording]
@@ -14,28 +19,57 @@ struct RecordingCarouselView: View {
     let thumbnailLoader: (Recording) async -> UIImage?
     let onSelect: (Recording) -> Void
 
-    private let cellSize: CGFloat = 72
+    // Cell dimensions — taller than the old strip to give the centered
+    // item visual weight comparable to the native iOS player.
+    private let cellWidth:  CGFloat = 84
+    private let cellHeight: CGFloat = 84
+    private let spacing:    CGFloat = 10
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.space8) {
-                ForEach(recordings) { recording in
-                    CarouselCell(
-                        recording: recording,
-                        isActive: recording.id == activeRecordingID,
-                        cellSize: cellSize,
-                        thumbnailLoader: thumbnailLoader
-                    )
-                    .onTapGesture { onSelect(recording) }
+        GeometryReader { geo in
+            // Side inset so the first and last cells can be centered.
+            let sideInset = (geo.size.width - cellWidth) / 2
+
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: spacing) {
+                        ForEach(recordings) { recording in
+                            let isActive = recording.id == activeRecordingID
+                            CarouselCell(
+                                recording: recording,
+                                isActive: isActive,
+                                cellWidth: cellWidth,
+                                cellHeight: cellHeight,
+                                thumbnailLoader: thumbnailLoader
+                            )
+                            .id(recording.id)
+                            .scaleEffect(isActive ? 1.0 : 0.82)
+                            .opacity(isActive ? 1.0 : 0.55)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
+                            .onTapGesture { onSelect(recording) }
+                        }
+                    }
+                    .padding(.horizontal, sideInset)
+                    // Registers each cell as a scroll target for view-aligned snapping.
+                    .scrollTargetLayout()
+                }
+                // Snap to the nearest cell center on lift.
+                .scrollTargetBehavior(.viewAligned)
+                .onAppear {
+                    // Scroll to active without animation on first appearance.
+                    proxy.scrollTo(activeRecordingID, anchor: .center)
+                }
+                .onChange(of: activeRecordingID) { _, newID in
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        proxy.scrollTo(newID, anchor: .center)
+                    }
                 }
             }
-            .padding(.horizontal, Theme.space16)
-            .padding(.vertical, Theme.space8)
         }
-        .frame(height: cellSize + Theme.space16 * 2)
+        .frame(height: cellHeight + Theme.space16)
         .background(
             LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
+                colors: [.clear, .black.opacity(0.75)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -48,7 +82,8 @@ struct RecordingCarouselView: View {
 private struct CarouselCell: View {
     let recording: Recording
     let isActive: Bool
-    let cellSize: CGFloat
+    let cellWidth: CGFloat
+    let cellHeight: CGFloat
     let thumbnailLoader: (Recording) async -> UIImage?
 
     @State private var thumbnail: UIImage?
@@ -62,16 +97,21 @@ private struct CarouselCell: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
-                    Color.white.opacity(0.08)
+                    Color.white.opacity(0.12)
+                        .overlay(
+                            Image(systemName: "video.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(Color.white.opacity(0.3))
+                        )
                 }
             }
-            .frame(width: cellSize, height: cellSize)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSm))
+            .frame(width: cellWidth, height: cellHeight)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMd))
             .overlay {
-                RoundedRectangle(cornerRadius: Theme.radiusSm)
+                RoundedRectangle(cornerRadius: Theme.radiusMd)
                     .strokeBorder(
-                        isActive ? Theme.yellow : Color.clear,
-                        lineWidth: 2
+                        isActive ? Theme.yellow : Theme.white.opacity(0.2),
+                        lineWidth: isActive ? 2 : 1
                     )
             }
 
@@ -81,8 +121,8 @@ private struct CarouselCell: View {
                 .foregroundStyle(Theme.white)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
-                .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 4))
-                .padding(4)
+                .background(Color.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 4))
+                .padding(5)
         }
         .task {
             thumbnail = await thumbnailLoader(recording)
