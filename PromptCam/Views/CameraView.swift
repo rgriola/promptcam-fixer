@@ -54,7 +54,7 @@ struct CameraView: View {
 
             ZStack {
 
-                // Layer 1: Chrome Controls, placed first to be below Camera Preview
+                // Layer 1: Chrome Controls, placed first to be below Camera Preview, controls use background 
                 VStack(spacing: Theme.space12) {
                     cameraControlsRow()
                     .padding(.top, 10)
@@ -99,11 +99,7 @@ struct CameraView: View {
                         width: CameraLayout.vuMeterWidth,
                         height: meterHeight
                     )
-                    .background(
-                        Color.black.opacity(0.3)
-                        .cornerRadius(8)
-                        .padding(-10)
-                        )
+                    .roundedBackground()
                     .position(
                         x: CameraLayout.vuMeterHorizontalInset + CameraLayout.vuMeterHorizontalNudge,
                         // Align meter bottom with record-button bottom.
@@ -140,8 +136,6 @@ struct CameraView: View {
                 .position(x: proxy.size.width / 2,
                           y: layout.previewSize.height - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
                 
-                // Layer 4: Header and footer chrome constrained to space below preview
-                
 
                 // Layer 5: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
@@ -170,8 +164,6 @@ struct CameraView: View {
                         viewModel.resetTeleprompterPosition()
                     }
                 )
-                .frame(width: layout.teleprompterResetButtonSize,
-                       height: layout.teleprompterResetButtonSize)
                 .position(layout.teleprompterResetCenter)
 
 

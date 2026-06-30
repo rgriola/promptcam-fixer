@@ -38,17 +38,26 @@ struct CameraFooterControlsView: View {
 
             Spacer()
 
-            footerIconButton(systemName: "sparkle.text.clipboard", label: "Script", action: onTapScriptAssist)
-                .accessibilityLabel("Insert generated script")
+            footerIconButton(
+                systemName: "sparkle.text.clipboard", 
+                label: "Script", 
+                action: onTapScriptAssist)
+                    .accessibilityLabel("Insert generated script")
 
             Spacer()
 
-            footerIconButton(systemName: "text.viewfinder", label: "Prompter", action: onTapAdjust)
+            footerIconButton(
+                systemName: "text.viewfinder",
+                label: "Prompter", action: onTapAdjust
+                )
                 .accessibilityLabel("Teleprompter adjustments")
 
             Spacer()
 
-            footerIconButton(systemName: "gear", label: "Settings", action: onTapSettings)
+            footerIconButton(
+                systemName: "gear",
+                label: "Settings", action: onTapSettings
+                )
                 .accessibilityLabel("Open camera settings")
 
             Spacer()
@@ -66,10 +75,12 @@ struct CameraFooterControlsView: View {
                 Image(systemName: systemName)
                     .font(Theme.icon24)
                     .foregroundStyle(Theme.white)
-                    .frame(width: CameraLayout.footerIconSize, height: CameraLayout.footerIconSize)
+                    .frame(
+                        width: CameraLayout.footerIconSize, 
+                        height: CameraLayout.footerIconSize)
                 Text(label)
                     .font(Theme.font10Regular)
-                    .foregroundStyle(Theme.secondaryText)
+                    .foregroundStyle(Theme.primaryText)
             }
         }
     }

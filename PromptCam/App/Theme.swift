@@ -136,7 +136,8 @@ enum Theme {
 
 extension View {
     /// Applies a subtle card background: dark fill with light border.
-    func cardBackground(cornerRadius: CGFloat = Theme.radiusMd) -> some View {
+    func cardBackground(
+        cornerRadius: CGFloat = Theme.radiusMd) -> some View {
         self.background {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(Theme.black.opacity(0.1))
@@ -145,6 +146,16 @@ extension View {
                         .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
                 }
         }
+    }
+
+    func roundedBackground(
+        fill: Color = Theme.black.opacity(0.3)
+        ) -> some View {
+            self.background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(fill)
+                    .padding(-10)
+            }
     }
 
 }

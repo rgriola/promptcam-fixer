@@ -15,21 +15,18 @@ struct RecordingTimerPanel: View {
     
     var body: some View {
         Text(formattedTime)
-            .font(.system(.body, design: .monospaced))
+            .font(
+                .system(.body, design: .monospaced)
+                )
             .fontWeight(.medium)
-            .foregroundColor(.white)
+            .foregroundColor(Theme.primaryText)
             .padding(.horizontal, Theme.space12)
             .padding(.vertical, Theme.space8)
-            .background(
-                Capsule()
-                    .fill(backgroundColor)
-            )
-            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-    }
-    
-    /// Background color based on recording state.
-    private var backgroundColor: Color {
-        isRecording ? .red : Color.gray.opacity(0.6)
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(
+                        isRecording ? .red : Theme.black.opacity(0.3))
+            }
     }
     
     /// Formats duration as MM:SS.

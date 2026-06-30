@@ -51,13 +51,13 @@ struct CameraFormatPanelSheet: View {
                         .foregroundStyle(Theme.primaryText)
                 } footer: {
                     if recordingFormat.mode == .cinematic {
-                        Text("Cinematic - you are all Hollywood now. Allows bokeh changes after recording.")
+                        Text("Cinematic - you are Hollywood now. Allows bokeh changes after recording.")
                             .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.secondaryText)
+                            .foregroundStyle(Theme.primaryText)
                     } else {
                         Text("Standard - for getting it done.")
                             .font(Theme.font12Regular)
-                            .foregroundStyle(Theme.secondaryText)
+                            .foregroundStyle(Theme.primaryText)
                     }
                 }
                 
@@ -150,7 +150,6 @@ struct CameraFormatPanelSheet: View {
             }
             .navigationTitle("Format")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                   //  CloseToolbarButton(action: "Done") { onClose() }

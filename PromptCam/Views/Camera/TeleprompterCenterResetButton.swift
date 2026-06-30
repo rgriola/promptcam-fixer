@@ -14,15 +14,19 @@ struct TeleprompterCenterResetButton: View {
 
     var body: some View {
         Button(action: action) {
-            ZStack {
-                Circle().fill(Theme.panelBg.opacity(0.9))
+            VStack(spacing: 3) {
                 Image(systemName: "arrow.up.and.down.text.horizontal")
                     .font(Theme.icon16)
                     .foregroundStyle(Theme.white)
+                Text("Center")
+                    .font(Theme.font10Regular)
+                    .foregroundStyle(Theme.primaryText)
             }
+            .roundedBackground()
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous)) // ← tap target matches shape
         }
         .disabled(isDisabled)
-        .opacity(isDisabled ? 0.4 : 1)
+        .opacity(isDisabled ? 0.3 : 1)
         .accessibilityLabel("Reset script position")
         .accessibilityHint("Centers script to the teleprompter center.")
     }

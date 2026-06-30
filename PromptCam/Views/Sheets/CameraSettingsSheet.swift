@@ -38,7 +38,45 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                // MARK: - Formats Accordion
+            
+                Section("Permissions") {
+
+                    PermissionStatusRow(
+                        icon: "camera.fill",
+                        iconColor: .blue,
+                        title: "Camera",
+                        status: PermissionStatusDisplay.label(for: cameraStatus),
+                        statusColor: PermissionStatusDisplay.color(for: cameraStatus)
+                    )
+
+                    PermissionStatusRow(
+                        icon: "mic.fill",
+                        iconColor: .orange,
+                        title: "Microphone",
+                        status: PermissionStatusDisplay.label(for: micStatus),
+                        statusColor: PermissionStatusDisplay.color(for: micStatus)
+                    )
+
+                    PermissionStatusRow(
+                        icon: "photo.on.rectangle",
+                        iconColor: .green,
+                        title: "Photo Library",
+                        status: PermissionStatusDisplay.label(for: photoStatus),
+                        statusColor: PermissionStatusDisplay.color(for: photoStatus)
+                    )
+
+                    PermissionStatusRow(
+                        icon: "location.fill",
+                        iconColor: .teal,
+                        title: "Location",
+                        status: PermissionStatusDisplay.label(for: locationStatus),
+                        statusColor: PermissionStatusDisplay.color(for: locationStatus)
+                    )
+                }
+                .listRowBackground(Theme.black.opacity(0.1))
+                .foregroundStyle(Theme.white)
+
+                 // MARK: - Formats Accordion
                 Section {
                     
                     DisclosureGroup(isExpanded: $formatsExpanded) {
@@ -81,43 +119,6 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
                 .tint(Theme.white)
-
-                Section("Permissions") {
-
-                    PermissionStatusRow(
-                        icon: "camera.fill",
-                        iconColor: .blue,
-                        title: "Camera",
-                        status: PermissionStatusDisplay.label(for: cameraStatus),
-                        statusColor: PermissionStatusDisplay.color(for: cameraStatus)
-                    )
-
-                    PermissionStatusRow(
-                        icon: "mic.fill",
-                        iconColor: .orange,
-                        title: "Microphone",
-                        status: PermissionStatusDisplay.label(for: micStatus),
-                        statusColor: PermissionStatusDisplay.color(for: micStatus)
-                    )
-
-                    PermissionStatusRow(
-                        icon: "photo.on.rectangle",
-                        iconColor: .green,
-                        title: "Photo Library",
-                        status: PermissionStatusDisplay.label(for: photoStatus),
-                        statusColor: PermissionStatusDisplay.color(for: photoStatus)
-                    )
-
-                    PermissionStatusRow(
-                        icon: "location.fill",
-                        iconColor: .teal,
-                        title: "Location",
-                        status: PermissionStatusDisplay.label(for: locationStatus),
-                        statusColor: PermissionStatusDisplay.color(for: locationStatus)
-                    )
-                }
-                .listRowBackground(Theme.black.opacity(0.1))
-                .foregroundStyle(Theme.white)
                 
             }
             .tint(Theme.white)
