@@ -203,8 +203,14 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.debug("AudioMeterService: stereo input detected — metering both channels")
         }
 
-        // Install tap — buffer size 1024 gives ~23ms at 44.1kHz.
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+        // Install tap with nil format so AVAudioEngine uses the hardware's
+        // native format directly, bypassing the endpoint format converter.
+        // Passing an explicit format causes an 'Endpoint Value Converter' step
+        // that silently fails for USB devices reporting portType 'Other'
+        // (e.g. DJI Wireless Mic Rx), leaving the tap installed but receiving
+        // no data even though engine.start() returns without error.
+        // AVCaptureSession has its own hardware path and is unaffected.
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] buffer, _ in
             self?.processBuffer(buffer)
         }
 
@@ -412,7 +418,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             autoSelectExternalInput()
             evaluateCurrentRoute()
             guard audioEngine != nil else { return }
-            restartEngine(delay: 0.8)
+            // Use a longer delay (1.2s) so USB devices have time to fully
+            // register with the iOS audio system before we connect the engine.
+            restartEngine(delay: 1.2)
 
         case .oldDeviceUnavailable:
             // A mic was unplugged — fall back to built-in.
