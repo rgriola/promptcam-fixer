@@ -517,38 +517,6 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         AVAudioSession.sharedInstance().availableInputs?.first(where: { $0.portType == .builtInMic })
     }
 
-    /// Scans available inputs for an external mic and sets it as preferred.
-    private func autoSelectExternalInput() {
-        guard let port = findExternalInput() else { return }
-        do {
-            try AVAudioSession.sharedInstance().setPreferredInput(port)
-            Log.camera.info("AudioMeterService: auto-selected external input: \(port.portName, privacy: .public)")
-        } catch {
-            Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
-        }
-    }
-
-    /// Sets the built-in microphone as the preferred input.
-    private func autoSelectBuiltInInput() {
-        let session = AVAudioSession.sharedInstance()
-        let builtIn = findBuiltInInput()
-        do {
-            try session.setPreferredInput(builtIn)  // nil resets to system default
-            Log.camera.debug("AudioMeterService: auto-selected built-in mic: \(builtIn?.portName ?? "system default")")
-        } catch {
-            Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
-        }
-    }
-
-    /// Tears down the engine and restarts it with a debounce so the new
-    /// `AVAudioEngine.inputNode` picks up the current preferred input.
-    ///
-    /// Convenience wrapper around `restartEngine(delay:)` using the longer
-    /// 0.8s delay appropriate for route-change settling.
-    private func restartEngineWithSessionReset() {
-        restartEngine(delay: 0.8)
-    }
-
     /// Handles an audio session interruption (phone call, Siri, etc.).
     private func handleInterruption(typeRaw: UInt?) {
         let type = AVAudioSession.InterruptionType(rawValue: typeRaw ?? 0) ?? .began
@@ -614,9 +582,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         } catch {
             Log.camera.error("AudioMeterService: setPreferredInput failed – \(error.localizedDescription)")
         }
-        // Restart engine with a full session reset to ensure the new
-        // preferred input takes effect.
-        restartEngineWithSessionReset()
+        // Restart engine so the new preferred input takes effect.
+        // 0.8s gives the audio route time to settle before reconnecting.
+        restartEngine(delay: 0.8)
     }
 
     /// Returns the currently active input port, if any.
@@ -647,11 +615,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         guard routeCallback != nil || inputsCallback != nil else { return }
 
-        DispatchQueue.main.async {
-            Task { @MainActor in
-                routeCallback?(isExternal, portName)
-                inputsCallback?(inputs)
-            }
+        Task { @MainActor in
+            routeCallback?(isExternal, portName)
+            inputsCallback?(inputs)
         }
     }
     
