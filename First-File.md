@@ -259,16 +259,14 @@ Lets devise a plan to make these changes with some differences
 Full Screen Cover v Sheet -
 Keyboard Adjusts background on a Sheet?? why who knows.
 
-
 ... June 25
 VU Meter Wrapping
 
-*** Task ***
-Add Transparent Background to VUMeterView. 
+**_ Task _**
+Add Transparent Background to VUMeterView.
 
-
-*** Issue ***
-App does not easily recognize External Mic Input. Also I believe the Auto Focus on the Selfie Camera is interferring or the touch Auto Focus is interferring in Cine Mode. Cine Mode Auto Focus must always be on to work - this is an Apple requirement for that mode. 
+**_ Issue _**
+App does not easily recognize External Mic Input. Also I believe the Auto Focus on the Selfie Camera is interferring or the touch Auto Focus is interferring in Cine Mode. Cine Mode Auto Focus must always be on to work - this is an Apple requirement for that mode.
 
 Ie if the App is in Cine mode at launch the Mic Input does not work. If it is standard, works fine and I can even switch to Cine Mode. Can you trace possible issues. No Coding. Just a plan.
 
@@ -280,15 +278,11 @@ To - Do June 23 from June 16
 
 - Need to reformat copy/paste text to layout correctly from Outlook Pasting
 - Converting Script to All Caps, Cap First, All lower
-- Remove ==OC== Markers in Script, Ask to reformat script 
-
-[ ] Audio input display - grab the name of the Mic set available.
+- Remove ==OC== Markers in Script, Ask to reformat script
 
 [Camera Roll] Needs to handle vertical + horizontal video layouts better. Horizontals overplay verticals, probably would be opposite if we were shooting horizontals
 
-[ ] Teleprompter Text  - When scrolling and user touches screen text jumps. Not really and error just looks bad. 
-
-[ ] Line Navbar (former header) Padding incorrect relation to Camera Preview across devices.
+[X] Line Navbar (former header) Padding incorrect relation to Camera Preview across devices.
 
 swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove Sheet function. Note this may change what the user sees - Apple uses a Blur Effect for transition - Keep as is clean up styling
 
@@ -296,27 +290,28 @@ swap STD/CINE Text to toggle, Make Format HD/4K Frame Rate Toggle Pair to remove
 Custom Slider ?
 
 [x]Change Opacity to Text Contrast.
-
 [x] reduced parameters Prompter Speed :: 32 fine speed,
+[X] Camera Roll Button Add a Photo in a Circle to show its the library,
+[x] Go to 4 buttons on bottom.
 
-[ ] Add Support for Clicker start/stop. Voice Activated?
-[ ] Move Guide Dog to Settings Panel or Make Guide Dog the Settings Panel. 
-[x] Recall Button icon needs a new design. 
-[x] I want to move the Cine/Standard Button to the left. I don't like it in the format panel. 
-[ ] Figure out how to Connect Record and Scroll at the Same time. 
-[ ] Overlay for tools. 
-[ ] Camera Roll Button Add a Photo in a Circle to show its the library, 
-
-[ ] Go to 4 buttons on bottom. 
-[ ] Add Clean Camera/Audio output to HDMI
+[x] Recall Button icon needs a new design.
+[x] I want to move the Cine/Standard Button to the left. I don't like it in the format panel.
 
 #
 
 [x] Reduce size of tap area for Mic Input.
 
+[ ] Add Support for Clicker start/stop. Voice Activated?
+[ ] Move Guide Dog to Settings Panel or Make Guide Dog the Settings Panel.
+[ ] Audio input display - grab the name of the Mic set available.
+[ ] Teleprompter Text - When scrolling and user touches screen text jumps. Not really and error just looks bad.
+[ ] Figure out how to Connect Record and Scroll at the Same time.
+[ ] Overlay for tools.
+[ ] Add Clean Camera/Audio output to HDMI
+
 - [ ] Add App Guide Pages. Think Handrails for Users
 - Insert Images drawn from App with Correct Styles
-- Change App Icon + Splash Screen 
+- Change App Icon + Splash Screen
 - Look at cleaner opening for Camera View.
   Script Returns become space + left justified.
 
@@ -370,3 +365,13 @@ Finished issues
   - Insert Images drawn from App with Correct Styles
   - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
+
+  **_ Task _**
+  - Create a plan to replace the full camera roll (RecordingsLibrarySheet) with a direct opening to our player with the last recorded video. This is to allow the creator to immediately review their work.
+  - Image Example IMG_0539 shows iOS Native App video Player with a carousel below the timeline. I want to add a similar carousel.
+  - The second image IMG_0540 shows our current player implimentation. I would like the onTapPhotoLibrary to open the player directly bypassing the Camera Roll. The Camera Roll can be dormant for now.
+  - The only UI additon I would like in our Player is the Carousel below the timeline.
+  - trace a better way to populate the carosuel. The camera roll for example always needed to load the video first before moving to the player and it lagged.
+  - the carousel only needs first few videos ready not the entire library if this helps with caching and responsiveness.
+  - Review and create a plan for approval prior to coding
+  - create a new branch prior to coding.
