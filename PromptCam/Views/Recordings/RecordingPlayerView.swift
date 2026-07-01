@@ -40,6 +40,11 @@ struct RecordingPlayerView: View {
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
 
+    /// Live horizontal drag offset while swiping to navigate.
+    @State private var swipeDragOffset: CGFloat = 0
+    /// True once the gesture is confirmed as horizontal (locks out vertical).
+    @State private var isHorizontalSwipe = false
+
     init(
         recording: Recording,
         videoURL: URL?,
@@ -70,11 +75,63 @@ struct RecordingPlayerView: View {
             if let player {
                 AVPlayerHostingView(player: player)
                     .ignoresSafeArea()
-                    // Tap anywhere on the video to toggle play/pause and show controls.
+                    .offset(x: swipeDragOffset * 0.15) // subtle parallax while swiping
                     .onTapGesture { togglePlayPause() }
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { value in
+                                let dx = value.translation.width
+                                let dy = value.translation.height
+                                // Lock to horizontal once the gesture is clearly lateral.
+                                if !isHorizontalSwipe {
+                                    guard abs(dx) > abs(dy) * 1.5 else { return }
+                                    isHorizontalSwipe = true
+                                }
+                                swipeDragOffset = dx
+                            }
+                            .onEnded { value in
+                                defer {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        swipeDragOffset = 0
+                                    }
+                                    isHorizontalSwipe = false
+                                }
+                                guard isHorizontalSwipe else { return }
+                                let threshold: CGFloat = 80
+                                let dx = value.translation.width
+                                if dx < -threshold {
+                                    navigateToAdjacent(offset: +1)   // swipe left → next
+                                } else if dx > threshold {
+                                    navigateToAdjacent(offset: -1)   // swipe right → prev
+                                }
+                            }
+                    )
             } else {
                 loadingView
+            }
+
+            // ── Swipe navigation hint ────────────────────────────────────────────────
+            if abs(swipeDragOffset) > 40 {
+                HStack {
+                    if swipeDragOffset > 0 { // swiping right → prev
+                        Image(systemName: "chevron.left.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Theme.white.opacity(0.85))
+                            .shadow(color: .black.opacity(0.4), radius: 6)
+                            .padding(.leading, Theme.space24)
+                        Spacer()
+                    } else {                  // swiping left → next
+                        Spacer()
+                        Image(systemName: "chevron.right.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Theme.white.opacity(0.85))
+                            .shadow(color: .black.opacity(0.4), radius: 6)
+                            .padding(.trailing, Theme.space24)
+                    }
                 }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.15), value: swipeDragOffset)
+            }
 
             // ── Control Overlay ────────────────────────────────────────────
             if showControls {
@@ -98,7 +155,7 @@ struct RecordingPlayerView: View {
             Button("Delete", role: .destructive) { onDelete(); dismiss() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This video will be permanently deleted.")
+            Text("Video will be permanently deleted.")
         }
     }
 
@@ -126,19 +183,7 @@ struct RecordingPlayerView: View {
                     activeRecordingID: activeRecording.id,
                     thumbnailLoader: loader,
                     onSelect: { selected in
-                        Task {
-                            // Update active recording immediately so carousel
-                            // highlights the tapped cell without waiting for URL.
-                            activeRecording = selected
-                            activeURL = nil  // shows loading indicator
-
-                            // Resolve the URL, then hand off to the player.
-                            let url = await resolveURL?(selected)
-                            activeURL = url  // triggers .task(id: activeURL) → loadPlayer()
-
-                            // Keep parent ViewModel in sync.
-                            await onSelectRecording?(selected, url)
-                        }
+                        Task { await selectRecording(selected) }
                     }
                 )
             }
@@ -265,6 +310,33 @@ struct RecordingPlayerView: View {
     }
 
     // MARK: - Player Lifecycle
+
+    // MARK: - Navigation Helpers
+
+    /// Navigates to the recording adjacent to the current one.
+    /// `offset` = +1 for next, -1 for previous.
+    private func navigateToAdjacent(offset: Int) {
+        guard !recentRecordings.isEmpty,
+              let currentIndex = recentRecordings.firstIndex(where: { $0.id == activeRecording.id })
+        else { return }
+
+        let targetIndex = currentIndex + offset
+        guard recentRecordings.indices.contains(targetIndex) else { return }
+        let target = recentRecordings[targetIndex]
+
+        Task { await selectRecording(target) }
+    }
+
+    /// Shared logic for both carousel taps and video swipes.
+    /// Updates activeRecording, resolves the URL, loads the player, and
+    /// notifies the parent ViewModel.
+    private func selectRecording(_ selected: Recording) async {
+        activeRecording = selected
+        activeURL = nil                                   // show loading spinner
+        let url = await resolveURL?(selected)
+        activeURL = url                                   // triggers loadPlayer()
+        await onSelectRecording?(selected, url)
+    }
 
     @MainActor
     private func loadPlayer() async {
