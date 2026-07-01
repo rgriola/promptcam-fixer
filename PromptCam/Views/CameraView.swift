@@ -341,9 +341,12 @@ struct CameraView: View {
                             targetSize: CGSize(width: 144, height: 144)
                         )
                     },
-                    onSelectRecording: { selected, _ in
+                    resolveURL: { rec in
+                        await RecordingsService().resolveURL(for: rec)
+                    },
+                    onSelectRecording: { selected, url in
                         viewModel.latestRecording = selected
-                        viewModel.latestVideoURL = await RecordingsService().resolveURL(for: selected)
+                        viewModel.latestVideoURL = url
                     }
                 )
             }

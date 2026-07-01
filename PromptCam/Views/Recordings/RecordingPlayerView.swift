@@ -20,7 +20,9 @@ struct RecordingPlayerView: View {
     var recentRecordings: [Recording] = []
     /// Loads a thumbnail for a carousel cell on demand.
     var thumbnailLoader: ((Recording) async -> UIImage?)? = nil
-    /// Called when the user taps a different video in the carousel.
+    /// Resolves a Recording to a playable URL — called when the carousel selects a new item.
+    var resolveURL: ((Recording) async -> URL?)? = nil
+    /// Called after a carousel selection so the parent ViewModel can stay in sync.
     var onSelectRecording: ((Recording, URL?) async -> Void)? = nil
 
     // MARK: - Player State
@@ -44,6 +46,7 @@ struct RecordingPlayerView: View {
         onDelete: @escaping () -> Void,
         recentRecordings: [Recording] = [],
         thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
+        resolveURL: ((Recording) async -> URL?)? = nil,
         onSelectRecording: ((Recording, URL?) async -> Void)? = nil
     ) {
         self.recording = recording
@@ -51,6 +54,7 @@ struct RecordingPlayerView: View {
         self.onDelete = onDelete
         self.recentRecordings = recentRecordings
         self.thumbnailLoader = thumbnailLoader
+        self.resolveURL = resolveURL
         self.onSelectRecording = onSelectRecording
         self._activeRecording = State(initialValue: recording)
         self._activeURL = State(initialValue: videoURL)
@@ -70,12 +74,12 @@ struct RecordingPlayerView: View {
                     .onTapGesture { togglePlayPause() }
             } else {
                 loadingView
-            }
+                }
 
             // ── Control Overlay ────────────────────────────────────────────
             if showControls {
                 controlOverlay
-                    .transition(.opacity)
+                  .transition(.opacity)
             }
         }
         // ── Player Lifecycle ───────────────────────────────────────────────
@@ -123,11 +127,17 @@ struct RecordingPlayerView: View {
                     thumbnailLoader: loader,
                     onSelect: { selected in
                         Task {
-                            if let handler = onSelectRecording {
-                                await handler(selected, nil)
-                            }
+                            // Update active recording immediately so carousel
+                            // highlights the tapped cell without waiting for URL.
                             activeRecording = selected
-                            activeURL = nil  // triggers loading state while URL resolves
+                            activeURL = nil  // shows loading indicator
+
+                            // Resolve the URL, then hand off to the player.
+                            let url = await resolveURL?(selected)
+                            activeURL = url  // triggers .task(id: activeURL) → loadPlayer()
+
+                            // Keep parent ViewModel in sync.
+                            await onSelectRecording?(selected, url)
                         }
                     }
                 )
@@ -176,7 +186,7 @@ struct RecordingPlayerView: View {
             HStack {
                 Text(formatTime(currentTime))
                     .font(Theme.mono12Medium)
-                    .foregroundStyle(Theme.white.opacity(0.7))
+                    .foregroundStyle(Theme.primaryText)
                     .monospacedDigit()
                     .frame(minWidth: 44, alignment: .leading)
 
@@ -197,14 +207,14 @@ struct RecordingPlayerView: View {
 
                 Text("-\(formatTime(max(0, duration - currentTime)))")
                     .font(Theme.mono12Medium)
-                    .foregroundStyle(Theme.white.opacity(0.7))
+                    .foregroundStyle(Theme.primaryText)
                     .monospacedDigit()
                     .frame(minWidth: 44, alignment: .trailing)
             }
         }
         .padding(.horizontal, Theme.space16)
         .padding(.bottom, 40)           // clears the home indicator
-        .background(
+      /*  .background(
             LinearGradient(
                 colors: [.clear, .black.opacity(0.65)],
                 startPoint: .top,
@@ -212,6 +222,7 @@ struct RecordingPlayerView: View {
             )
             .ignoresSafeArea()
         )
+        */
     }
 
     private var scrubber: some View {
@@ -289,9 +300,9 @@ struct RecordingPlayerView: View {
         }
         timeObserverToken = token
 
-        p.play()
-        isPlaying = true
-        scheduleControlsHide()
+        // Start paused — let the user tap play when ready.
+        isPlaying = false
+        showControls = true
     }
 
     private func teardownPlayer() {
@@ -336,7 +347,6 @@ struct RecordingPlayerView: View {
     }
 
     // MARK: - Controls Auto-Hide
-
     private func scheduleControlsHide() {
         hideControlsTask?.cancel()
         hideControlsTask = Task {
@@ -347,7 +357,6 @@ struct RecordingPlayerView: View {
     }
 
     // MARK: - Time Formatting
-
     private func formatTime(_ seconds: Double) -> String {
         guard seconds.isFinite else { return "0:00" }
         let totalSeconds = Int(seconds)
