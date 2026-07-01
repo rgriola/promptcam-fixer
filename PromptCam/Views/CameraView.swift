@@ -341,6 +341,19 @@ struct CameraView: View {
                             targetSize: CGSize(width: 144, height: 144)
                         )
                     },
+                    coverThumbnailLoader: { rec in
+                        // Screen-sized still (2x for retina) so the transition
+                        // cover doesn't visibly upscale over the sharp video.
+                        let scale = UIScreen.main.scale
+                        let size = UIScreen.main.bounds.size
+                        return await RecordingsService().thumbnail(
+                            for: rec,
+                            targetSize: CGSize(
+                                width: size.width * scale,
+                                height: size.height * scale
+                            )
+                        )
+                    },
                     resolveURL: { rec in
                         await RecordingsService().resolveURL(for: rec)
                     },

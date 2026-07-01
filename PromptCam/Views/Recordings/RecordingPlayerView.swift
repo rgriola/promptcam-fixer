@@ -4,15 +4,13 @@
 // so no native AirPlay / PiP icons appear. All chrome is ours.
 import AVKit
 import Combine
+import QuartzCore
 import SwiftUI
 
 struct RecordingPlayerView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    /// The recording currently loaded in the player.
-    let recording: Recording
-    let videoURL: URL?
     let onDelete: () -> Void
 
     /// Carousel data — first 8 recent recordings passed from the ViewModel.
@@ -20,6 +18,9 @@ struct RecordingPlayerView: View {
     var recentRecordings: [Recording] = []
     /// Loads a thumbnail for a carousel cell on demand.
     var thumbnailLoader: ((Recording) async -> UIImage?)? = nil
+    /// Loads a screen-sized still used for the prev/next drag peek slots.
+    /// Falls back to thumbnailLoader when nil (may upscale a small thumbnail).
+    var coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil
     /// Resolves a Recording to a playable URL — called when the carousel selects a new item.
     var resolveURL: ((Recording) async -> URL?)? = nil
     /// Called after a carousel selection so the parent ViewModel can stay in sync.
@@ -40,10 +41,36 @@ struct RecordingPlayerView: View {
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
 
-    /// Live horizontal drag offset while swiping to navigate.
-    @State private var swipeDragOffset: CGFloat = 0
-    /// True once the gesture is confirmed as horizontal (locks out vertical).
-    @State private var isHorizontalSwipe = false
+    // MARK: - Full-screen pager state
+    // Same mechanic as RecordingCarouselView, scaled up:
+    //   slot width = screen width, spacing = 0
+    //   slot[i] center = i * screenWidth  →  active slot at screenWidth * activeIndex
+    //   total offset = dragOffset  (baseOffset is always 0 since active slot is always 0)
+    //   prev slot lives at -screenWidth + dragOffset
+    //   next slot lives at +screenWidth + dragOffset
+
+    /// Live horizontal drag offset (0 when settled).
+    @State private var dragOffset: CGFloat = 0
+    /// Direction-lock flag — true once the current gesture is confirmed horizontal.
+    /// Reset in commitDrag so the next gesture re-evaluates.
+    @State private var isHorizontalDrag = false
+    /// Cached thumbnail for the recording before the active one (drag peek).
+    @State private var prevThumbnail: UIImage?
+    /// Cached thumbnail for the recording after the active one (drag peek).
+    @State private var nextThumbnail: UIImage?
+
+    // MARK: - Pager Tuning
+
+    private enum PagerConstants {
+        /// Velocity (pt/s) above which a flick commits navigation.
+        static let velocityThreshold: CGFloat = 600
+        /// Minimum drag distance required alongside velocity for a commit.
+        static let minCommitDistance: CGFloat = 50
+        /// Ratio |dx|/|dy| above which the gesture is considered horizontal.
+        static let horizontalLockRatio: CGFloat = 1.5
+        /// Rubber-band factor for over-drag at the first/last recording.
+        static let rubberBandFactor: CGFloat = 0.15
+    }
 
     init(
         recording: Recording,
@@ -51,14 +78,14 @@ struct RecordingPlayerView: View {
         onDelete: @escaping () -> Void,
         recentRecordings: [Recording] = [],
         thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
+        coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         resolveURL: ((Recording) async -> URL?)? = nil,
         onSelectRecording: ((Recording, URL?) async -> Void)? = nil
     ) {
-        self.recording = recording
-        self.videoURL = videoURL
         self.onDelete = onDelete
         self.recentRecordings = recentRecordings
         self.thumbnailLoader = thumbnailLoader
+        self.coverThumbnailLoader = coverThumbnailLoader
         self.resolveURL = resolveURL
         self.onSelectRecording = onSelectRecording
         self._activeRecording = State(initialValue: recording)
@@ -71,67 +98,64 @@ struct RecordingPlayerView: View {
         ZStack {
             Theme.bgGrad.ignoresSafeArea()
 
-            // ── Video Surface ──────────────────────────────────────────────
-            if let player {
-                AVPlayerHostingView(player: player)
-                    .ignoresSafeArea()
-                    .offset(x: swipeDragOffset * 0.15) // subtle parallax while swiping
-                    .onTapGesture { togglePlayPause() }
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { value in
-                                let dx = value.translation.width
-                                let dy = value.translation.height
-                                // Lock to horizontal once the gesture is clearly lateral.
-                                if !isHorizontalSwipe {
-                                    guard abs(dx) > abs(dy) * 1.5 else { return }
-                                    isHorizontalSwipe = true
-                                }
-                                swipeDragOffset = dx
-                            }
-                            .onEnded { value in
-                                defer {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        swipeDragOffset = 0
-                                    }
-                                    isHorizontalSwipe = false
-                                }
-                                guard isHorizontalSwipe else { return }
-                                let threshold: CGFloat = 80
-                                let dx = value.translation.width
-                                if dx < -threshold {
-                                    navigateToAdjacent(offset: +1)   // swipe left → next
-                                } else if dx > threshold {
-                                    navigateToAdjacent(offset: -1)   // swipe right → prev
-                                }
-                            }
-                    )
-            } else {
-                loadingView
-            }
+            // ── Full-screen pager ──────────────────────────────────────────
+            // Slot[i] center = i * screenWidth. Active slot is always slot 0.
+            // prev slot lives at -screenWidth + dragOffset
+            // next slot lives at +screenWidth + dragOffset
+            GeometryReader { geo in
+                let w = geo.size.width
 
-            // ── Swipe navigation hint ────────────────────────────────────────────────
-            if abs(swipeDragOffset) > 40 {
-                HStack {
-                    if swipeDragOffset > 0 { // swiping right → prev
-                        Image(systemName: "chevron.left.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundStyle(Theme.white.opacity(0.85))
-                            .shadow(color: .black.opacity(0.4), radius: 6)
-                            .padding(.leading, Theme.space24)
-                        Spacer()
-                    } else {                  // swiping left → next
-                        Spacer()
-                        Image(systemName: "chevron.right.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundStyle(Theme.white.opacity(0.85))
-                            .shadow(color: .black.opacity(0.4), radius: 6)
-                            .padding(.trailing, Theme.space24)
+                ZStack {
+                    // Previous slot
+                    if let thumb = prevThumbnail {
+                        Image(uiImage: thumb)
+                            .resizable().scaledToFill()
+                            .frame(width: w, height: geo.size.height).clipped()
+                            .offset(x: -w + dragOffset)
                     }
+
+                    // Next slot
+                    if let thumb = nextThumbnail {
+                        Image(uiImage: thumb)
+                            .resizable().scaledToFill()
+                            .frame(width: w, height: geo.size.height).clipped()
+                            .offset(x: w + dragOffset)
+                    }
+
+                    // Active slot — live player or loading view
+                    Group {
+                        if let player {
+                            AVPlayerHostingView(player: player)
+                                // Lock the SwiftUI frame so it doesn't inherit
+                                // AVPlayerViewController.preferredContentSize
+                                // (which changes with each new item's natural size).
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .clipped()
+                                .transition(.identity)
+                                .onTapGesture { togglePlayPause() }
+                        } else {
+                            loadingView
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .transition(.identity)
+                        }
+                    }
+                    .transition(.identity)
+                    .offset(x: dragOffset)
                 }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.15), value: swipeDragOffset)
+                .ignoresSafeArea()
+                .clipped()
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { value in updateDrag(value) }
+                        .onEnded { value in commitDrag(value, width: w) }
+                )
+                .onChange(of: activeRecording) { _, _ in
+                    Task { await loadAdjacentThumbnails() }
+                }
             }
+            .ignoresSafeArea()
+            .onAppear { Task { await loadAdjacentThumbnails() } }
 
             // ── Control Overlay ────────────────────────────────────────────
             if showControls {
@@ -259,15 +283,6 @@ struct RecordingPlayerView: View {
         }
         .padding(.horizontal, Theme.space16)
         .padding(.bottom, 40)           // clears the home indicator
-      /*  .background(
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.65)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
-        */
     }
 
     private var scrubber: some View {
@@ -288,10 +303,10 @@ struct RecordingPlayerView: View {
 
     @ViewBuilder
     private var shareButton: some View {
-        if let videoURL {
+        if let activeURL {
             ShareLink(
-                item: VideoFile(url: videoURL),
-                preview: SharePreview(recording.formattedDuration)
+                item: VideoFile(url: activeURL),
+                preview: SharePreview(activeRecording.formattedDuration)
             ) {
                 controlIcon("square.and.arrow.up.circle.fill", tint: Theme.primaryText)
             }
@@ -313,28 +328,90 @@ struct RecordingPlayerView: View {
 
     // MARK: - Navigation Helpers
 
-    /// Navigates to the recording adjacent to the current one.
-    /// `offset` = +1 for next, -1 for previous.
-    private func navigateToAdjacent(offset: Int) {
-        guard !recentRecordings.isEmpty,
-              let currentIndex = recentRecordings.firstIndex(where: { $0.id == activeRecording.id })
-        else { return }
+    private var prevRecording: Recording? {
+        guard let i = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
+              i > 0 else { return nil }
+        return recentRecordings[i - 1]
+    }
 
-        let targetIndex = currentIndex + offset
-        guard recentRecordings.indices.contains(targetIndex) else { return }
-        let target = recentRecordings[targetIndex]
+    private var nextRecording: Recording? {
+        guard let i = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
+              i < recentRecordings.count - 1 else { return nil }
+        return recentRecordings[i + 1]
+    }
 
+    /// Loads thumbnails for the slots immediately before and after the active recording.
+    /// Prefers coverThumbnailLoader (screen-sized) if provided so covers don't upscale
+    /// from the small carousel thumbnail.
+    private func loadAdjacentThumbnails() async {
+        let loader = coverThumbnailLoader ?? thumbnailLoader
+        prevThumbnail = prevRecording != nil ? await loader?(prevRecording!) : nil
+        nextThumbnail = nextRecording != nil ? await loader?(nextRecording!) : nil
+    }
+
+    // MARK: - Drag Handlers
+
+    /// Updates `dragOffset` while the user is dragging.
+    /// Locks to horizontal once the gesture direction is clear, and
+    /// applies rubber-banding at the first/last recording.
+    private func updateDrag(_ value: DragGesture.Value) {
+        let dx = value.translation.width
+        let dy = value.translation.height
+
+        if !isHorizontalDrag {
+            guard abs(dx) > abs(dy) * PagerConstants.horizontalLockRatio else { return }
+            isHorizontalDrag = true
+        }
+
+        let atLeftEdge  = dx > 0 && prevRecording == nil
+        let atRightEdge = dx < 0 && nextRecording == nil
+        dragOffset = (atLeftEdge || atRightEdge)
+            ? dx * PagerConstants.rubberBandFactor
+            : dx
+    }
+
+    /// On release: commit to prev/next if past threshold, otherwise snap back.
+    private func commitDrag(_ value: DragGesture.Value, width w: CGFloat) {
+        defer { isHorizontalDrag = false }
+
+        let dx = value.translation.width
+        let vx = value.velocity.width
+        let threshold = w / 3
+        let minDx = PagerConstants.minCommitDistance
+        let vt = PagerConstants.velocityThreshold
+
+        if (dx < -threshold || (vx < -vt && dx < -minDx)), let next = nextRecording {
+            commitNavigation(to: next)
+        } else if (dx > threshold || (vx > vt && dx > minDx)), let prev = prevRecording {
+            commitNavigation(to: prev)
+        } else {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { dragOffset = 0 }
+        }
+    }
+
+    /// Commit flow — mirrors the carousel tap behavior exactly:
+    /// springs `dragOffset` back to 0 while `selectRecording` runs in
+    /// parallel. The AVPlayer item is swapped in place, so there is no
+    /// offscreen slide and no thumbnail cover — matching the carousel path.
+    private func commitNavigation(to target: Recording) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            dragOffset = 0
+        }
         Task { await selectRecording(target) }
     }
 
     /// Shared logic for both carousel taps and video swipes.
-    /// Updates activeRecording, resolves the URL, loads the player, and
+    /// Updates `activeRecording`, resolves the URL, loads the player, and
     /// notifies the parent ViewModel.
+    ///
+    /// Does NOT set `activeURL = nil` first — that would flip the Group to
+    /// the loadingView branch and destroy the AVPlayerViewController,
+    /// causing the UIKit appearance animation on the next player. Instead
+    /// `loadPlayer` reuses the existing player via `replaceCurrentItem`.
     private func selectRecording(_ selected: Recording) async {
         activeRecording = selected
-        activeURL = nil                                   // show loading spinner
         let url = await resolveURL?(selected)
-        activeURL = url                                   // triggers loadPlayer()
+        activeURL = url                                   // triggers loadPlayer() which reuses the AVPlayer
         await onSelectRecording?(selected, url)
     }
 
@@ -342,21 +419,46 @@ struct RecordingPlayerView: View {
     private func loadPlayer() async {
         guard let url = activeURL else { return }
 
-        // Tear down any previous player cleanly.
-        teardownPlayer()
+        let item = AVPlayerItem(url: url)
 
-        let p = AVPlayer(url: url)
-        player = p
+        if let existing = player {
+            // Reuse the existing AVPlayer — swap the item so
+            // AVPlayerViewController stays in the view hierarchy.
+            // No VC recreation → no UIKit appearance animation → no zoom flash.
+            existing.pause()
 
-        // Read duration.
-        if let item = p.currentItem {
-            let d = try? await item.asset.load(.duration)
-            if let d, d.isNumeric {
-                duration = d.seconds
-            }
+            // Suppress AVPlayerLayer's implicit CALayer animation for the
+            // aspect-fit transform. Without this, when a new item's natural
+            // size differs from the previous one, the layer briefly renders
+            // stretched-to-bounds then animates to .resizeAspect over ~0.25s
+            // — which reads as a visible zoom-in on the incoming video.
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            existing.replaceCurrentItem(with: item)
+            existing.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { _ in })
+            CATransaction.commit()
+        } else {
+            // First load — create the player and install the time observer once.
+            let p = AVPlayer(playerItem: item)
+            player = p
+            installTimeObserver(on: p)
         }
 
-        // Periodic time observer — updates scrubber every 0.1 s.
+        // Reset per-item UI state.
+        currentTime = 0
+        duration = 1
+        isPlaying = false
+        showControls = true
+
+        let d = try? await item.asset.load(.duration)
+        if let d, d.isNumeric {
+            duration = d.seconds
+        }
+    }
+
+    /// Installs the periodic time observer. Only called once per player
+    /// instance since we now reuse the same AVPlayer across items.
+    private func installTimeObserver(on p: AVPlayer) {
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         let token = p.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak p] time in
             // queue: .main guarantees main-thread execution — assumeIsolated is safe here.
@@ -364,19 +466,16 @@ struct RecordingPlayerView: View {
                 guard let p else { return }
                 currentTime = time.seconds
                 isPlaying = p.rate > 0
-                // Auto-hide controls after video ends.
                 if time.seconds >= duration - 0.2 {
                     isPlaying = false
                 }
             }
         }
         timeObserverToken = token
-
-        // Start paused — let the user tap play when ready.
-        isPlaying = false
-        showControls = true
     }
 
+    /// Full teardown — only called on view disappear. Never called between
+    /// item swaps, so the AVPlayerViewController is not recreated.
     private func teardownPlayer() {
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)

@@ -42,7 +42,8 @@ struct RecordingCarouselView: View {
             let totalOffset   = centerInitial + baseOffset + dragOffset
 
             HStack(spacing: spacing) {
-                ForEach(Array(recordings.enumerated()), id: \.element.id) { index, recording in
+                ForEach(Array(recordings.enumerated()), 
+                         id: \.element.id) { index, recording in
                     let isActive = recording.id == activeRecordingID
 
                     CarouselCell(
@@ -54,6 +55,8 @@ struct RecordingCarouselView: View {
                     )
                     .scaleEffect(isActive ? 1.0 : 0.82)
                     .opacity(isActive ? 1.0 : 0.55)
+                    // withAnimation isolates this spring so it doesn't bleed
+                    // into the parent ZStack / full-screen player.
                     .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
                     .onTapGesture {
                         guard !isActive else { return }
@@ -160,7 +163,7 @@ private struct CarouselCell: View {
                 .foregroundStyle(Theme.white)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
-                .background(Color.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 4))
+                .background(Theme.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 4))
                 .padding(5)
         }
         .task {
