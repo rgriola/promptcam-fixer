@@ -99,6 +99,41 @@ struct RecordingsService: Sendable {
         Self.cachingManager.stopCachingImagesForAllAssets()
     }
 
+    /// Resolves a `Recording` to a playable `AVURLAsset` URL using the
+    /// high-quality PHImageManager path. Used by the direct player to get a
+    /// URL without going through the PhotosPicker Transferable copy path,
+    /// which requires downloading the full file.
+    ///
+    /// Returns nil if the asset is unavailable or the URL cannot be resolved.
+    func resolveURL(for recording: Recording) async -> URL? {
+        guard let asset = asset(for: recording.id) else { return nil }
+        return await withCheckedContinuation { continuation in
+            var resumed = false
+            let options = PHVideoRequestOptions()
+            options.isNetworkAccessAllowed = true
+            options.version = .current
+            options.deliveryMode = .highQualityFormat
+            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+                guard !resumed else { return }
+                resumed = true
+                continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
+            }
+        }
+    }
+
+    /// Fetches the most recent video recording, or nil if the library is empty.
+    func fetchLatestRecording() -> Recording? {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { return nil }
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.fetchLimit = 1
+        guard let asset = PHAsset.fetchAssets(with: .video, options: options).firstObject else {
+            return nil
+        }
+        return Recording(asset: asset)
+    }
+
     /// Exports the asset to a temp file URL so it can be shared via iMessage,
     /// AirDrop, Files, etc. Reuses a cached copy on repeat shares.
     func exportForSharing(_ recording: Recording) async -> URL? {

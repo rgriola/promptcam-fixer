@@ -14,6 +14,7 @@
 // view-local animation timing and position — the ViewModel only owns the
 // camera-service-facing lock status.
 import AVFoundation
+import Photos
 import SwiftUI
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
@@ -316,6 +317,52 @@ struct CameraView: View {
         }
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
+        }
+        .fullScreenCover(isPresented: $viewModel.showDirectPlayer) {
+            if let recording = viewModel.latestRecording {
+                RecordingPlayerView(
+                    recording: recording,
+                    videoURL: viewModel.latestVideoURL,
+                    onDelete: {
+                        Task {
+                            let assets = PHAsset.fetchAssets(
+                                withLocalIdentifiers: [recording.id], options: nil)
+                            try? await PHPhotoLibrary.shared().performChanges {
+                                PHAssetChangeRequest.deleteAssets(assets)
+                            }
+                            viewModel.showDirectPlayer = false
+                            viewModel.refreshLatestRecording()
+                        }
+                    },
+                    recentRecordings: viewModel.recentRecordings,
+                    thumbnailLoader: { rec in
+                        await RecordingsService().thumbnail(
+                            for: rec,
+                            targetSize: CGSize(width: 144, height: 144)
+                        )
+                    },
+                    coverThumbnailLoader: { rec in
+                        // Screen-sized still (2x for retina) so the transition
+                        // cover doesn't visibly upscale over the sharp video.
+                        let scale = UIScreen.main.scale
+                        let size = UIScreen.main.bounds.size
+                        return await RecordingsService().thumbnail(
+                            for: rec,
+                            targetSize: CGSize(
+                                width: size.width * scale,
+                                height: size.height * scale
+                            )
+                        )
+                    },
+                    resolveURL: { rec in
+                        await RecordingsService().resolveURL(for: rec)
+                    },
+                    onSelectRecording: { selected, url in
+                        viewModel.latestRecording = selected
+                        viewModel.latestVideoURL = url
+                    }
+                )
+            }
         }
         .fullScreenCover(isPresented: $viewModel.showComposeSheet) {
             ComposeScriptSheet(

@@ -54,6 +54,7 @@
 		AB33FECF05CF97E9AFCA5EEB /* RecordingFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6602AD9D3CC7FCA71B5CCBC5 /* RecordingFormat.swift */; };
 		AC56EC5CA7D852F223052444 /* CloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8468ECD58FD36041762DF16 /* CloseButton.swift */; };
 		AC8A3E035773D456DF5C7000 /* CameraSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */; };
+		B1C58674F76FA902933ADFF7 /* RecordingCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D3873C1AE0EBBFF66FB5A0 /* RecordingCarouselView.swift */; };
 		B4D31512FFE492F6B0BD9155 /* Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FF44041128C203B6A0CE91 /* Recording.swift */; };
 		B6B5FAF6960F5A314987C644 /* TeleprompterDebugHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71440E54776D121738FE8505 /* TeleprompterDebugHUD.swift */; };
 		B8A6D22F3AF477AFE0043942 /* ScriptArchiveSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F3533487EF3233BBD3779E8 /* ScriptArchiveSheet.swift */; };
@@ -144,6 +145,7 @@
 		BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFormatTests.swift; sourceTree = "<group>"; };
 		C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingTeleprompterText.swift; sourceTree = "<group>"; };
 		C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		C4D3873C1AE0EBBFF66FB5A0 /* RecordingCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCarouselView.swift; sourceTree = "<group>"; };
 		C70874E673904C8E434BD20C /* InstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionsView.swift; sourceTree = "<group>"; };
 		C8468ECD58FD36041762DF16 /* CloseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseButton.swift; sourceTree = "<group>"; };
 		CB551B9997DF32815A820B3F /* RecordingsLibrarySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsLibrarySheet.swift; sourceTree = "<group>"; };
@@ -216,6 +218,7 @@
 			isa = PBXGroup;
 			children = (
 				ED6AA13BA68D073472585817 /* AVPlayerHostingView.swift */,
+				C4D3873C1AE0EBBFF66FB5A0 /* RecordingCarouselView.swift */,
 				D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */,
 				451BB829FD09329B426D70AF /* RecordingThumbnailView.swift */,
 			);
@@ -487,6 +490,7 @@
 				3110BDD3348F0913A0E362F7 /* PermissionsOnboardingView.swift in Sources */,
 				8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */,
 				B4D31512FFE492F6B0BD9155 /* Recording.swift in Sources */,
+				B1C58674F76FA902933ADFF7 /* RecordingCarouselView.swift in Sources */,
 				8C0E0A20E9A35E0EE07CE167 /* RecordingClusterView.swift in Sources */,
 				AB33FECF05CF97E9AFCA5EEB /* RecordingFormat.swift in Sources */,
 				32027F533DD7867B0C6F4A7B /* RecordingPlayerView.swift in Sources */,
@@ -557,11 +561,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 23;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "A1 - Teleprompter";
+				INFOPLIST_KEY_CFBundleDisplayName = "A1-Teleprompter";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
@@ -748,11 +752,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 23;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "A1 - Teleprompter";
+				INFOPLIST_KEY_CFBundleDisplayName = "A1-Teleprompter";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "PromptCam needs camera access to record videos.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PromptCam can record microphone audio with your videos.";
