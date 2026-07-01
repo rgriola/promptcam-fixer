@@ -375,3 +375,8 @@ Finished issues
   - the carousel only needs first few videos ready not the entire library if this helps with caching and responsiveness.
   - Review and create a plan for approval prior to coding
   - create a new branch prior to coding.
+
+  - Turn off auto play. [x]
+  - Some weird overlay that darkens it . [x]
+
+- Carousel active video, one being viewed, needs to connect to main player. Currently the carousel moves but the main player does not,
