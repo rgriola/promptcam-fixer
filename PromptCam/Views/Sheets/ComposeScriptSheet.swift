@@ -9,6 +9,26 @@ import SwiftUI
 struct ComposeScriptSheet: View {
     /// Maximum allowed script length (10,000 characters).
     private static let kMaxScriptLength = 10_000
+
+    // MARK: - Tuning
+
+    private enum Timing {
+        /// Delay before focusing the editor so the fullScreenCover presentation
+        /// animation completes before the keyboard slides up. Prevents layout
+        /// jump when keyboard appears mid-animation.
+        static let focusDelay: Duration = .milliseconds(500)
+        /// Delay between dismissing the keyboard and running the callback so
+        /// the keyboard animates down before the sheet closes.
+        static let keyboardDismissDelay: Duration = .milliseconds(350)
+        /// How long the "Cleaned" confirmation stays visible on the Clean button.
+        static let cleanIndicatorDuration: Duration = .milliseconds(1500)
+    }
+
+    private enum Layout {
+        /// Editor height as a fraction of available height.
+        static let editorHeightRatio: CGFloat = 0.45
+    }
+
     /// Local draft text edited before save is committed.
     @State private var draftText: String
     /// Focus binding used to open the keyboard on sheet presentation.
@@ -17,20 +37,33 @@ struct ComposeScriptSheet: View {
     @State private var showArchive = false
     /// Tracks whether the clean action just ran — shows a brief "Cleaned" confirmation.
     @State private var didClean = false
+    /// Cancellable Task that resets `didClean` after the indicator duration.
+    @State private var cleanIndicatorTask: Task<Void, Never>?
+    /// Cancellable Task that runs a dismiss callback after the keyboard
+    /// animates down. Cancelled on view disappear.
+    @State private var dismissTask: Task<Void, Never>?
     /// Callback fired with latest text when user saves.
     let onSave: (String) -> Void
     /// Callback fired when user cancels editing.
     let onCancel: () -> Void
 
     /// Creates compose sheet state from current teleprompter text.
+    /// Truncates `initialText` to the maximum allowed length so the character
+    /// count never opens in an over-limit state.
     /// - Parameters:
     ///   - initialText: Source text shown when compose opens.
     ///   - onSave: Callback invoked with user-edited script.
     ///   - onCancel: Callback invoked when user dismisses without saving.
     init(initialText: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
-        _draftText = State(initialValue: initialText)
+        let clamped = String(initialText.prefix(Self.kMaxScriptLength))
+        _draftText = State(initialValue: clamped)
         self.onSave = onSave
         self.onCancel = onCancel
+    }
+
+    /// True when the draft has any non-whitespace content.
+    private var hasContent: Bool {
+        !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Sanitizes script text by trimming whitespace and stripping control characters (except newlines/tabs).
@@ -54,6 +87,9 @@ struct ComposeScriptSheet: View {
     /// 5. Collapse runs of more than one blank line into a single blank line
     /// 6. Trim leading and trailing blank lines
     private func cleanForTeleprompter(_ text: String) -> String {
+        // Early return — no work to do on empty input.
+        guard !text.isEmpty else { return text }
+
         // 1. Normalize line endings.
         var result = text
             .replacingOccurrences(of: "\r\n", with: "\n")
@@ -115,11 +151,16 @@ struct ComposeScriptSheet: View {
     }
 
     /// Dismisses the keyboard and waits for it to animate down before
-    /// running the callback. This prevents the camera preview from being
-    /// visible in a "narrowed" state when the fullScreenCover closes.
+    /// running the callback. Prevents the camera preview from being visible
+    /// in a "narrowed" state when the fullScreenCover closes.
+    /// Uses a cancellable Task so an in-flight dismiss is cancelled if the
+    /// view disappears (e.g. system dismiss during the delay window).
     private func dismissAndRun(_ action: @escaping () -> Void) {
+        dismissTask?.cancel()
         isEditorFocused = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        dismissTask = Task {
+            try? await Task.sleep(for: Timing.keyboardDismissDelay)
+            guard !Task.isCancelled else { return }
             action()
         }
     }
@@ -128,7 +169,7 @@ struct ComposeScriptSheet: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geo in
-                let editorHeight = geo.size.height * 0.45
+                let editorHeight = geo.size.height * Layout.editorHeightRatio
 
                 VStack(spacing: Theme.space12) {
                     // Info bar above editor
@@ -168,8 +209,10 @@ struct ComposeScriptSheet: View {
                         Button {
                             draftText = cleanForTeleprompter(draftText)
                             didClean = true
-                            Task {
-                                try? await Task.sleep(for: .seconds(1.5))
+                            cleanIndicatorTask?.cancel()
+                            cleanIndicatorTask = Task {
+                                try? await Task.sleep(for: Timing.cleanIndicatorDuration)
+                                guard !Task.isCancelled else { return }
                                 didClean = false
                             }
                         } label: {
@@ -181,8 +224,8 @@ struct ComposeScriptSheet: View {
                             .foregroundStyle(didClean ? Theme.green : Theme.white)
                             .animation(.easeInOut(duration: 0.2), value: didClean)
                         }
-                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
-                        .disabled(draftText.isEmpty)
+                        .opacity(hasContent ? 1.0 : 0.3)
+                        .disabled(!hasContent)
                         .accessibilityLabel("Clean script formatting")
                         .accessibilityHint("Removes indents, bullets, and paste artifacts from Outlook or Word")
 
@@ -196,8 +239,8 @@ struct ComposeScriptSheet: View {
                                 .font(Theme.font16Regular)
                                 .foregroundStyle(Theme.white)
                         }
-                        .opacity(draftText.isEmpty ? 0.3 : 1.0)
-                        .disabled(draftText.isEmpty)
+                        .opacity(hasContent ? 1.0 : 0.3)
+                        .disabled(!hasContent)
                     }
 
                     Spacer()
@@ -210,13 +253,18 @@ struct ComposeScriptSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark)
             .task {
-                // Delay keyboard focus until the cover presentation animation
-                // completes (~0.5s). The text editor is pre-sized so the keyboard
-                // fills the space below without resizing anything.
-               // try? await Task.sleep(for: .milliseconds(500))
+                // Delay keyboard focus until the fullScreenCover presentation
+                // animation completes. Without this, keyboard slides up while
+                // the sheet is still animating in — causes visible layout jump.
+                try? await Task.sleep(for: Timing.focusDelay)
+                guard !Task.isCancelled else { return }
                 isEditorFocused = true
             }
-            
+            .onDisappear {
+                cleanIndicatorTask?.cancel()
+                dismissTask?.cancel()
+            }
+
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     CloseToolbarButton { dismissAndRun { onCancel() } }
@@ -229,6 +277,8 @@ struct ComposeScriptSheet: View {
                         } label: {
                             Image(systemName: "flame.gauge.open")
                         }
+                        .accessibilityLabel("Recent scripts")
+                        .accessibilityHint("Restore a previously saved script")
 
                         SaveToolbarButton(
                             action: {
@@ -237,7 +287,7 @@ struct ComposeScriptSheet: View {
                                 ScriptArchive.save(truncated)
                                 dismissAndRun { onSave(truncated) }
                             },
-                            isDisabled: draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            isDisabled: !hasContent
                         )
                     }
                 }
