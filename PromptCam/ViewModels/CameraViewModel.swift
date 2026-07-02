@@ -257,7 +257,10 @@ final class CameraViewModel {
     }
 
     /// Fetches the latest recording and pre-resolves its URL so the player
-    /// opens without delay. Also seeds the carousel with the first 8 recordings.
+    /// opens without delay. Loads ALL recordings for the carousel — Recording
+    /// objects are lightweight PHAsset wrappers (~100 bytes each). Only the
+    /// first window of thumbnails is pre-warmed; the rest load on demand as
+    /// the user swipes.
     func prefetchLatestRecording() async {
         let latest = recordingsService.fetchLatestRecording()
         latestRecording = latest
@@ -267,20 +270,27 @@ final class CameraViewModel {
             latestVideoURL = await recordingsService.resolveURL(for: latest)
         }
 
-        // Fetch first 8 for carousel — don't need the full library.
-        let options = PHFetchOptions()
-        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        options.fetchLimit = 8
-        let fetch = PHAsset.fetchAssets(with: .video, options: options)
-        var first8: [Recording] = []
-        fetch.enumerateObjects { asset, _, _ in first8.append(Recording(asset: asset)) }
-        recentRecordings = first8
+        // Fetch all recordings — no limit. PHAsset references are tiny.
+        let all = await recordingsService.fetchAllRecordings()
+        recentRecordings = all
 
-        // Pre-warm carousel thumbnails.
-        if !first8.isEmpty {
+        // Pre-warm thumbnails for the first visible window only.
+        let warmIDs = all.prefix(8).map(\.id)
+        if !warmIDs.isEmpty {
             let carouselSize = CGSize(width: 144, height: 144)
-            recordingsService.startCaching(ids: first8.map(\.id), targetSize: carouselSize)
+            recordingsService.startCaching(ids: Array(warmIDs), targetSize: carouselSize)
         }
+    }
+
+    /// Pre-warms carousel thumbnails in a sliding window around the given
+    /// recording. Call this when the user navigates to a new item so adjacent
+    /// thumbnails are ready before they scroll into view.
+    func warmCarouselCache(around recording: Recording, windowSize: Int = 4) {
+        guard let index = recentRecordings.firstIndex(where: { $0.id == recording.id }) else { return }
+        let lo = max(0, index - windowSize)
+        let hi = min(recentRecordings.count - 1, index + windowSize)
+        let ids = recentRecordings[lo...hi].map(\.id)
+        recordingsService.startCaching(ids: ids, targetSize: CGSize(width: 144, height: 144))
     }
 
     /// Call after a recording finishes saving to refresh the player state.

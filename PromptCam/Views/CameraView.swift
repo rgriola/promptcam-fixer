@@ -360,6 +360,7 @@ struct CameraView: View {
                     onSelectRecording: { selected, url in
                         viewModel.latestRecording = selected
                         viewModel.latestVideoURL = url
+                        viewModel.warmCarouselCache(around: selected)
                     }
                 )
             }
