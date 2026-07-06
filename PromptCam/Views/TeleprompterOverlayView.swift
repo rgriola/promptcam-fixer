@@ -47,6 +47,7 @@ struct TeleprompterOverlayView: View {
                             text: config.text,
                             fontSize: config.fontSize,
                             textColor: config.textColor.color,
+                            alignment: config.textAlignment.swiftUIAlignment,
                             offsetY: totalY
                         )
                     }
@@ -55,6 +56,7 @@ struct TeleprompterOverlayView: View {
                         text: config.text,
                         fontSize: config.fontSize,
                         textColor: config.textColor.color,
+                        alignment: config.textAlignment.swiftUIAlignment,
                         offsetY: staticOffsetY
                     )
                 }
