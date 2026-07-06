@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct PromptCamApp: App {
@@ -14,6 +15,14 @@ struct PromptCamApp: App {
     /// UI-test bypass: launch with `-uitest-skip-onboarding` to land directly on the camera.
     private var skipOnboardingForUITest: Bool {
         ProcessInfo.processInfo.arguments.contains("-uitest-skip-onboarding")
+    }
+
+    init() {
+        // One-time launch snapshot for HDMI debugging. Confirms whether iOS
+        // saw any external screens before the app finished initializing.
+        let screenCount = UIScreen.screens.count
+        let sceneCount = UIApplication.shared.connectedScenes.count
+        Log.hdmi.info("PromptCamApp.init screens=\(screenCount, privacy: .public) scenes=\(sceneCount, privacy: .public)")
     }
 
     var body: some Scene {
