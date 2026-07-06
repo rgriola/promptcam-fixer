@@ -209,6 +209,8 @@ final class CameraViewModel {
         // Permissions are already granted by the onboarding page.
         cameraService.configureSession(format: recordingFormat)
         cameraService.startSession()
+        // Wire external-display service so HDMI/AirPlay gets a clean feed.
+        ExternalDisplayService.shared.configure(session: cameraService.previewSession)
         // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
