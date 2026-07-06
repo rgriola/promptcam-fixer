@@ -315,6 +315,8 @@ Custom Slider ?
 - Look at cleaner opening for Camera View.
   Script Returns become space + left justified.
 
+  
+
 Finished issues
 
 - Script View -
@@ -354,8 +356,8 @@ Finished issues
     [HD 1920x1080 - 24,30]
     [4K - 24,30]
 
-  - Multiple Front Cameras need to initiallized
-  - 4K View is resetting in CameraView
+  - Multiple Front Cameras need to initiallized 
+  - 4K View is resetting in CameraView 
 
 - Script View -
 
@@ -363,7 +365,7 @@ Finished issues
 
 - [ ] Add App Guide Pages. Think Handrails for Users
   - Insert Images drawn from App with Correct Styles
-  - Change App Icon + Splash Screen
+  - Change App Icon + Splash Screen 
   - Look at cleaner opening for Camera View.
 
   **_ Task _**

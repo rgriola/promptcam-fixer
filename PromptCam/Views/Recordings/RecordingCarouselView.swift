@@ -153,7 +153,7 @@ private struct CarouselCell: View {
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.radiusMd)
                     .strokeBorder(
-                        isActive ? Theme.yellow : Theme.white.opacity(0.2),
+                        isActive ? Theme.accent : Theme.white.opacity(0.2),
                         lineWidth: isActive ? 2 : 1
                     )
             }

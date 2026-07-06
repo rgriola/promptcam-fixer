@@ -152,8 +152,6 @@ struct CameraFormatPanelSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                  //  CloseToolbarButton(action: "Done") { onClose() }
-
                   CloseToolbarButton { onClose() }
                 }
             }

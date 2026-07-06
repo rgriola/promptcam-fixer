@@ -20,6 +20,8 @@ struct CameraFooterControlsView: View {
     let onTapAdjust: () -> Void
     /// Action to open settings sheet.
     let onTapSettings: () -> Void
+    /// Whether recording is active — all footer buttons are disabled while recording.
+    var isRecording: Bool = false
 
     /// Footer control row for media import and utility actions.
     var body: some View {
@@ -66,6 +68,9 @@ struct CameraFooterControlsView: View {
         .padding(.top, Theme.space4)
         .padding(.bottom, Theme.space8)
         .frame(maxWidth: .infinity)
+        .disabled(isRecording)
+        .opacity(isRecording ? 0.3 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isRecording)
     }
 
     /// Shared icon + label button used by footer controls.

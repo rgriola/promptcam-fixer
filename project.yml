@@ -22,7 +22,6 @@ targets:
       - path: PromptCam
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rgriola.promptcam
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: PromptCam/Info.plist
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -30,6 +29,18 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: PromptCam needs camera access to record videos.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: PromptCam can record microphone audio with your videos.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: PromptCam needs photo library access to save and review your recordings.
+
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_BackgroundColor: SplashBg
+        INFOPLIST_KEY_UILaunchScreen_ImageName: launchscreen
+        INFOPLIST_KEY_UILaunchScreen_ImageRespectsSafeAreaInsets: NO
+
+        PRODUCT_BUNDLE_IDENTIFIER: com.rgriola.promptcam
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: LW5P4PVL96
+
     dependencies: []
 
   PromptCamTests:

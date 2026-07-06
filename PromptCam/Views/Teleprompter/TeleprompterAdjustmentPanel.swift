@@ -53,8 +53,9 @@ struct TeleprompterAdjustmentPanel: View {
                     Text("Color")
                         .font(Theme.font16Medium)
                         .foregroundStyle(Theme.primaryText)
-                        .frame(width: 90, alignment: .leading)
-
+                        .frame( width: 90, 
+                                alignment: .leading)
+                    
                     Spacer()
 
                     HStack(spacing: Theme.space12) {

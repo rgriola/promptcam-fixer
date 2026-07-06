@@ -84,7 +84,7 @@ struct PermissionsOnboardingView: View {
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
-                    description: "Keep your recording",
+                    description: "Saves your recording",
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
@@ -94,7 +94,7 @@ struct PermissionsOnboardingView: View {
                     icon: "location.fill",
                     iconColor: .teal,
                     title: "Location",
-                    description: "Adds GPS tag your recording",
+                    description: "GPS tags your video",
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
                     showSettingsLink: locationStatus == .denied || locationStatus == .restricted

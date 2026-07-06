@@ -181,7 +181,7 @@ struct ComposeScriptSheet: View {
 
                             Spacer()
 
-                        Text("Save to apply script updates.")
+                        Text("Checkmark applies the script.")
                             .font(Theme.font12Regular)
                             .foregroundStyle(Theme.primaryText)
                         
@@ -267,18 +267,18 @@ struct ComposeScriptSheet: View {
 
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CloseToolbarButton { dismissAndRun { onCancel() } }
+                    CloseToolbarButton { 
+                        dismissAndRun { onCancel() } 
+                        }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: Theme.space16) {
-                        Button {
-                            showArchive = true
-                        } label: {
-                            Image(systemName: "flame.gauge.open")
-                        }
-                        .accessibilityLabel("Recent scripts")
-                        .accessibilityHint("Restore a previously saved script")
+                        ArchiveButton(
+                            action: {
+                                showArchive = true
+                            }
+                        )
 
                         SaveToolbarButton(
                             action: {

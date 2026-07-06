@@ -41,14 +41,11 @@ struct CloseToolbarButton: View {
     /// Button label text for accessibility. Defaults to "Close".
     var label: String = "Close"
     
-    /// Icon color. Defaults to accent color.
-    var iconColor: Color = Theme.white
-    
     var body: some View {
         Button(action: action) {
             Image(systemName: "xmark")
                 .font(Theme.icon16)
-                .foregroundStyle(iconColor)
+                .foregroundStyle(Theme.white)
         }
         .accessibilityLabel(label)
         .accessibilityHint("Dismisses the current view")

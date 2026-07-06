@@ -12,28 +12,19 @@ struct SaveButton: View {
     
     /// Whether the button is disabled (e.g., invalid input).
     var isDisabled: Bool = false
-    
-    /// Icon color. Defaults to accent color.
-    var iconColor: Color = Theme.accent
-    
-    /// Icon size. Defaults to 20pt icon size from Theme.
-    var iconSize: Font = Theme.icon20
-    
-    /// Padding around the tappable area.
-    var padding: CGFloat = Theme.space16
-    
+        
     var body: some View {
         Button(action: action) {
             Image(systemName: "checkmark")
-                .font(iconSize)
-                .foregroundStyle(iconColor)
-                .padding(padding)
+                .font(Theme.icon20)
+                .foregroundStyle(Theme.accent)
+                .padding(Theme.space16)
                 .contentShape(Circle())
         }
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.4 : 1.0)
         .accessibilityLabel("Save")
-        .accessibilityHint("Saves changes and dismisses the current view")
+        .accessibilityHint("Save changes and dismiss the current view")
     }
 }
 
@@ -48,10 +39,7 @@ struct SaveToolbarButton: View {
     
     /// Button label text. Defaults to "Save".
     var label: String = "Save"
-    
-    /// Padding around the tappable area.
-    var padding: CGFloat = Theme.space16
-    
+        
     var body: some View {
           Button(action: action) {
                Image(systemName: "checkmark")

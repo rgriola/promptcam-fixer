@@ -390,6 +390,17 @@ struct CameraView: View {
         .onChange(of: viewModel.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
+        .onChange(of: viewModel.isRecording) { _, isRecording in
+            // Auto-dismiss open panels when recording starts so they don't
+            // appear in the captured video or block the recording chrome.
+            if isRecording {
+                withAnimation(Theme.panelSpring) {
+                    showEVPanel = false
+                    showAperturePanel = false
+                    showAdjustmentPanel = false
+                }
+            }
+        }
         .onChange(of: viewModel.cinematicApertureRange) { _, newRange in
             // Auto-dismiss aperture panel if cinematic mode is turned off.
             if newRange == nil, showAperturePanel {
@@ -445,7 +456,8 @@ struct CameraView: View {
             },
             onTapLock: {
                 toggleLockStatus()
-            }
+            },
+            isRecording: viewModel.isRecording
         )
     }
 
@@ -472,14 +484,17 @@ struct CameraView: View {
             },
             onTapSettings: {
                 viewModel.openSettings()
-            }
+            },
+            isRecording: viewModel.isRecording
         )
     }
 
     // MARK: - Focus / Exposure Gesture Handlers
 
     /// Handles single tap to focus at the touched point.
+    /// No-op while recording to prevent accidental refocus mid-take.
     private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint) {
+        guard !viewModel.isRecording else { return }
         viewModel.focus(at: devicePoint)
         Log.ui.debug("Touch Focus at point")
     }

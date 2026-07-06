@@ -242,12 +242,14 @@ final class CameraViewModel {
     }
 
     func openPhotoLibrary() {
+        guard !isRecording else { return }
         openDirectPlayer()
     }
 
     /// Opens the direct player on the most recent recording.
     /// If the latest recording isn't ready yet, falls back to the library sheet.
     func openDirectPlayer() {
+        guard !isRecording else { return }
         if latestRecording != nil {
             showDirectPlayer = true
         } else {
@@ -301,6 +303,7 @@ final class CameraViewModel {
     
 
     func openCompose() {
+        guard !isRecording else { return }
         cameraMode = .compose
         showComposeSheet = true
     }
@@ -311,6 +314,7 @@ final class CameraViewModel {
     }
 
     func openSettings() {
+        guard !isRecording else { return }
         presentSheet(.settings)
     }
 
@@ -659,6 +663,7 @@ final class CameraViewModel {
     /// notification. Re-reading here guarantees the list is current when
     /// the user actually sees the picker.
     func openAudioSourcePicker() {
+        guard !isRecording else { return }
         availableAudioInputs = AVAudioSession.sharedInstance().availableInputs ?? []
         activeAudioInputName = audioMeterService?.activeInput?.portName
             ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName

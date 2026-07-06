@@ -3,13 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>PromptCam uses your location to tag video recordings with where they were filmed.</string>
+	<string>For tagging GPS data to the videos</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Dark</string>
 	<key>UILaunchScreen</key>
 	<dict>
+		<key>UIColorName</key>
+		<string>SplashBg</string>
 		<key>UIImageName</key>
-		<string>SplashIcon</string>
+		<string>launchscreen</string>
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<false/>
 	</dict>

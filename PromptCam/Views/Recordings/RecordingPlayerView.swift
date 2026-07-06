@@ -188,7 +188,7 @@ struct RecordingPlayerView: View {
     private var loadingView: some View {
         VStack(spacing: Theme.space16) {
             ProgressView().tint(Theme.primaryText)
-            Text("Pulling video…")
+            Text("Queuing up video…")
                 .font(Theme.font16Regular)
                 .foregroundStyle(Theme.primaryText)
         }
@@ -212,18 +212,20 @@ struct RecordingPlayerView: View {
                 )
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: showControls)
     }
 
-    // MARK: - Top Bar: Close / Share / Delete
 
+    // MARK: - Top Bar: Close / Share / Delete
     private var topBar: some View {
         HStack(spacing: Theme.space16) {
             // Close
             Button {
                 dismiss()
             } label: {
-                controlIcon("xmark.circle.fill", tint: Theme.primaryText)
+                controlIcon(
+                    "xmark.circle.fill", 
+                    tint: Theme.primaryText
+                    )
             }
             .accessibilityLabel("Close")
 
@@ -236,7 +238,7 @@ struct RecordingPlayerView: View {
             Button {
                 showDeleteConfirmation = true
             } label: {
-                controlIcon("trash.circle.fill", tint: Theme.red)
+                controlIcon("trash.circle.fill", tint: Theme.primaryText)
             }
             .accessibilityLabel("Delete recording")
         }
@@ -248,41 +250,64 @@ struct RecordingPlayerView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 10) {
-            // Scrubber
-            scrubber
-
+             
             // Play row: elapsed — play/pause — remaining
             HStack {
                 Text(formatTime(currentTime))
-                    .font(Theme.mono12Medium)
+                    .font(Theme.mono16Medium)
                     .foregroundStyle(Theme.primaryText)
                     .monospacedDigit()
-                    .frame(minWidth: 44, alignment: .leading)
+                    .frame(minWidth: 44, alignment: .leading)  
 
                 Spacer()
-
-                // Play / Pause
-                Button {
-                    togglePlayPause()
-                } label: {
-                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(Theme.white)
-                        .shadow(color: .black.opacity(0.4), radius: 6)
-                }
-                .accessibilityLabel(isPlaying ? "Pause" : "Play")
-
-                Spacer()
-
+           
                 Text("-\(formatTime(max(0, duration - currentTime)))")
-                    .font(Theme.mono12Medium)
+                    .font(Theme.mono16Medium)
                     .foregroundStyle(Theme.primaryText)
                     .monospacedDigit()
                     .frame(minWidth: 44, alignment: .trailing)
             }
+
+            HStack{
+                // Play / Pause
+                Button {
+                    togglePlayPause()
+                } label: {
+                    Image(
+                        systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(Theme.icon28)
+                        .foregroundStyle(Theme.white)
+                }
+                .accessibilityLabel(isPlaying ? "Pause" : "Play")
+                // Scrubber
+                scrubber
+            }
+
         }
+        .padding(.top, Theme.space12)
         .padding(.horizontal, Theme.space16)
-        .padding(.bottom, 40)           // clears the home indicator
+        .padding(.bottom, Theme.space16)// clears the home indicator
+        .background(Theme.black.opacity(0.1))
+        .frame(maxWidth: .infinity)
+        .mask(alignment: .center) {
+                VStack(spacing: 0) {
+                    // this is not used but keep it for now. RG June 4, 2026.
+                    LinearGradient(
+                        colors: [.clear, .black],
+                        startPoint: .top, endPoint: .bottom
+                        )
+                        .frame(height: 20)
+
+                    Theme.black
+
+                    LinearGradient( 
+                        colors: [.black, .clear],
+                        startPoint: .top, endPoint: .bottom
+                        )
+                        .frame(height: 20) // taller fade at bottom — text enters here
+                }
+            }
+            
     }
 
     private var scrubber: some View {
@@ -295,7 +320,12 @@ struct RecordingPlayerView: View {
             ),
             in: 0...max(duration, 0.001)
         )
-        .tint(Theme.yellow)
+        .onAppear {
+                let thumbImage = UIImage(systemName: "circle.fill") // Or UIImage(named: "yourCustomImage")
+                UISlider.appearance().setThumbImage(thumbImage, for: .normal)
+            }
+      //  .frame(maxWidth: .infinity)
+        .tint(Theme.accent)
         .accessibilityLabel("Playback position")
     }
 
@@ -308,10 +338,12 @@ struct RecordingPlayerView: View {
                 item: VideoFile(url: activeURL),
                 preview: SharePreview(activeRecording.formattedDuration)
             ) {
-                controlIcon("square.and.arrow.up.circle.fill", tint: Theme.primaryText)
+                controlIcon("square.and.arrow.up.circle.fill", 
+                tint: Theme.primaryText)
             }
         } else {
-            controlIcon("square.and.arrow.up.circle.fill", tint: Theme.secondaryText)
+            controlIcon("square.and.arrow.up.circle.fill", 
+            tint: Theme.secondaryText)
         }
     }
 
@@ -319,13 +351,13 @@ struct RecordingPlayerView: View {
 
     private func controlIcon(_ name: String, tint: Color) -> some View {
         Image(systemName: name)
-            .font(.system(size: 32))
-            .foregroundStyle(tint)
-            .shadow(color: .black.opacity(0.35), radius: 5)
+            .symbolRenderingMode(.palette)
+            .font(Theme.icon32)
+            .foregroundStyle(Theme.black, tint)
+            //.foregroundStyle(Theme.white)      
     }
 
     // MARK: - Player Lifecycle
-
     // MARK: - Navigation Helpers
 
     private var prevRecording: Recording? {
@@ -521,9 +553,10 @@ struct RecordingPlayerView: View {
     private func scheduleControlsHide() {
         hideControlsTask?.cancel()
         hideControlsTask = Task {
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled else { return }
-            withAnimation { showControls = false }
+            withAnimation(.easeInOut(duration: 2.0)) { 
+                            showControls = false }
         }
     }
 

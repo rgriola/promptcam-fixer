@@ -59,6 +59,9 @@ enum Theme {
     static let icon20 = fontFamily.font(size: 20)
     static let icon24 = fontFamily.font(size: 24)
     static let icon28 = fontFamily.font(size: 28)
+    static let icon32 = fontFamily.font(size: 32)
+    static let icon44 = fontFamily.font(size: 44)
+
 
     // Display
     static let display24 = fontFamily.font(size: 24)
@@ -125,10 +128,10 @@ enum Theme {
     static let purple = Color(hex: "#8576EE")
 
     static let bgGrad = LinearGradient(
-        colors: [Theme.black, Theme.purple],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+                            colors: [Theme.black, Theme.purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                            )
 
 }
 

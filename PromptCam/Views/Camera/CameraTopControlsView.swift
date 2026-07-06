@@ -32,6 +32,8 @@ struct CameraControlsRowView: View {
     let onTapFormat: () -> Void
     /// Action for tapping the lock status badge to toggle lock state.
     let onTapLock: () -> Void
+    /// Whether recording is active — camera control buttons are disabled while recording.
+    var isRecording: Bool = false
 
     /// Header layout containing EV, lock status, grid, and format controls.
     var body: some View {
@@ -88,6 +90,9 @@ struct CameraControlsRowView: View {
         .padding(.horizontal, Theme.space12)
         //.padding(.bottom, Theme.space8)
         .frame(maxWidth: .infinity)
+        .disabled(isRecording)
+        .opacity(isRecording ? 0.3 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isRecording)
     }
 
 }
