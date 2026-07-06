@@ -1,4 +1,5 @@
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Extracted from TeleprompterOverlayView (Phase 4)
+// July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add alignment parameter
 import SwiftUI
 
 /// Renders the teleprompter script text at a given vertical offset.
@@ -8,6 +9,7 @@ struct ScrollingTeleprompterText: View {
     let text: String
     let fontSize: Double
     let textColor: Color
+    let alignment: TextAlignment
     let offsetY: CGFloat
 
     var body: some View {
@@ -15,7 +17,7 @@ struct ScrollingTeleprompterText: View {
             Text(text)
                 .font(Theme.fontFamily.rounded(size: fontSize, weight: .semibold))
                 .foregroundStyle(textColor)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(alignment)
                 .padding(.horizontal, Theme.teleprompterHPad) // Must stay in sync with TeleprompterMeasurement.
                 .padding(.vertical, Theme.space16)
                 .frame(width: geo.size.width, alignment: .top)

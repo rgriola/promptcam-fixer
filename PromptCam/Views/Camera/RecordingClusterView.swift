@@ -1,12 +1,13 @@
 // PromptCam — Recording Cluster (Record + Scroll Controls)
 // Extracted from CameraView.swift (refactor June 1, 2026)
+// July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add AlignmentToggleButton
 import SwiftUI
 
 // MARK: - Center Record Cluster
 
 /// Native-like stacked record + scroll control cluster positioned
 /// between the header and footer chrome. The record button is centered
-/// with the scroll toggle offset to the right.
+/// with the scroll toggle offset to the right and alignment toggle to the left.
 struct RecordingClusterView: View {
     /// Whether capture is currently recording.
     let isRecording: Bool
@@ -14,10 +15,14 @@ struct RecordingClusterView: View {
     let isScrolling: Bool
     /// Enables/disables record interaction based on camera readiness.
     let isRecordEnabled: Bool
+    /// Current text alignment state.
+    let textAlignment: TeleprompterTextAlignment
     /// Action to start/stop recording.
     let onRecordTap: () -> Void
     /// Action to pause/play teleprompter scrolling.
     let onScrollTap: () -> Void
+    /// Action to cycle through text alignment options.
+    let onAlignmentTap: () -> Void
 
     /// Native-like stacked record + scroll control cluster.
     var body: some View {
@@ -25,9 +30,13 @@ struct RecordingClusterView: View {
             RecordButton(isRecording: isRecording, isEnabled: isRecordEnabled, action: onRecordTap)
                 .frame(width: 72, height: 72)
 
-            ScrollToggleButton(isScrolling: isScrolling, action: onScrollTap)
+            ScrollToggleButton(isScrolling: isScrolling, isEnabled: !isRecording, action: onScrollTap)
                 .frame(width: 40, height: 40)
                 .offset(x: 72)
+            
+            AlignmentToggleButton(alignment: textAlignment, isEnabled: !isRecording, action: onAlignmentTap)
+                .frame(width: 40, height: 40)
+                .offset(x: -72)
         }
     }
 }
@@ -74,6 +83,8 @@ struct RecordButton: View {
 struct ScrollToggleButton: View {
     /// Whether teleprompter scrolling is active.
     let isScrolling: Bool
+    /// Whether the button should accept taps.
+    let isEnabled: Bool
     /// Callback to toggle scroll state.
     let action: () -> Void
 
@@ -88,8 +99,40 @@ struct ScrollToggleButton: View {
                     .foregroundStyle(Theme.white)
             }
         }
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.55)
         .accessibilityLabel(isScrolling ? "Pause teleprompter" : "Play teleprompter")
         .accessibilityHint("Toggles teleprompter scrolling")
+    }
+}
+
+// MARK: - Alignment Toggle Button
+
+/// Tertiary control to cycle through text alignment options.
+/// White circle with alignment icon (center/left/right).
+struct AlignmentToggleButton: View {
+    /// Current text alignment state.
+    let alignment: TeleprompterTextAlignment
+    /// Whether the button should accept taps.
+    let isEnabled: Bool
+    /// Callback to advance to next alignment.
+    let action: () -> Void
+    
+    /// Tertiary control to cycle through text alignment options.
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle().strokeBorder(Theme.white, lineWidth: 4)
+                Circle().fill(Theme.blue)
+                Image(systemName: alignment.iconName)
+                    .font(Theme.icon16)
+                    .foregroundStyle(Theme.white)
+            }
+        }
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.55)
+        .accessibilityLabel("Text alignment: \(alignment.rawValue)")
+        .accessibilityHint("Cycles between center, left, and right alignment")
     }
 }
 
@@ -114,7 +157,7 @@ struct ScrollToggleButton: View {
 #Preview("ScrollToggleButton - Paused") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
-        ScrollToggleButton(isScrolling: false) {}
+        ScrollToggleButton(isScrolling: false, isEnabled: true) {}
             .frame(width: 40, height: 40)
     }
 }
@@ -122,7 +165,31 @@ struct ScrollToggleButton: View {
 #Preview("ScrollToggleButton - Scrolling") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
-        ScrollToggleButton(isScrolling: true) {}
+        ScrollToggleButton(isScrolling: true, isEnabled: true) {}
+            .frame(width: 40, height: 40)
+    }
+}
+
+#Preview("AlignmentToggleButton - Center") {
+    ZStack {
+        Theme.cameraBg.ignoresSafeArea()
+        AlignmentToggleButton(alignment: .center, isEnabled: true) {}
+            .frame(width: 40, height: 40)
+    }
+}
+
+#Preview("AlignmentToggleButton - Left") {
+    ZStack {
+        Theme.cameraBg.ignoresSafeArea()
+        AlignmentToggleButton(alignment: .left, isEnabled: true) {}
+            .frame(width: 40, height: 40)
+    }
+}
+
+#Preview("AlignmentToggleButton - Right") {
+    ZStack {
+        Theme.cameraBg.ignoresSafeArea()
+        AlignmentToggleButton(alignment: .right, isEnabled: true) {}
             .frame(width: 40, height: 40)
     }
 }

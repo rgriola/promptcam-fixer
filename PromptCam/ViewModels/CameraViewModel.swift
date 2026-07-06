@@ -182,6 +182,7 @@ final class CameraViewModel {
         static let speed      = "tp.speed"
         static let textColor  = "tp.textColor"
         static let bgOpacity  = "tp.bgOpacity"
+        static let alignment  = "tp.alignment"
     }
 
     let cameraService: CameraServiceProtocol
@@ -365,6 +366,14 @@ final class CameraViewModel {
         Log.viewmodel.debug("updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
     }
 
+    /// Cycles to the next text alignment option.
+    @MainActor
+    func cycleTextAlignment() {
+        config.textAlignment = config.textAlignment.next
+        saveStylePreferences()
+        print("Text alignment cycled to: \(config.textAlignment.rawValue)")
+    }
+
     // MARK: - Style Persistence
 
     private func saveStylePreferences() {
@@ -373,6 +382,7 @@ final class CameraViewModel {
         ud.set(config.speedPointsPerSecond,        forKey: StyleKey.speed)
         ud.set(config.textColor.rawValue,          forKey: StyleKey.textColor)
         ud.set(config.backgroundOpacity,           forKey: StyleKey.bgOpacity)
+        ud.set(config.textAlignment.rawValue,      forKey: StyleKey.alignment)
     }
 
     private func loadStylePreferences() {
@@ -385,6 +395,10 @@ final class CameraViewModel {
             if let raw = ud.string(forKey: StyleKey.textColor),
                let color = TeleprompterTextColor(rawValue: raw) {
                 config.textColor = color
+            }
+            if let raw = ud.string(forKey: StyleKey.alignment),
+               let alignment = TeleprompterTextAlignment(rawValue: raw) {
+                config.textAlignment = alignment
             }
             config = config.clamped
             config.text = TeleprompterConfig.default.text

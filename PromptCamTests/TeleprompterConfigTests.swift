@@ -2,6 +2,7 @@
 // Updated June 1, 2026 — aligned with current TeleprompterGeometry API
 // (progress-based pipeline was removed in Phase 5)
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textColor/backgroundOpacity to init calls after Phase 2 model expansion
+// July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textAlignment tests
 import XCTest
 @testable import PromptCam
 
@@ -9,7 +10,7 @@ import XCTest
 
 final class TeleprompterConfigTests: XCTestCase {
     func testClampedConfigLimitsFontAndSpeed() {
-        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15)
+        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
 
         let clamped = config.clamped
 
@@ -20,21 +21,22 @@ final class TeleprompterConfigTests: XCTestCase {
     func testDefaultConfigHasExpectedValues() {
         XCTAssertEqual(TeleprompterConfig.default.speedPointsPerSecond, 35)
         XCTAssertEqual(TeleprompterConfig.default.fontSize, 30)
+        XCTAssertEqual(TeleprompterConfig.default.textAlignment, .center)
         XCTAssertFalse(TeleprompterConfig.default.text.isEmpty)
     }
 
     func testClampedConfigSnapsToEvenFontSize() {
-        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25, textColor: .white, backgroundOpacity: 0.15)
+        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
         XCTAssertEqual(oddConfig.clamped.fontSize, 26) // rounds to nearest even
     }
 
     func testClampedConfigClampsSpeedLowerBound() {
-        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30, textColor: .white, backgroundOpacity: 0.15)
+        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
         XCTAssertEqual(lowSpeed.clamped.speedPointsPerSecond, 5)
     }
 
     func testClampedConfigClampsFontUpperBound() {
-        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100, textColor: .white, backgroundOpacity: 0.15)
+        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
         XCTAssertEqual(bigFont.clamped.fontSize, 72)
     }
 
@@ -43,11 +45,29 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testClampedConfigClampsBackgroundOpacity() {
-        let overOpaque = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 1.5)
+        let overOpaque = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 1.5, textAlignment: .center)
         XCTAssertEqual(overOpaque.clamped.backgroundOpacity, 0.85, accuracy: 0.001)
 
-        let negative = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: -0.5)
+        let negative = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: -0.5, textAlignment: .center)
         XCTAssertEqual(negative.clamped.backgroundOpacity, 0.0, accuracy: 0.001)
+    }
+
+    func testTextAlignmentCycle() {
+        XCTAssertEqual(TeleprompterTextAlignment.center.next, .left)
+        XCTAssertEqual(TeleprompterTextAlignment.left.next, .right)
+        XCTAssertEqual(TeleprompterTextAlignment.right.next, .center)
+    }
+
+    func testTextAlignmentSwiftUIMapping() {
+        XCTAssertEqual(TeleprompterTextAlignment.center.swiftUIAlignment, .center)
+        XCTAssertEqual(TeleprompterTextAlignment.left.swiftUIAlignment, .leading)
+        XCTAssertEqual(TeleprompterTextAlignment.right.swiftUIAlignment, .trailing)
+    }
+
+    func testTextAlignmentIcons() {
+        XCTAssertEqual(TeleprompterTextAlignment.center.iconName, "text.aligncenter")
+        XCTAssertEqual(TeleprompterTextAlignment.left.iconName, "text.alignleft")
+        XCTAssertEqual(TeleprompterTextAlignment.right.iconName, "text.alignright")
     }
 }
 

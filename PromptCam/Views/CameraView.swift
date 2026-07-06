@@ -119,11 +119,15 @@ struct CameraView: View {
                     isRecording: viewModel.isRecording,
                     isScrolling: viewModel.isScrolling,
                     isRecordEnabled: viewModel.isCameraReady,
+                    textAlignment: viewModel.config.textAlignment,
                     onRecordTap: {
                         viewModel.toggleRecording()
                     },
                     onScrollTap: {
                         viewModel.toggleScrolling()
+                    },
+                    onAlignmentTap: {
+                        viewModel.cycleTextAlignment()
                     }
                 )
                 .position(x: proxy.size.width / 2,
