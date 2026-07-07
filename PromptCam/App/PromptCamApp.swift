@@ -18,11 +18,13 @@ struct PromptCamApp: App {
     }
 
     init() {
-        // One-time launch snapshot for HDMI debugging. Confirms whether iOS
-        // saw any external screens before the app finished initializing.
-        let screenCount = UIScreen.screens.count
+        // One-time launch snapshot for HDMI debugging. Scene enumeration
+        // (openSessions) works even before the first scene connects — it lists
+        // sessions the OS has restored from a previous launch. External screen
+        // presence is reported via ExternalSceneDelegate when a scene attaches.
         let sceneCount = UIApplication.shared.connectedScenes.count
-        Log.hdmi.info("PromptCamApp.init screens=\(screenCount, privacy: .public) scenes=\(sceneCount, privacy: .public)")
+        let sessionCount = UIApplication.shared.openSessions.count
+        Log.hdmi.info("PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)")
     }
 
     var body: some Scene {
