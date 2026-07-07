@@ -1,4 +1,4 @@
-name: A1-Teleprompter
+name: PromptCam
 options:
   bundleIdPrefix: com.rgriola
   deploymentTarget:
