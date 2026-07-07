@@ -1,6 +1,10 @@
 # Clean HDMI Output — PromptCam
 
-_Last updated: July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) — iOS 18+; audio monitoring deferred_
+_Last updated: July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) — iOS 18+; **shipped** (video); audio monitoring deferred_
+
+## Status: ✅ Working (video)
+
+Verified on iPhone with USB-C → HDMI adapter and physical monitor. Camera feed renders full-screen at 1920×1080 on the external display while the iPhone continues showing the full app UI (teleprompter, controls, everything).
 
 ## Goal
 
