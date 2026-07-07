@@ -25,13 +25,13 @@ When a USB-C → HDMI adapter (or AirPlay non-mirrored screen) is connected, out
 
 ## How It Fits the Existing App (verified July 6, 2026)
 
-| Existing piece                                | Role in HDMI feature                                                                                                              |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `CameraService.session` (`AVCaptureSession`)  | Single session — video flows from here. HDMI preview taps in with a second layer.                                                 |
-| `CameraService.previewSession`                | Public read-only accessor — HDMI window uses it directly. Already declared in `CameraServiceProtocol`.                            |
-| `CameraViewModel.session`                     | Forwarded from `previewSession` — already passed to `CameraPreviewView` on iPhone.                                                |
-| `CameraPreviewView` / `PreviewView`           | Uses `AVCaptureVideoPreviewLayer`. A second, gesture-free version is created for the HDMI window.                                 |
-| `PromptCamApp` / `WindowGroup`                | Unchanged — an additional external-display scene is declared in the scene manifest and handled by a dedicated `SceneDelegate`.    |
+| Existing piece                               | Role in HDMI feature                                                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `CameraService.session` (`AVCaptureSession`) | Single session — video flows from here. HDMI preview taps in with a second layer.                                              |
+| `CameraService.previewSession`               | Public read-only accessor — HDMI window uses it directly. Already declared in `CameraServiceProtocol`.                         |
+| `CameraViewModel.session`                    | Forwarded from `previewSession` — already passed to `CameraPreviewView` on iPhone.                                             |
+| `CameraPreviewView` / `PreviewView`          | Uses `AVCaptureVideoPreviewLayer`. A second, gesture-free version is created for the HDMI window.                              |
+| `PromptCamApp` / `WindowGroup`               | Unchanged — an additional external-display scene is declared in the scene manifest and handled by a dedicated `SceneDelegate`. |
 
 > [!IMPORTANT]
 > `AVCaptureVideoPreviewLayer` supports **multiple instances per session**. Two preview layers can connect to the same running `AVCaptureSession` with no conflicts and no session restart.
@@ -43,15 +43,15 @@ When a USB-C → HDMI adapter (or AirPlay non-mirrored screen) is connected, out
 
 ## Files Delivered
 
-| File                                                        | Purpose                                                                                                              |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `PromptCam/Services/ExternalDisplayService.swift`           | `@MainActor` singleton. Owns the external window; wires session into `CleanOutputView`.                              |
-| `PromptCam/App/ExternalSceneDelegate.swift`                 | `UIWindowSceneDelegate` that forwards attach/detach to the service.                                                  |
-| `PromptCam/Views/ExternalDisplay/CleanPreviewView.swift`    | Gesture-free `UIViewRepresentable` wrapping `PreviewView` with `.resizeAspectFill`.                                  |
-| `PromptCam/Views/ExternalDisplay/CleanOutputView.swift`     | Black background + full-screen `CleanPreviewView`.                                                                   |
-| `PromptCam/Info.plist`                                      | Explicit `UIApplicationSceneManifest` declaring both the app scene and the external-display scene role.              |
-| `project.yml`                                               | `INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO` so the explicit Info.plist declaration wins.               |
-| `PromptCam/ViewModels/CameraViewModel.swift`                | One-line `ExternalDisplayService.shared.configure(session:)` call in `onAppear()`.                                   |
+| File                                                     | Purpose                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `PromptCam/Services/ExternalDisplayService.swift`        | `@MainActor` singleton. Owns the external window; wires session into `CleanOutputView`.                 |
+| `PromptCam/App/ExternalSceneDelegate.swift`              | `UIWindowSceneDelegate` that forwards attach/detach to the service.                                     |
+| `PromptCam/Views/ExternalDisplay/CleanPreviewView.swift` | Gesture-free `UIViewRepresentable` wrapping `PreviewView` with `.resizeAspectFill`.                     |
+| `PromptCam/Views/ExternalDisplay/CleanOutputView.swift`  | Black background + full-screen `CleanPreviewView`.                                                      |
+| `PromptCam/Info.plist`                                   | Explicit `UIApplicationSceneManifest` declaring both the app scene and the external-display scene role. |
+| `project.yml`                                            | `INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO` so the explicit Info.plist declaration wins.  |
+| `PromptCam/ViewModels/CameraViewModel.swift`             | One-line `ExternalDisplayService.shared.configure(session:)` call in `onAppear()`.                      |
 
 `CameraService.swift` is **untouched**.
 
@@ -91,14 +91,14 @@ Complications:
 
 ## Verification Plan
 
-| Test                                | Expected result                                                                              |
-| ----------------------------------- | -------------------------------------------------------------------------------------------- |
-| Connect adapter → monitor           | External display shows full-screen camera feed, black background                             |
-| Disconnect adapter mid-session      | iPhone continues normally, external window torn down, no crash                               |
-| Tap focus on iPhone                 | HDMI feed updates (same session); no touch events on HDMI side                               |
-| Record while HDMI connected         | Recording saves to device normally; mic audio in file unchanged                              |
-| Switch Standard ↔ Cinematic         | HDMI preview follows session (same layer)                                                    |
-| Connect HDMI before app launch      | Scene delegate fires at launch; service attaches once camera session is configured           |
-| AirPlay to Apple TV (non-mirrored)  | Same code path — AirPlay presents as external scene                                          |
-| Screen mirroring / QuickTime        | Shows full iPhone UI (expected — mirroring is not the same as external scene)                |
-| No adapter connected                | Zero performance impact — service holds session ref but does nothing                         |
+| Test                               | Expected result                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| Connect adapter → monitor          | External display shows full-screen camera feed, black background                   |
+| Disconnect adapter mid-session     | iPhone continues normally, external window torn down, no crash                     |
+| Tap focus on iPhone                | HDMI feed updates (same session); no touch events on HDMI side                     |
+| Record while HDMI connected        | Recording saves to device normally; mic audio in file unchanged                    |
+| Switch Standard ↔ Cinematic        | HDMI preview follows session (same layer)                                          |
+| Connect HDMI before app launch     | Scene delegate fires at launch; service attaches once camera session is configured |
+| AirPlay to Apple TV (non-mirrored) | Same code path — AirPlay presents as external scene                                |
+| Screen mirroring / QuickTime       | Shows full iPhone UI (expected — mirroring is not the same as external scene)      |
+| No adapter connected               | Zero performance impact — service holds session ref but does nothing               |

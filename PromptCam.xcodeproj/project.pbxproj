@@ -150,7 +150,7 @@
 		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B60690BEE26843E7EF20BD3C /* CleanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanPreviewView.swift; sourceTree = "<group>"; };
 		B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
-		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFormatTests.swift; sourceTree = "<group>"; };
 		C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingTeleprompterText.swift; sourceTree = "<group>"; };
@@ -615,6 +615,10 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -805,6 +809,10 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

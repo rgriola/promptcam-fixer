@@ -6,6 +6,15 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## 0. iOS Coding
+
+We are coding for iOS 18+ using Swift 6+, (Current stable version is 6.3).
+
+## 0.1 Suggestions
+
+When code needs to be updated make this suggestions.
+Files should be limited to 800 lines.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

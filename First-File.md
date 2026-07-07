@@ -303,10 +303,13 @@ Custom Slider ?
 
 [ ] Add Support for Clicker start/stop. Voice Activated?
 [ ] Move Guide Dog to Settings Panel or Make Guide Dog the Settings Panel.
-[ ] Audio input display - grab the name of the Mic set available.
+
 [ ] Teleprompter Text - When scrolling and user touches screen text jumps. Not really and error just looks bad.
+
 [ ] Figure out how to Connect Record and Scroll at the Same time.
+
 [ ] Overlay for tools.
+
 [ ] Add Clean Camera/Audio output to HDMI
 
 - [ ] Add App Guide Pages. Think Handrails for Users
@@ -315,19 +318,18 @@ Custom Slider ?
 - Look at cleaner opening for Camera View.
   Script Returns become space + left justified.
 
-  
-
 Finished issues
 
 - Script View -
 
-  EV Bias Control Panel needs to say "EV Bias"
-  [X] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
-  [X] Add a lightweight save for backup should creator lost the script
+[x] Audio input display - grab the name of the Mic set available.
+EV Bias Control Panel needs to say "EV Bias"
+[X] Easy script clear button to script or remove default text to allow immediate paste or replace current script with new one.
+[X] Add a lightweight save for backup should creator lost the script
 
-  [x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
+[x]Recorded Session does not immediatly populate into the Camera Roll. User must close app then reopen to see video. Camera Roll probably needs a UI refresh triggered by the Recording.
 
-  [x] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
+[x] App VU meters do not adopt audio source immediately. User must do a soft shutdown and relaunch to refresh the VU meter. This occurs going from iPhone Mic > External Mic and External > iPhone Mic.
 
 - Camera View
 
@@ -356,8 +358,8 @@ Finished issues
     [HD 1920x1080 - 24,30]
     [4K - 24,30]
 
-  - Multiple Front Cameras need to initiallized 
-  - 4K View is resetting in CameraView 
+  - Multiple Front Cameras need to initiallized
+  - 4K View is resetting in CameraView
 
 - Script View -
 
@@ -365,7 +367,7 @@ Finished issues
 
 - [ ] Add App Guide Pages. Think Handrails for Users
   - Insert Images drawn from App with Correct Styles
-  - Change App Icon + Splash Screen 
+  - Change App Icon + Splash Screen
   - Look at cleaner opening for Camera View.
 
   **_ Task _**
@@ -382,3 +384,7 @@ Finished issues
   - Some weird overlay that darkens it . [x]
 
 - Carousel active video, one being viewed, needs to connect to main player. Currently the carousel moves but the main player does not,
+
+Create a new 3 - toggle button to set the teleprompter script justification. Use SF Symbols; text.aligncenter (default), text.alignleft Step -1 , text.alignright Step 2, Return to default. Use Theme.white for the color, icon32 for the size.
+
+The user should be able to click through this toggle continuously. The button should be set to the left of the record button similar to how the scroll button is positioned. After reviewing, show me an implimentation plan.
