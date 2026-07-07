@@ -1,6 +1,7 @@
 // PromptCam — Settings Sheet
 // Extracted from CameraView.swift (refactor June 1, 2026)
 // Uses shared PermissionStatusDisplay helpers and PermissionStatusRow component.
+// July 7, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add Help section linking to InstructionsView
 import AVFoundation
 import CoreLocation
 import Photos
@@ -23,6 +24,8 @@ struct CameraSettingsSheet: View {
     @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
     /// Controls the format accordion open/closed state.
     @State private var formatsExpanded = false
+    /// Controls presentation of the in-app instructions.
+    @State private var showInstructions = false
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -37,6 +40,17 @@ struct CameraSettingsSheet: View {
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
+
+                Section("Help") {
+                    Button {
+                        showInstructions = true
+                    } label: {
+                        Label("App Guide", systemImage: "service.dog.fill")
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white)
+                    }
+                }
+                .listRowBackground(Theme.black.opacity(0.1))
 
             
                 Section("Permissions") {
@@ -134,6 +148,9 @@ struct CameraSettingsSheet: View {
             .onAppear { refreshStatuses() }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active { refreshStatuses() }
+            }
+            .sheet(isPresented: $showInstructions) {
+                InstructionsView()
             }
         }
         .presentationBackground(Theme.bgGrad)
