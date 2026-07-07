@@ -104,6 +104,7 @@ final class ExternalDisplayHostViewController: UIViewController {
     private let sessionProvider: () -> AVCaptureSession?
     private let previewView = PreviewView()
     private let diagnosticLabel = UILabel()
+    private var rebindTimer: Timer?
 
     /// Toggle to false once HDMI output is verified.
     static var showDiagnosticOverlay = true
@@ -117,16 +118,27 @@ final class ExternalDisplayHostViewController: UIViewController {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func loadView() {
-        // Use PreviewView directly as the controller's view — no extra containers.
+        // Bright red root behind the preview view — if we see red on the TV
+        // where video should be, the preview layer isn't drawing frames.
+        // If the whole TV is red, PreviewView isn't sized or isn't visible.
+        let root = UIView()
+        root.backgroundColor = .red
         previewView.backgroundColor = .black
         previewView.previewLayer.videoGravity = .resizeAspectFill
-        view = previewView
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(previewView)
+        NSLayoutConstraint.activate([
+            previewView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            previewView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            previewView.topAnchor.constraint(equalTo: root.topAnchor),
+            previewView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+        ])
+        view = root
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        previewView.previewLayer.session = sessionProvider()
-        Log.hdmi.info("ExternalDisplayHostVC viewDidLoad session=\(self.previewView.previewLayer.session != nil ? "set" : "nil", privacy: .public) running=\(self.previewView.previewLayer.session?.isRunning == true, privacy: .public)")
+        bindSession(reason: "viewDidLoad")
 
         if Self.showDiagnosticOverlay {
             diagnosticLabel.text = "HDMI CONNECTED"
@@ -144,10 +156,48 @@ final class ExternalDisplayHostViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Ensure preview always has the latest session reference.
-        if previewView.previewLayer.session !== sessionProvider() {
-            previewView.previewLayer.session = sessionProvider()
+        bindSession(reason: "viewWillAppear")
+        startRebindPolling()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        rebindTimer?.invalidate()
+        rebindTimer = nil
+    }
+
+    /// (Re)assigns the capture session on the preview layer and logs its
+    /// current connection state. Cheap to call repeatedly.
+    private func bindSession(reason: String) {
+        let session = sessionProvider()
+        if previewView.previewLayer.session !== session {
+            previewView.previewLayer.session = session
         }
-        Log.hdmi.info("ExternalDisplayHostVC viewWillAppear session=\(self.previewView.previewLayer.session != nil ? "set" : "nil", privacy: .public) running=\(self.previewView.previewLayer.session?.isRunning == true, privacy: .public) frame=\(String(describing: self.view.frame), privacy: .public)")
+        let running = session?.isRunning == true
+        let conn = previewView.previewLayer.connection
+        let connEnabled = conn?.isEnabled == true
+        let connActive = conn?.isActive == true
+        Log.hdmi.info("bindSession[\(reason, privacy: .public)] session=\(session != nil ? "set" : "nil", privacy: .public) running=\(running, privacy: .public) connection=\(conn != nil ? "set" : "nil", privacy: .public) enabled=\(connEnabled, privacy: .public) active=\(connActive, privacy: .public) viewFrame=\(String(describing: self.view.frame), privacy: .public) layerFrame=\(String(describing: self.previewView.previewLayer.frame), privacy: .public)")
+    }
+
+    private var rebindTicks = 0
+
+    /// Poll every 500ms for a few seconds to re-bind once the AVCaptureSession
+    /// actually flips to `isRunning`. Assigning the session BEFORE it starts
+    /// can leave the preview layer without a live connection.
+    private func startRebindPolling() {
+        rebindTimer?.invalidate()
+        rebindTicks = 0
+        rebindTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.rebindTicks += 1
+                self.bindSession(reason: "poll#\(self.rebindTicks)")
+                if self.rebindTicks >= 10 {
+                    self.rebindTimer?.invalidate()
+                    self.rebindTimer = nil
+                }
+            }
+        }
     }
 }
