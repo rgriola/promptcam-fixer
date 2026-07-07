@@ -49,6 +49,14 @@ struct CameraSettingsSheet: View {
                             .font(Theme.font16Regular)
                             .foregroundStyle(Theme.white)
                     }
+
+                    Button {
+                        openSlackChannel()
+                    } label: {
+                        Label("Support on Slack", systemImage: "bubble.left.and.bubble.right.fill")
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white)
+                    }
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
 
@@ -188,5 +196,23 @@ struct CameraSettingsSheet: View {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
+    }
+
+    // MARK: - Slack Deep Link
+
+    private static let slackTeamID    = "E7T3R16EM"
+    private static let slackChannelID = "C08KEGNF00N"
+
+    /// Opens the support Slack channel.
+    /// Tries the native Slack app first; falls back to the web client.
+    private func openSlackChannel() {
+        let appURL = URL(string: "slack://channel?team=\(Self.slackTeamID)&id=\(Self.slackChannelID)")!
+        let webURL = URL(string: "https://app.slack.com/client/\(Self.slackTeamID)/\(Self.slackChannelID)")!
+
+        if UIApplication.shared.canOpenURL(appURL) {
+            UIApplication.shared.open(appURL)
+        } else {
+            UIApplication.shared.open(webURL)
+        }
     }
 }
