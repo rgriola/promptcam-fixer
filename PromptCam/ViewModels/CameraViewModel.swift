@@ -512,6 +512,12 @@ final class CameraViewModel {
             }
         }
 
+        // Fires the instant PhotoKit actually persists the new asset — closes
+        // the race where onRecordingStateChanged fires before the save is done.
+        cameraService.onRecordingSavedToLibrary = { [weak self] in
+            self?.refreshLatestRecording()
+        }
+
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
             guard let self else { return }
             self.isCameraReady = isRunning
