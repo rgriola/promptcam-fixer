@@ -171,6 +171,21 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         set { callbackLock.withLock { _onError = newValue } }
     }
 
+    private var _onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)?
+    var onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)? {
+        get { callbackLock.withLock { _onRecordingSavedToLibrary } }
+        set { callbackLock.withLock { _onRecordingSavedToLibrary = newValue } }
+    }
+
+    /// Injected saver for the Photo Library write. Defaults to the real
+    /// `PHPhotoLibrary`-backed implementation; tests substitute a fake.
+    let photoSaver: PhotoLibrarySaver
+
+    init(photoSaver: PhotoLibrarySaver = DefaultPhotoLibrarySaver()) {
+        self.photoSaver = photoSaver
+        super.init()
+    }
+
     deinit {
         // AVCaptureSession mutations must run on sessionQueue. Capture the
         // session reference locally so the closure does not capture self,

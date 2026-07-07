@@ -49,16 +49,23 @@ extension CameraService {
             try? FileManager.default.removeItem(at: outputFileURL)
             return
         }
+        performSave(outputFileURL)
+    }
 
-        PHPhotoLibrary.shared().performChanges {
-            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputFileURL)
-        } completionHandler: { success, error in
-            if let error {
-                self.publishError(.photoLibrarySaveFailed(error.localizedDescription))
-            } else if !success {
-                self.publishError(.photoLibrarySaveFailed("Video save operation did not complete."))
+    /// Performs the actual save via the injected `PhotoLibrarySaver` and
+    /// dispatches success/failure callbacks. Split from the permission-guarded
+    /// entry point so unit tests can bypass PhotoKit authorization.
+    func performSave(_ outputFileURL: URL) {
+        let saver = self.photoSaver
+        Task { [weak self] in
+            do {
+                try await saver.saveVideo(at: outputFileURL)
+                await MainActor.run { [weak self] in
+                    self?.onRecordingSavedToLibrary?()
+                }
+            } catch {
+                self?.publishError(.photoLibrarySaveFailed(error.localizedDescription))
             }
-
             try? FileManager.default.removeItem(at: outputFileURL)
         }
     }

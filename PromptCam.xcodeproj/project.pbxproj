@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06B611B17F34388EE24D00B3 /* CameraServiceRecordingSavedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59F519045CC1413E5A9411F4 /* CameraServiceRecordingSavedTests.swift */; };
 		07A316F71AFD15F25605C234 /* CleanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60690BEE26843E7EF20BD3C /* CleanPreviewView.swift */; };
 		0B69BBAE147C47CC934070F7 /* ComposeScriptSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 923418788547770366446818 /* ComposeScriptSheet.swift */; };
 		0D0F77366217D4B1B4E6C142 /* RecordingsLibrarySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB551B9997DF32815A820B3F /* RecordingsLibrarySheet.swift */; };
@@ -39,6 +40,7 @@
 		7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */; };
 		75698C4EF877F2ECCC84528F /* RecordingThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451BB829FD09329B426D70AF /* RecordingThumbnailView.swift */; };
 		7903D6611F488BA869F2A267 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */; };
+		8347FB8174585CBCF475164A /* PhotoLibrarySaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6175464BB708CE805EDD350 /* PhotoLibrarySaver.swift */; };
 		8585E9813537F463E7F0BF3F /* CameraService+Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB7527037EBC9AB5DB07434 /* CameraService+Recording.swift */; };
 		8822631F7E4FCED4165D036E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26EEA7971142FD517E1511C6 /* Theme.swift */; };
 		8B00638349BBD6B15A5E48C6 /* ExternalDisplayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 515E59847CCAEAF9F3ECDBA7 /* ExternalDisplayService.swift */; };
@@ -58,6 +60,7 @@
 		AC56EC5CA7D852F223052444 /* CloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8468ECD58FD36041762DF16 /* CloseButton.swift */; };
 		AC8A3E035773D456DF5C7000 /* CameraSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */; };
 		B1C58674F76FA902933ADFF7 /* RecordingCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D3873C1AE0EBBFF66FB5A0 /* RecordingCarouselView.swift */; };
+		B322E89ABDD58EF7F35B6E3E /* PhotoLibraryChangeMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */; };
 		B4D31512FFE492F6B0BD9155 /* Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FF44041128C203B6A0CE91 /* Recording.swift */; };
 		B6B5FAF6960F5A314987C644 /* TeleprompterDebugHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71440E54776D121738FE8505 /* TeleprompterDebugHUD.swift */; };
 		B8A6D22F3AF477AFE0043942 /* ScriptArchiveSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F3533487EF3233BBD3779E8 /* ScriptArchiveSheet.swift */; };
@@ -68,6 +71,7 @@
 		D1D09FA35BCB222C0CA52EC9 /* RecordingTimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098CF98A9B397E6DACFC59FF /* RecordingTimerPanel.swift */; };
 		D80A41E07564E74C4CF82076 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749694F8D9812A53CBCC6CC /* CameraView.swift */; };
 		DDE61F8B7BFD6E54D8A3C66D /* CleanOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20265C364ED1A6A57FDCBC0D /* CleanOutputView.swift */; };
+		EABF5503EB98437D80103605 /* PhotoLibraryChangeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE60C4B00CAE887C0AB3B754 /* PhotoLibraryChangeMonitor.swift */; };
 		EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABC9B16CA9F0DE0167C80C67 /* PermissionStatusHelpers.swift */; };
 		EC27A2A544E4006A4755A14E /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C5486901965005D700AC21 /* CameraService.swift */; };
 		ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44258EFBB280CA9948B0912 /* VUMeterView.swift */; };
@@ -115,6 +119,7 @@
 		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
 		3A7E2E71F8EF2FCD7E8217A3 /* CameraService+Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraService+Format.swift"; sourceTree = "<group>"; };
 		3D30172CAF08C9A84962B58C /* CameraService+Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraService+Controls.swift"; sourceTree = "<group>"; };
+		3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryChangeMonitorTests.swift; sourceTree = "<group>"; };
 		3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsSheet.swift; sourceTree = "<group>"; };
 		417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLockStatusBadgeView.swift; sourceTree = "<group>"; };
 		42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilitiesTests.swift; sourceTree = "<group>"; };
@@ -128,6 +133,7 @@
 		515E59847CCAEAF9F3ECDBA7 /* ExternalDisplayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplayService.swift; sourceTree = "<group>"; };
 		525F4215FDEF56A0D72B7C58 /* SaveButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveButton.swift; sourceTree = "<group>"; };
 		55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
+		59F519045CC1413E5A9411F4 /* CameraServiceRecordingSavedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraServiceRecordingSavedTests.swift; sourceTree = "<group>"; };
 		5AA5E5344875D6CB4076D11F /* EVAdjustmentPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EVAdjustmentPanel.swift; sourceTree = "<group>"; };
 		5EA93F6B0683EAD2D7B78DD4 /* CameraError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraError.swift; sourceTree = "<group>"; };
 		62386ADCCFC7E9387894F205 /* TeleprompterCenterResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterCenterResetButton.swift; sourceTree = "<group>"; };
@@ -149,8 +155,9 @@
 		B1E807D783DFBBE234865C83 /* PromptCamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamApp.swift; sourceTree = "<group>"; };
 		B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PromptCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B60690BEE26843E7EF20BD3C /* CleanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanPreviewView.swift; sourceTree = "<group>"; };
+		B6175464BB708CE805EDD350 /* PhotoLibrarySaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibrarySaver.swift; sourceTree = "<group>"; };
 		B72E99F00B4E91C180B7AC9A /* CameraFormatPanelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFormatPanelSheet.swift; sourceTree = "<group>"; };
-		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B860643BC28289FBEEAD4BEB /* PromptCam.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PromptCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C5486901965005D700AC21 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFormatTests.swift; sourceTree = "<group>"; };
 		C0649A81690E942C7EBA7E07 /* ScrollingTeleprompterText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingTeleprompterText.swift; sourceTree = "<group>"; };
@@ -159,6 +166,7 @@
 		C70874E673904C8E434BD20C /* InstructionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionsView.swift; sourceTree = "<group>"; };
 		C8468ECD58FD36041762DF16 /* CloseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseButton.swift; sourceTree = "<group>"; };
 		CB551B9997DF32815A820B3F /* RecordingsLibrarySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsLibrarySheet.swift; sourceTree = "<group>"; };
+		CE60C4B00CAE887C0AB3B754 /* PhotoLibraryChangeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryChangeMonitor.swift; sourceTree = "<group>"; };
 		D0758B72A7B23803C0E912B5 /* AudioMeterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMeterService.swift; sourceTree = "<group>"; };
 		D44258EFBB280CA9948B0912 /* VUMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VUMeterView.swift; sourceTree = "<group>"; };
 		D46482F8F7086DD831B53ECA /* RecordingPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPlayerView.swift; sourceTree = "<group>"; };
@@ -179,9 +187,11 @@
 			children = (
 				34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */,
 				946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */,
+				59F519045CC1413E5A9411F4 /* CameraServiceRecordingSavedTests.swift */,
 				AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */,
 				42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */,
 				A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */,
+				3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */,
 				BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */,
 				0EECACF93F836A0209B57F7F /* TeleprompterConfigTests.swift */,
 			);
@@ -200,6 +210,8 @@
 				07CD4E201E8DD159B20FF392 /* CameraServiceProtocol.swift */,
 				515E59847CCAEAF9F3ECDBA7 /* ExternalDisplayService.swift */,
 				55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */,
+				CE60C4B00CAE887C0AB3B754 /* PhotoLibraryChangeMonitor.swift */,
+				B6175464BB708CE805EDD350 /* PhotoLibrarySaver.swift */,
 				E6904D890420C96DB2895AFC /* RecordingsService.swift */,
 			);
 			path = Services;
@@ -520,6 +532,8 @@
 				EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */,
 				5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */,
 				3110BDD3348F0913A0E362F7 /* PermissionsOnboardingView.swift in Sources */,
+				EABF5503EB98437D80103605 /* PhotoLibraryChangeMonitor.swift in Sources */,
+				8347FB8174585CBCF475164A /* PhotoLibrarySaver.swift in Sources */,
 				8D95AB9B5EA5D9BC354E7893 /* PromptCamApp.swift in Sources */,
 				B4D31512FFE492F6B0BD9155 /* Recording.swift in Sources */,
 				B1C58674F76FA902933ADFF7 /* RecordingCarouselView.swift in Sources */,
@@ -564,9 +578,11 @@
 			files = (
 				41DC8BC23D7AA37EA938C17E /* AudioMeterServiceTests.swift in Sources */,
 				3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */,
+				06B611B17F34388EE24D00B3 /* CameraServiceRecordingSavedTests.swift in Sources */,
 				565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */,
 				A82A98A6DFEC958503F82421 /* DeviceCapabilitiesTests.swift in Sources */,
 				F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */,
+				B322E89ABDD58EF7F35B6E3E /* PhotoLibraryChangeMonitorTests.swift in Sources */,
 				F9571A615D04517E7ECC75EA /* RecordingFormatTests.swift in Sources */,
 				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
 			);
@@ -615,10 +631,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -809,10 +821,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam;
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

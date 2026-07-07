@@ -31,6 +31,11 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
     var onCinematicApertureAvailable: (@MainActor @Sendable (Float, Float, Float) -> Void)? { get set }
     var onError: (@MainActor @Sendable (CameraError) -> Void)? { get set }
 
+    /// Fired on the main actor after a completed recording has been saved to
+    /// the Photo Library. Used by the ViewModel to refresh the carousel without
+    /// waiting for the next app launch. Does NOT fire if the save failed.
+    var onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)? { get set }
+
     // MARK: - Session Lifecycle
 
     func configureSession(format: RecordingFormat)

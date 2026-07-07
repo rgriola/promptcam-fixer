@@ -39,6 +39,7 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
     var onDeviceCapabilitiesQueried: (@MainActor @Sendable (DeviceCapabilities) -> Void)?
     var onCinematicApertureAvailable: (@MainActor @Sendable (Float, Float, Float) -> Void)?
     var onError: (@MainActor @Sendable (CameraError) -> Void)?
+    var onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)?
 
     // MARK: - Session Lifecycle
 
