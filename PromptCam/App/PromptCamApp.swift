@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct PromptCamApp: App {
@@ -14,6 +15,16 @@ struct PromptCamApp: App {
     /// UI-test bypass: launch with `-uitest-skip-onboarding` to land directly on the camera.
     private var skipOnboardingForUITest: Bool {
         ProcessInfo.processInfo.arguments.contains("-uitest-skip-onboarding")
+    }
+
+    init() {
+        // One-time launch snapshot for HDMI debugging. Scene enumeration
+        // (openSessions) works even before the first scene connects — it lists
+        // sessions the OS has restored from a previous launch. External screen
+        // presence is reported via ExternalSceneDelegate when a scene attaches.
+        let sceneCount = UIApplication.shared.connectedScenes.count
+        let sessionCount = UIApplication.shared.openSessions.count
+        Log.hdmi.info("PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)")
     }
 
     var body: some Scene {

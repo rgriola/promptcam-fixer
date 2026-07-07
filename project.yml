@@ -24,11 +24,14 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: PromptCam/Info.plist
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_NSCameraUsageDescription: PromptCam needs camera access to record videos.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: PromptCam can record microphone audio with your videos.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: PromptCam needs photo library access to save and review your recordings.
+
+        INFOPLIST_KEY_CFBundleDisplayName: A1-Telepromter
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.video
 
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_BackgroundColor: SplashBg

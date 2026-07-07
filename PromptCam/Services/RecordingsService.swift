@@ -8,6 +8,15 @@ struct RecordingsService: Sendable {
     /// Shared caching image manager for grid thumbnails.
     static let cachingManager = PHCachingImageManager()
 
+    /// Serial queue for pre-warm work. `PHAsset.fetchAssets(withLocalIdentifiers:)`
+    /// is synchronous and takes several ms per call; running it on main pegs
+    /// the UI thread during rapid carousel swipes (Time Profiler measured
+    /// 7ms/78% per sample on iPhone 13). PHCachingImageManager is thread-safe.
+    private static let cachingQueue = DispatchQueue(
+        label: "com.rgriola.promptcam.recordings.caching",
+        qos: .userInitiated
+    )
+
     /// Fetches videos from the user's library, newest first.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -86,17 +95,23 @@ struct RecordingsService: Sendable {
         }
     }
 
-    /// Pre-warm thumbnails for visible cells.
+    /// Pre-warm thumbnails for visible cells. Runs the PhotoKit fetch and
+    /// caching-start on a background queue to keep the main thread free
+    /// during rapid carousel navigation.
     func startCaching(ids: [String], targetSize: CGSize) {
-        let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
-        var assets: [PHAsset] = []
-        fetch.enumerateObjects { a, _, _ in assets.append(a) }
-        Self.cachingManager.startCachingImages(
-            for: assets, targetSize: targetSize, contentMode: .aspectFill, options: nil)
+        Self.cachingQueue.async {
+            let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+            var assets: [PHAsset] = []
+            fetch.enumerateObjects { a, _, _ in assets.append(a) }
+            Self.cachingManager.startCachingImages(
+                for: assets, targetSize: targetSize, contentMode: .aspectFill, options: nil)
+        }
     }
 
     func stopCachingAll() {
-        Self.cachingManager.stopCachingImagesForAllAssets()
+        Self.cachingQueue.async {
+            Self.cachingManager.stopCachingImagesForAllAssets()
+        }
     }
 
     /// Resolves a `Recording` to a playable `AVURLAsset` URL using the

@@ -45,7 +45,7 @@ struct PermissionsOnboardingView: View {
                     .font(Theme.display44)
                     .foregroundStyle(Theme.white)
 
-                Text("PromptCam")
+                Text("A1-Teleprompter")
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
 
