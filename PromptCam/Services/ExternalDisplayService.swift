@@ -65,7 +65,14 @@ final class ExternalDisplayService {
         tearDownWindow(reason: "scene detach")
     }
 
-    // MARK: - Legacy UIScreen path (iPhone HDMI adapter fallback)
+    // MARK: - Legacy UIScreen path (fallback only)
+    //
+    // iOS 18 iPhone reliably delivers UIWindowSceneSessionRoleExternalDisplayNonInteractive,
+    // so the scene delegate is the correct path. The legacy notifications still
+    // arrive alongside it — we log them for diagnostics but only actually
+    // attach a window if the scene delegate has NOT fired within a grace period.
+
+    private static let legacyFallbackDelay: TimeInterval = 0.75
 
     private func startLegacyObservationIfNeeded() {
         guard !didStartLegacyObservation else { return }
@@ -82,25 +89,23 @@ final class ExternalDisplayService {
             name: UIScreen.didDisconnectNotification,
             object: nil
         )
-        Log.hdmi.debug("legacy UIScreen observers registered")
+        Log.hdmi.debug("legacy UIScreen observers registered (diagnostic + fallback)")
     }
 
     private func attemptLegacyAttachIfNeeded() {
-        // If no scene delegate has fired yet and there is a non-main UIScreen
-        // present, attach via the legacy path.
+        // Only reach for the legacy path if the scene delegate did not fire.
         guard attachedScene == nil, attachedScreen == nil else { return }
         let externals = UIScreen.screens.filter { $0 !== UIScreen.main }
-        if let screen = externals.first {
-            Log.hdmi.info("legacy attach on existing external screen bounds=\(String(describing: screen.bounds), privacy: .public)")
-            legacyAttach(to: screen)
-        }
+        guard let screen = externals.first else { return }
+        Log.hdmi.info("legacy attach on existing external screen bounds=\(String(describing: screen.bounds), privacy: .public)")
+        scheduleLegacyAttach(to: screen)
     }
 
     @objc private nonisolated func handleScreenConnect(_ note: Notification) {
         guard let screen = note.object as? UIScreen else { return }
         Task { @MainActor in
             Log.hdmi.info("UIScreen.didConnectNotification bounds=\(String(describing: screen.bounds), privacy: .public)")
-            self.legacyAttach(to: screen)
+            self.scheduleLegacyAttach(to: screen)
         }
     }
 
@@ -115,26 +120,31 @@ final class ExternalDisplayService {
         }
     }
 
+    /// Delay the legacy attach so the scene delegate (which fires reliably on
+    /// iOS 18 iPhone) has a chance to win the race. If the scene delegate has
+    /// attached by the time the timer fires, we bail out.
+    private func scheduleLegacyAttach(to screen: UIScreen) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.legacyFallbackDelay) { [weak self] in
+            guard let self else { return }
+            if self.attachedScene != nil {
+                Log.hdmi.debug("legacyAttach cancelled — scene delegate already attached")
+                return
+            }
+            self.legacyAttach(to: screen)
+        }
+    }
+
     private func legacyAttach(to screen: UIScreen) {
-        // If the scene-delegate path already handled this, don't double-attach.
         guard attachedScene == nil else {
             Log.hdmi.debug("legacyAttach skipped — scene path already active")
             return
         }
         attachedScreen = screen
 
-        // Find a UIWindowScene we can host on. On iPhone HDMI adapter, the OS
-        // may not create a dedicated external scene, so we host on the main
-        // window scene and target the external screen via UIWindow.screen.
-        let hostScene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first
-        let window: UIWindow
-        if let hostScene {
-            window = UIWindow(windowScene: hostScene)
-        } else {
-            window = UIWindow(frame: screen.bounds)
-        }
+        // No scene delegate fired, so build a window bound to a dedicated frame.
+        // NOTE: If iOS ever routes here, the phone-scene window trick from the
+        // previous revision would cover the phone UI — avoid that.
+        let window = UIWindow(frame: screen.bounds)
         window.screen = screen
         window.backgroundColor = .black
         installRootView(on: window)
@@ -150,7 +160,11 @@ final class ExternalDisplayService {
             self?.captureSession
         }))
         host.view.backgroundColor = .black
+        host.view.frame = window.bounds
+        host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         window.rootViewController = host
+        window.layoutIfNeeded()
+        Log.hdmi.info("installRootView on window frame=\(String(describing: window.frame), privacy: .public) hostViewFrame=\(String(describing: host.view.frame), privacy: .public)")
     }
 
     private func tearDownWindow(reason: String) {
