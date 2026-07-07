@@ -188,6 +188,10 @@ final class CameraViewModel {
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
     @ObservationIgnored private var audioMeterService: AudioMeterService?
+    /// Refreshes the carousel whenever the Photo Library changes (own saves,
+    /// Photos.app deletes, iCloud sync). Started in onAppear, stopped in
+    /// onDisappear. Complements onRecordingSavedToLibrary from CameraService.
+    @ObservationIgnored private let photoLibraryMonitor = PhotoLibraryChangeMonitor()
 
 
 
@@ -211,6 +215,11 @@ final class CameraViewModel {
         cameraService.startSession()
         // Wire external-display service so HDMI/AirPlay gets a clean feed.
         ExternalDisplayService.shared.configure(session: cameraService.previewSession)
+        // Observe photo-library changes so the carousel refreshes on external
+        // deletes, iCloud sync, etc. Debounced to coalesce bursts.
+        photoLibraryMonitor.start { [weak self] in
+            self?.refreshLatestRecording()
+        }
         // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
@@ -222,6 +231,7 @@ final class CameraViewModel {
         audioMeterService?.stopMetering()
         audioMeterService?.stopMonitoringRoute()
         cameraService.stopSession()
+        photoLibraryMonitor.stop()
         isCameraReady = false
     }
 
