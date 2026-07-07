@@ -361,9 +361,12 @@ struct CameraView: View {
                     resolveURL: { rec in
                         await RecordingsService().resolveURL(for: rec)
                     },
-                    onSelectRecording: { selected, url in
-                        viewModel.latestRecording = selected
-                        viewModel.latestVideoURL = url
+                    onSelectRecording: { selected, _ in
+                        // Do NOT overwrite viewModel.latestRecording here —
+                        // that would make the player reopen on the last-viewed
+                        // video instead of the most recently recorded one.
+                        // The RecordingPlayerView tracks its own @State
+                        // activeRecording for in-session swiping.
                         viewModel.warmCarouselCache(around: selected)
                     }
                 )
