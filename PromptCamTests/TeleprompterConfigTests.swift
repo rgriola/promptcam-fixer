@@ -53,21 +53,19 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testTextAlignmentCycle() {
+        // .right is currently commented out — 2-state cycle: center ↔ left
         XCTAssertEqual(TeleprompterTextAlignment.center.next, .left)
-        XCTAssertEqual(TeleprompterTextAlignment.left.next, .right)
-        XCTAssertEqual(TeleprompterTextAlignment.right.next, .center)
+        XCTAssertEqual(TeleprompterTextAlignment.left.next, .center)
     }
 
     func testTextAlignmentSwiftUIMapping() {
         XCTAssertEqual(TeleprompterTextAlignment.center.swiftUIAlignment, .center)
         XCTAssertEqual(TeleprompterTextAlignment.left.swiftUIAlignment, .leading)
-        XCTAssertEqual(TeleprompterTextAlignment.right.swiftUIAlignment, .trailing)
     }
 
     func testTextAlignmentIcons() {
         XCTAssertEqual(TeleprompterTextAlignment.center.iconName, "text.aligncenter")
         XCTAssertEqual(TeleprompterTextAlignment.left.iconName, "text.alignleft")
-        XCTAssertEqual(TeleprompterTextAlignment.right.iconName, "text.alignright")
     }
 }
 

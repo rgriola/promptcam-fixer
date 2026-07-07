@@ -183,6 +183,7 @@ final class CameraViewModel {
         static let textColor  = "tp.textColor"
         static let bgOpacity  = "tp.bgOpacity"
         static let alignment  = "tp.alignment"
+        static let scriptText = "tp.scriptText"
     }
 
     let cameraService: CameraServiceProtocol
@@ -366,6 +367,7 @@ final class CameraViewModel {
     func updateScriptText(_ text: String) {
         Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
         config.text = text
+        saveStylePreferences()
     }
 
     /// Applies and clamps new style settings, then persists them.
@@ -395,6 +397,11 @@ final class CameraViewModel {
         ud.set(config.textColor.rawValue,          forKey: StyleKey.textColor)
         ud.set(config.backgroundOpacity,           forKey: StyleKey.bgOpacity)
         ud.set(config.textAlignment.rawValue,      forKey: StyleKey.alignment)
+        // Only persist the script when it differs from the default placeholder
+        // so a fresh install still shows the onboarding hint text.
+        if config.text != TeleprompterConfig.default.text {
+            ud.set(config.text, forKey: StyleKey.scriptText)
+        }
     }
 
     private func loadStylePreferences() {
@@ -413,8 +420,14 @@ final class CameraViewModel {
                 config.textAlignment = alignment
             }
             config = config.clamped
-            config.text = TeleprompterConfig.default.text
-            Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
+            // Restore the saved script. If no script has been saved yet (fresh
+            // install or user cleared it), fall back to the default hint text.
+            if let saved = ud.string(forKey: StyleKey.scriptText), !saved.isEmpty {
+                config.text = saved
+            } else {
+                config.text = TeleprompterConfig.default.text
+            }
+            Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public) scriptLen=\(self.config.text.count, privacy: .public)")
         }
     }
 

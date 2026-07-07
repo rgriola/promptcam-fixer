@@ -216,4 +216,58 @@ final class CameraViewModelTests: XCTestCase {
         XCTAssertGreaterThan(sut.teleprompterResetToken, initialToken,
                              "teleprompterResetToken should increase after reset")
     }
+
+    // MARK: - Script Persistence
+
+    func testUpdateScriptText_persistsToUserDefaults() {
+        let scriptKey = "tp.scriptText"
+        UserDefaults.standard.removeObject(forKey: scriptKey)
+        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+
+        sut.updateScriptText("My reporter script.")
+
+        let saved = UserDefaults.standard.string(forKey: scriptKey)
+        XCTAssertEqual(saved, "My reporter script.",
+                       "updateScriptText must persist the script to UserDefaults")
+    }
+
+    func testUpdateScriptText_doesNotSaveDefaultPlaceholder() {
+        let scriptKey = "tp.scriptText"
+        UserDefaults.standard.removeObject(forKey: scriptKey)
+        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+
+        // Saving the default hint text should NOT persist it — ensures a
+        // fresh install still shows the hint on next launch.
+        sut.updateScriptText(TeleprompterConfig.default.text)
+
+        let saved = UserDefaults.standard.string(forKey: scriptKey)
+        XCTAssertNil(saved,
+                     "Default placeholder text must not be written to UserDefaults")
+    }
+
+    func testNewViewModel_restoresSavedScript() {
+        let scriptKey = "tp.scriptText"
+        UserDefaults.standard.removeObject(forKey: scriptKey)
+        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+
+        // Simulate saving a script in one session.
+        sut.updateScriptText("Breaking news script.")
+
+        // Create a new ViewModel — simulates a cold app relaunch.
+        let relaunchedVM = CameraViewModel(cameraService: MockCameraService())
+
+        XCTAssertEqual(relaunchedVM.config.text, "Breaking news script.",
+                       "Script must be restored from UserDefaults after relaunch")
+    }
+
+    func testNewViewModel_showsDefaultTextWhenNoScriptSaved() {
+        let scriptKey = "tp.scriptText"
+        UserDefaults.standard.removeObject(forKey: scriptKey)
+        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+
+        let freshVM = CameraViewModel(cameraService: MockCameraService())
+
+        XCTAssertEqual(freshVM.config.text, TeleprompterConfig.default.text,
+                       "Fresh install must show the default hint text")
+    }
 }
