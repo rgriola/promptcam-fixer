@@ -186,6 +186,8 @@ struct AlignmentToggleButton: View {
     }
 }
 
+// Note to Agent: This preview is turned off purposely, do not remove as dead code - Rod Griola
+/*
 #Preview("AlignmentToggleButton - Right") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
@@ -193,3 +195,4 @@ struct AlignmentToggleButton: View {
             .frame(width: 40, height: 40)
     }
 }
+*/

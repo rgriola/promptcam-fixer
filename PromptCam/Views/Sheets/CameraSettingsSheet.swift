@@ -38,10 +38,10 @@ struct CameraSettingsSheet: View {
                     SettingStatusRow(title: "Version", value: appVersion)
                     SettingStatusRow(title: "Model Name", value: deviceInfo)
                 }
-                .listRowBackground(Theme.black.opacity(0.1))
-                .foregroundStyle(Theme.white)
+                .settingsSectionHeaderStyle()
 
-                Section("Help") {
+                Section("Support") {
+                    /*
                     Button {
                         showInstructions = true
                     } label: {
@@ -49,16 +49,23 @@ struct CameraSettingsSheet: View {
                             .font(Theme.font16Regular)
                             .foregroundStyle(Theme.white)
                     }
+                    */
 
                     Button {
                         openSlackChannel()
                     } label: {
-                        Label("Support on Slack", systemImage: "bubble.left.and.bubble.right.fill")
-                            .font(Theme.font16Regular)
-                            .foregroundStyle(Theme.white)
+                        HStack {
+                            Label("Slack #mvp\nMobile Video Production", systemImage: "bubble.left.and.bubble.right.fill")
+                                .font(Theme.font16Regular)
+                                .foregroundStyle(Theme.white)
+                            Spacer()
+                            Image(systemName: "chevron.up.forward.dotted.2")
+                                .font(Theme.font16Regular)
+                                .foregroundStyle(Theme.primaryText)
+                        }
                     }
                 }
-                .listRowBackground(Theme.black.opacity(0.1))
+                .settingsSectionHeaderStyle()
 
             
                 Section("Permissions") {
@@ -138,8 +145,7 @@ struct CameraSettingsSheet: View {
                     Text("Formats")
                         .foregroundStyle(Theme.primaryText)
                 }
-                .listRowBackground(Theme.black.opacity(0.1))
-                .foregroundStyle(Theme.white)
+                .settingsSectionHeaderStyle()
                 .tint(Theme.white)
                 
             }

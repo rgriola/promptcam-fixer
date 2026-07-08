@@ -161,6 +161,12 @@ extension View {
             }
     }
 
+    func settingsSectionHeaderStyle() -> some View {
+        self
+            .listRowBackground(Theme.black.opacity(0.1))
+            .foregroundStyle(Theme.white)
+    }
+
 }
 
 extension Color {

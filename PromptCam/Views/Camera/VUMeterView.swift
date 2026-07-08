@@ -181,12 +181,12 @@ private struct VUBarView: View {
 
     private static let levelGradient = LinearGradient(
         stops: [
-            .init(color: Theme.green,  location: 0.0),
-            .init(color: Theme.green,  location: 0.6),
-            .init(color: Theme.yellow, location: 0.6),
-            .init(color: Theme.yellow, location: 0.8),
-            .init(color: Theme.red,    location: 0.8),
-            .init(color: Theme.red,    location: 1.0),
+            .init(color: Theme.white,  location: 0.0),
+            .init(color: Theme.white,  location: 0.6),
+            .init(color: Theme.white, location: 0.6),
+            .init(color: Theme.white, location: 0.8),
+            .init(color: Theme.white,    location: 0.8),
+            .init(color: Theme.white,    location: 1.0),
         ],
         startPoint: .bottom,
         endPoint: .top
@@ -203,7 +203,7 @@ private struct VUBarView: View {
         ZStack {
             // Background track
             RoundedRectangle(cornerRadius: 4)
-                .fill(Theme.panelBg.opacity(0.3))
+                .fill(Theme.panelBg.opacity(0.4))
                 .frame(width: barWidth, height: barHeight)
                 .position(x: centerX, y: topPad + barHeight / 2)
 
@@ -287,7 +287,7 @@ private struct VUBarView: View {
             .frame(width: 50, height: 200)
     }
     .padding()
-    .background(Color.black)
+    .background(Theme.black)
 }
 
 #Preview("VU Meter — Stereo") {
@@ -317,5 +317,5 @@ private struct VUBarView: View {
         .frame(width: 50, height: 200)
     }
     .padding()
-    .background(Color.black)
+    .background(Theme.black)
 }

@@ -7,13 +7,13 @@ import SwiftUI
 enum TeleprompterTextAlignment: String, CaseIterable, Equatable, Sendable {
     case center
     case left
-    case right
+   // case right
     
     var swiftUIAlignment: TextAlignment {
         switch self {
         case .center: return .center
         case .left: return .leading
-        case .right: return .trailing
+       // case .right: return .trailing
         }
     }
     
@@ -21,7 +21,7 @@ enum TeleprompterTextAlignment: String, CaseIterable, Equatable, Sendable {
         switch self {
         case .center: return "text.aligncenter"
         case .left: return "text.alignleft"
-        case .right: return "text.alignright"
+        //case .right: return "text.alignright"
         }
     }
     
@@ -29,8 +29,9 @@ enum TeleprompterTextAlignment: String, CaseIterable, Equatable, Sendable {
     var next: TeleprompterTextAlignment {
         switch self {
         case .center: return .left
-        case .left: return .right
-        case .right: return .center
+        case .left: return .center
+       // case .left: return .right
+       // case .right: return .center
         }
     }
 }

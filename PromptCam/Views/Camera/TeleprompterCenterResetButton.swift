@@ -18,7 +18,7 @@ struct TeleprompterCenterResetButton: View {
                 Image(systemName: "arrow.up.and.down.text.horizontal")
                     .font(Theme.icon16)
                     .foregroundStyle(Theme.white)
-                Text("Center")
+                Text("Reset")
                     .font(Theme.font10Regular)
                     .foregroundStyle(Theme.primaryText)
             }
