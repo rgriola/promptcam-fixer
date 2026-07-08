@@ -72,12 +72,11 @@ struct RecordingsService: Sendable {
             ) { image, info in
                 guard !resumed else { return }
                 let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) == true
+
                 if let image {
-                    if !isDegraded {
-                        resumed = true
-                    }
+                    resumed = true
                     continuation.resume(returning: image)
-                } else if isDegraded == false {
+                } else if !isDegraded {
                     resumed = true
                     continuation.resume(returning: nil)
                 }
@@ -95,12 +94,12 @@ struct RecordingsService: Sendable {
     ///
     /// Uses `.opportunistic` delivery so PhotoKit returns a degraded local
     /// thumbnail immediately, then calls back a second time with full quality
-    /// once the asset downloads from iCloud (if needed). The continuation
-    /// resolves on the FIRST non-nil result so the cell shows something fast;
-    /// callers that need the final quality should use `thumbnailHighQuality`.
+    /// once the asset downloads from iCloud (if needed). Resumes on the FIRST
+    /// non-nil result — continuations are one-shot, so we cannot wait for the
+    /// upgraded image. The first callback is usually the degraded one; that's
+    /// fine for carousel cells (visually indistinguishable at 84pt).
     ///
-    /// Falls back to a generic placeholder (nil) only when no representation
-    /// at all is available locally or remotely — e.g. a corrupted PHAsset.
+    /// Falls back to nil only when both callbacks return no image.
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
@@ -116,26 +115,23 @@ struct RecordingsService: Sendable {
                 contentMode: .aspectFill,
                 options: options
             ) { image, info in
-                // .opportunistic can fire twice: once with a degraded local copy,
-                // then again with the full iCloud-fetched image. Resume on the
-                // first non-nil result so the cell shows something immediately.
+                // Continuation is one-shot: only the FIRST callback (of the 2
+                // opportunistic ones) is allowed to resume it.
                 guard !resumed else { return }
                 let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) == true
+
                 if let image {
-                    // Accept degraded thumbnails immediately — better than blank.
-                    // If this is degraded, PhotoKit will fire again with the full
-                    // version; the cell's `.task(id:)` rebind will update it then.
-                    if !isDegraded {
-                        resumed = true
-                    }
+                    // Take the first image we get — degraded is better than nil.
+                    resumed = true
                     continuation.resume(returning: image)
-                } else if isDegraded == false {
-                    // Final callback with nil = no image available at all.
+                } else if !isDegraded {
+                    // Final callback (isDegraded=false) with no image means
+                    // nothing is available at all. Resume with nil.
                     resumed = true
                     continuation.resume(returning: nil)
                 }
-                // If degraded == true and image == nil, PhotoKit is still fetching.
-                // Wait for the next callback.
+                // If image==nil AND isDegraded==true, this was the initial
+                // no-local-cache callback — wait for the full-quality one.
             }
         }
     }
