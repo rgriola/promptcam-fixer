@@ -30,7 +30,7 @@ struct RecordingClusterView: View {
             RecordButton(isRecording: isRecording, isEnabled: isRecordEnabled, action: onRecordTap)
                 .frame(width: 72, height: 72)
 
-            ScrollToggleButton(isScrolling: isScrolling, isEnabled: !isRecording, action: onScrollTap)
+            ScrollToggleButton(isScrolling: isScrolling, isEnabled: true, action: onScrollTap)
                 .frame(width: 40, height: 40)
                 .offset(x: 72)
             
