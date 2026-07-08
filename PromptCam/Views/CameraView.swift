@@ -171,7 +171,6 @@ struct CameraView: View {
                 )
                 .position(layout.teleprompterResetCenter)
 
-
                 // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {
                     StandardPanelOverlay(onDismiss: {
@@ -346,16 +345,16 @@ struct CameraView: View {
                         )
                     },
                     coverThumbnailLoader: { rec in
-                        // Screen-sized still (2x for retina) so the transition
-                        // cover doesn't visibly upscale over the sharp video.
-                        let scale = UIScreen.main.scale
-                        let size = UIScreen.main.bounds.size
+                        // Cover thumbnail shown during the ~200ms player transition.
+                        // Previously requested screenSize × 2x (retina) — for an
+                        // iCloud-offloaded video that forced a full-resolution
+                        // download just to show a 200ms fade. A 500pt max is
+                        // large enough that the transition doesn't look pixelated
+                        // when scaled up, and PhotoKit can serve it from a much
+                        // cheaper cached representation.
                         return await RecordingsService().thumbnail(
                             for: rec,
-                            targetSize: CGSize(
-                                width: size.width * scale,
-                                height: size.height * scale
-                            )
+                            targetSize: CGSize(width: 500, height: 500)
                         )
                     },
                     resolveURL: { rec in

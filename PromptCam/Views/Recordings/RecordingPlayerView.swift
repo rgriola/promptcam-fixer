@@ -53,6 +53,11 @@ struct RecordingPlayerView: View {
     /// `loadingView` so users see progress instead of a silent black screen.
     @State private var downloadProgress: Double? = nil
 
+    /// Set true when a resolveURL attempt returned nil — used to show the
+    /// "video unavailable" state instead of an infinite spinner. Reset when
+    /// the user swipes to a different recording.
+    @State private var loadFailed: Bool = false
+
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
 
@@ -191,6 +196,7 @@ struct RecordingPlayerView: View {
             if activeURL == nil {
                 let url = await resolveURLWithReporting(activeRecording)
                 activeURL = url
+                if url == nil { loadFailed = true }
             }
         }
         .onDisappear {
@@ -213,7 +219,21 @@ struct RecordingPlayerView: View {
 
     private var loadingView: some View {
         VStack(spacing: Theme.space16) {
-            if let progress = downloadProgress {
+            if loadFailed {
+                // resolveURL returned nil — asset unavailable (deleted, iCloud
+                // fetch failed, or no network). Show an actionable error state.
+                Image(systemName: "exclamationmark.icloud")
+                    .font(.system(size: 42))
+                    .foregroundStyle(Theme.primaryText)
+                Text("Video not available")
+                    .font(Theme.font16Semibold)
+                    .foregroundStyle(Theme.primaryText)
+                Text("Download it from Photos, then try again.")
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.space24)
+            } else if let progress = downloadProgress {
                 // iCloud download in flight — show percentage + linear progress.
                 Image(systemName: "icloud.and.arrow.down")
                     .font(.system(size: 36))
@@ -485,8 +505,10 @@ struct RecordingPlayerView: View {
     /// `loadPlayer` reuses the existing player via `replaceCurrentItem`.
     private func selectRecording(_ selected: Recording) async {
         activeRecording = selected
+        loadFailed = false                                // reset before new attempt
         let url = await resolveURLWithReporting(selected)
         activeURL = url                                   // triggers loadPlayer() which reuses the AVPlayer
+        if url == nil { loadFailed = true }
         await onSelectRecording?(selected, url)
     }
 
