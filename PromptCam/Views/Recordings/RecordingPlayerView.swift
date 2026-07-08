@@ -3,8 +3,11 @@
 // Uses AVPlayerHostingView (AVPlayerViewController, showsPlaybackControls = false)
 // so no native AirPlay / PiP icons appear. All chrome is ours.
 // July 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add iCloud download progress UI
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Phase 1: cancel in-flight PHImageRequestID,
+//     observe AVPlayerItem.status, add 60s resolve timeout, id: on fallback .task
 import AVKit
 import Combine
+import Photos
 import QuartzCore
 import SwiftUI
 
@@ -32,7 +35,14 @@ struct RecordingPlayerView: View {
     /// A reference-type `PlayerProgressReporter` is used instead of a raw
     /// closure to sidestep Swift 6's non-escaping-through-closure-boundary
     /// restrictions on the progressHandler.
-    var resolveURLWithProgress: ((Recording, PlayerProgressReporter) async -> URL?)? = nil
+    ///
+    /// The third parameter is an `onStart` callback fired synchronously with
+    /// the `PHImageRequestID` as soon as PhotoKit begins the request. This
+    /// lets the player store the ID so it can cancel the in-flight download
+    /// on dismiss, timeout, or when the user swipes to a different clip —
+    /// preventing the orphaned-request leak that used to accumulate on rapid
+    /// open/close cycles.
+    var resolveURLWithProgress: ((Recording, PlayerProgressReporter, @escaping @Sendable (PHImageRequestID) -> Void) async -> URL?)? = nil
     /// Called after a carousel selection so the parent ViewModel can stay in sync.
     var onSelectRecording: ((Recording, URL?) async -> Void)? = nil
 
@@ -60,6 +70,19 @@ struct RecordingPlayerView: View {
 
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
+
+    /// KVO observation for `AVPlayerItem.status`. Set in `loadPlayer()` for
+    /// every new item and invalidated on the next swap / teardown. Catches
+    /// `.failed` items so the UI shows the unavailable state instead of a
+    /// silent black screen.
+    @State private var statusObservation: NSKeyValueObservation?
+
+    /// In-flight PhotoKit request ID for the currently-resolving iCloud
+    /// download. Set as soon as `resolveURL` starts (via the `onStart`
+    /// callback) and cleared when the resolve completes normally. Cancelled
+    /// on player dismiss, next-recording swipe, or 60s timeout so orphaned
+    /// downloads don't accumulate in the background.
+    @State private var inFlightRequestID: PHImageRequestID?
 
     // MARK: - Full-screen pager state
     // Same mechanic as RecordingCarouselView, scaled up:
@@ -100,7 +123,7 @@ struct RecordingPlayerView: View {
         thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         resolveURL: ((Recording) async -> URL?)? = nil,
-        resolveURLWithProgress: ((Recording, PlayerProgressReporter) async -> URL?)? = nil,
+        resolveURLWithProgress: ((Recording, PlayerProgressReporter, @escaping @Sendable (PHImageRequestID) -> Void) async -> URL?)? = nil,
         onSelectRecording: ((Recording, URL?) async -> Void)? = nil
     ) {
         self.onDelete = onDelete
@@ -189,15 +212,16 @@ struct RecordingPlayerView: View {
         .task(id: activeURL) {
             await loadPlayer()
         }
-        .task {
+        .task(id: activeRecording.id) {
             // If the initial URL was nil (e.g. iCloud video whose prefetch
             // hadn't finished when the player was opened), kick off a resolve
             // so the progress UI can show up instead of an infinite spinner.
-            if activeURL == nil {
-                let url = await resolveURLWithReporting(activeRecording)
-                activeURL = url
-                if url == nil { loadFailed = true }
-            }
+            // Keyed on activeRecording.id so it re-runs when the user swipes
+            // to a new clip whose URL isn't already resolved.
+            guard activeURL == nil else { return }
+            let url = await resolveURLWithReporting(activeRecording)
+            activeURL = url
+            if url == nil { loadFailed = true }
         }
         .onDisappear {
             teardownPlayer()
@@ -504,6 +528,9 @@ struct RecordingPlayerView: View {
     /// causing the UIKit appearance animation on the next player. Instead
     /// `loadPlayer` reuses the existing player via `replaceCurrentItem`.
     private func selectRecording(_ selected: Recording) async {
+        // Cancel any in-flight resolve from the previous recording so we don't
+        // leak PhotoKit requests as the user rapidly swipes through the carousel.
+        cancelInFlightResolve()
         activeRecording = selected
         loadFailed = false                                // reset before new attempt
         let url = await resolveURLWithReporting(selected)
@@ -512,26 +539,82 @@ struct RecordingPlayerView: View {
         await onSelectRecording?(selected, url)
     }
 
+    /// Cancels an in-flight PhotoKit resolve request, if any, and clears the
+    /// stored ID. Safe to call when no request is pending. Called from
+    /// `selectRecording` (before starting a new resolve), the 60s timeout,
+    /// and `teardownPlayer` (on view disappear).
+    @MainActor
+    private func cancelInFlightResolve() {
+        guard let id = inFlightRequestID else { return }
+        PHImageManager.default().cancelImageRequest(id)
+        inFlightRequestID = nil
+    }
+
     /// Resolves a Recording's URL, preferring the progress-reporting closure
     /// when it's available. Manages `downloadProgress` so the loading view
     /// can show a progress bar for iCloud downloads.
+    ///
+    /// Wraps the resolve in a 60s timeout: if PhotoKit hasn't returned by
+    /// then (e.g. stalled iCloud download), the in-flight request is
+    /// cancelled via `PHImageManager.cancelImageRequest` and nil is returned
+    /// so the loading view flips to the "video unavailable" state instead of
+    /// spinning forever.
     @MainActor
     private func resolveURLWithReporting(_ recording: Recording) async -> URL? {
         // Reset the placeholder — 0.0 shows an empty progress bar so the user
         // sees SOMETHING is happening even before the first progressHandler fires.
         downloadProgress = 0.0
-        defer { downloadProgress = nil }
-
-        if let progressLoader = resolveURLWithProgress {
-            let reporter = PlayerProgressReporter { fraction in
-                Task { @MainActor in
-                    downloadProgress = fraction
-                }
-            }
-            return await progressLoader(recording, reporter)
-        } else {
-            return await resolveURL?(recording)
+        defer {
+            downloadProgress = nil
+            // Clear the stored ID once the resolve returns — the request is
+            // either complete or already cancelled by the timeout branch.
+            inFlightRequestID = nil
         }
+
+        // The onStart closure fires synchronously from inside the resolve
+        // closure as soon as PhotoKit begins the request. Storing the ID here
+        // (not after the await returns) is what makes mid-flight cancellation
+        // actually work — by the time the await returns, the request is done.
+        let onStart: @Sendable (PHImageRequestID) -> Void = { id in
+            Task { @MainActor in
+                self.inFlightRequestID = id
+            }
+        }
+
+        let resolveTask = Task<URL?, Never> { [resolveURLWithProgress, resolveURL] in
+            if let progressLoader = resolveURLWithProgress {
+                let reporter = PlayerProgressReporter { fraction in
+                    Task { @MainActor in
+                        self.downloadProgress = fraction
+                    }
+                }
+                return await progressLoader(recording, reporter, onStart)
+            } else {
+                // Progress-less fallback: no early-notify path available, so
+                // timeout cancellation via ID isn't possible for this branch.
+                // The timeout still fires and returns nil so the UI recovers.
+                return await resolveURL?(recording)
+            }
+        }
+
+        // Race the resolve against a 60s timeout. If the timeout wins, cancel
+        // the in-flight PhotoKit request so it doesn't keep downloading in the
+        // background. Note we can't `throw` from a Never-throwing task, so we
+        // use a nullable URL and treat timeout as nil.
+        //
+        // Task is a value type wrapping an internal handle, so capturing it
+        // strongly here does not create a retain cycle — the timeout closure
+        // is discarded once this function returns.
+        let timeoutTask = Task {
+            try? await Task.sleep(for: .seconds(60))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { self.cancelInFlightResolve() }
+            resolveTask.cancel()
+        }
+
+        let url = await resolveTask.value
+        timeoutTask.cancel()
+        return url
     }
 
     @MainActor
@@ -539,6 +622,30 @@ struct RecordingPlayerView: View {
         guard let url = activeURL else { return }
 
         let item = AVPlayerItem(url: url)
+        // Cap the forward buffer at 5s so playback starts sooner on
+        // slow/cellular networks. No-op for local file URLs (the whole file
+        // is the buffer) but relevant if resolveURL ever returns a streaming
+        // URL (e.g. .mediumQualityFormat / HLS). Default is 0 meaning
+        // "AVPlayer decides" \u2014 typically a much larger buffer which delays
+        // first-frame on slow networks. Set on every item since AVPlayerItem
+        // is recreated per swap.
+        item.preferredForwardBufferDuration = 5
+
+        // Install a status observer BEFORE handing the item to the player so
+        // we catch `.failed` transitions even if they fire immediately (e.g.
+        // invalid URL, deleted file). Previously, a failed item silently left
+        // the user on a black screen with no error UI.
+        statusObservation?.invalidate()
+        statusObservation = item.observe(\.status, options: [.new]) { observedItem, _ in
+            let status = observedItem.status
+            Task { @MainActor in
+                if status == .failed {
+                    loadFailed = true
+                    player?.pause()
+                    isPlaying = false
+                }
+            }
+        }
 
         if let existing = player {
             // Reuse the existing AVPlayer — swap the item so
@@ -596,6 +703,11 @@ struct RecordingPlayerView: View {
     /// Full teardown — only called on view disappear. Never called between
     /// item swaps, so the AVPlayerViewController is not recreated.
     private func teardownPlayer() {
+        // Cancel any in-flight iCloud download; keeps the PhotoKit request
+        // queue clean when the user dismisses the player mid-fetch.
+        cancelInFlightResolve()
+        statusObservation?.invalidate()
+        statusObservation = nil
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)
             timeObserverToken = nil

@@ -53,6 +53,12 @@ struct RecordingCarouselView: View {
                         cellHeight: cellHeight,
                         thumbnailLoader: thumbnailLoader
                     )
+                    // Force distinct view identity per recording so @State
+                    // (thumbnail, loadAttempt, loadFailed) never leaks across
+                    // cells when the recordings array reorders, and so the
+                    // retry .task inside the cell is cleanly cancelled when
+                    // the underlying recording rotates out.
+                    .id(recording.id)
                     .scaleEffect(isActive ? 1.0 : 0.82)
                     .opacity(isActive ? 1.0 : 0.55)
                     // withAnimation isolates this spring so it doesn't bleed
@@ -137,13 +143,26 @@ private struct CarouselCell: View {
     /// Stops the infinite retry loop that pegged CPU for iCloud assets
     /// that never resolved (no network, deleted, permissions).
     @State private var loadFailed = false
+    /// Tracks whether the thumbnail was originally missing (iCloud-offloaded)
+    /// and only appeared after a retry. Used to overlay a cloud badge so
+    /// users know the underlying video also lives in iCloud and will need a
+    /// download before playback.
+    @State private var wasFromCloud = false
+
+    /// Live connectivity state. When the network goes from down to up while
+    /// a cell is in `loadFailed`, we reset `loadAttempt` to 0 to re-trigger
+    /// the `.task` — lets users regain thumbnails after a network hiccup
+    /// without swiping the cell out of view and back.
+    @State private var networkMonitor = NetworkMonitor.shared
 
     /// Retry ceiling. After this many failed attempts we stop trying and
-    /// show the unavailable placeholder. Kept small because each retry
-    /// fires a real PhotoKit request.
-    private static let maxRetries = 2
-    /// Backoff delays in seconds: [attempt 1 → wait 3s, attempt 2 → wait 8s].
-    private static let retryDelays: [UInt64] = [3, 8]
+    /// show the unavailable placeholder. Bumped from 2 to 5 (Phase 3) so
+    /// slow iCloud downloads have room to complete; each retry still
+    /// requires an actual PhotoKit request so the ceiling matters.
+    private static let maxRetries = 5
+    /// Backoff delays in seconds keyed by attempt index. Extended alongside
+    /// the retry ceiling so later attempts don't hammer PhotoKit.
+    private static let retryDelays: [UInt64] = [3, 5, 8, 15, 30]
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -179,6 +198,21 @@ private struct CarouselCell: View {
                         lineWidth: isActive ? 2 : 1
                     )
             }
+            // Cloud badge — shown on cells whose thumbnail needed a retry to
+            // load (i.e. was originally iCloud-offloaded). Tells users the
+            // underlying video will also require a download before playback,
+            // so a delay opening the player is expected, not a bug.
+            .overlay(alignment: .topTrailing) {
+                if wasFromCloud && thumbnail != nil {
+                    Image(systemName: "icloud.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Theme.white)
+                        .padding(4)
+                        .background(Theme.black.opacity(0.55), in: Circle())
+                        .padding(5)
+                        .accessibilityLabel("Stored in iCloud")
+                }
+            }
 
             Text(recording.formattedDuration)
                 .font(Theme.font10Medium)
@@ -192,6 +226,10 @@ private struct CarouselCell: View {
             let result = await thumbnailLoader(recording)
             if let result {
                 thumbnail = result
+                // If we needed any retries to get here, flag the cell so the
+                // cloud badge overlay renders. First-attempt success stays
+                // badge-free — the video was already local.
+                if loadAttempt > 0 { wasFromCloud = true }
                 return
             }
             // Nil result — decide whether to retry or give up.
@@ -204,6 +242,14 @@ private struct CarouselCell: View {
             try? await Task.sleep(nanoseconds: waitSeconds * 1_000_000_000)
             guard !Task.isCancelled else { return }
             loadAttempt += 1
+        }
+        // When the network flips from down to up while a cell is in the
+        // failed state, reset the retry counter so the .task re-fires. Only
+        // recovers cells that gave up — an in-flight retry is unaffected.
+        .onChange(of: networkMonitor.isConnected) { _, connected in
+            guard connected, loadFailed else { return }
+            loadFailed = false
+            loadAttempt = 0
         }
     }
 }

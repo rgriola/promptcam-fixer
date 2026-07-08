@@ -86,29 +86,58 @@ struct RecordingsService: Sendable {
 
     /// Thumbnail via the shared caching manager.
     ///
-    /// Uses `.fastFormat` delivery — single callback, single decode. For
-    /// iCloud-offloaded assets this may return nil (no local fast rep). The
-    /// caller (CarouselCell) has a bounded 2-retry loop that catches those
-    /// cases; after both retries fail the cell shows a permanent placeholder.
+    /// Delivery mode is parameterized (Phase 2) so callers can pick the
+    /// right speed / CPU / iCloud-download tradeoff:
     ///
-    /// Previously used `.opportunistic` which fires the callback twice
-    /// (degraded + full) and forces two decodes per iCloud asset. Measured on
-    /// iPhone 13 that doubled CPU during carousel scrolling.
-    func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
+    /// - `.fastFormat` (default): single callback, single decode, cheapest.
+    ///   Does NOT trigger iCloud download — returns nil for offloaded
+    ///   assets with no local rep. Used by pre-warm and background paths.
+    /// - `.opportunistic`: fires the callback up to twice (degraded + full)
+    ///   AND triggers an iCloud download when the local rep is missing.
+    ///   Used by the visible carousel cell so iCloud-offloaded thumbnails
+    ///   render immediately (or start downloading) instead of returning nil
+    ///   and waiting for CarouselCell's 3s retry.
+    ///
+    /// For `.opportunistic`, the continuation is resumed on the FIRST
+    /// non-nil image (degraded or full) via a `resumed` guard — PhotoKit
+    /// still fires the second callback but we discard it. At 144×144 the
+    /// visible upgrade from degraded to full is imperceptible, so the extra
+    /// Swift-side @State assignment isn't worth an AsyncStream refactor.
+    func thumbnail(
+        for recording: Recording,
+        targetSize: CGSize,
+        deliveryMode: PHImageRequestOptionsDeliveryMode = .fastFormat
+    ) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .fastFormat
+            options.deliveryMode = deliveryMode
             options.isNetworkAccessAllowed = true    // pull from iCloud in the background if needed
             options.version = .current
 
+            // Guard against .opportunistic firing the callback twice.
+            // withCheckedContinuation crashes if resumed more than once.
+            nonisolated(unsafe) var resumed = false
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
+            ) { image, info in
+                guard !resumed else { return }
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                if let image {
+                    // First non-nil image wins.
+                    resumed = true
+                    continuation.resume(returning: image)
+                } else if !isDegraded {
+                    // Final callback with no image — asset truly unavailable.
+                    // For .opportunistic, a degraded==true callback with nil
+                    // image just means "no local rep" and the hi-res is
+                    // still downloading; wait for the next fire.
+                    resumed = true
+                    continuation.resume(returning: nil)
+                }
             }
         }
     }
@@ -154,10 +183,15 @@ struct RecordingsService: Sendable {
     ///     download progress value. Fires ONLY when PhotoKit needs to download
     ///     the asset from iCloud; local videos resolve immediately with no
     ///     progress callbacks.
+    ///   - onStart: Optional handler called synchronously with the request ID
+    ///     as soon as PhotoKit begins the request. Use this to store the ID
+    ///     so the request can be cancelled mid-flight (e.g. on player dismiss
+    ///     or a timeout). Fires before `progress` and before the return tuple.
     /// - Returns: A tuple of (url, requestID). Either can be nil.
     func resolveURL(
         for recording: Recording,
-        progress: (@MainActor @Sendable (Double) -> Void)?
+        progress: (@MainActor @Sendable (Double) -> Void)?,
+        onStart: (@Sendable (PHImageRequestID) -> Void)? = nil
     ) async -> (url: URL?, requestID: PHImageRequestID?) {
         guard let asset = asset(for: recording.id) else { return (nil, nil) }
 
@@ -175,15 +209,30 @@ struct RecordingsService: Sendable {
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             options.version = .current
-            options.deliveryMode = .highQualityFormat
+            // .automatic (Phase 3): Apple picks the best-quality-that-loads-
+            // fastest based on current network conditions. On fast Wi-Fi this
+            // typically behaves like .highQualityFormat; on cellular or slow
+            // links PhotoKit may return a smaller proxy so playback starts
+            // sooner. Was .highQualityFormat, which always blocked until the
+            // full-res original had been downloaded from iCloud (minutes for
+            // a 200MB 4K clip). If video quality noticeably degrades, revert
+            // to `.highQualityFormat` here or expose a per-call parameter.
+            options.deliveryMode = .automatic
             if let onProgress {
                 // Throttle: PhotoKit can fire progressHandler ~10 Hz per download.
                 // Each callback spawns a Task { @MainActor in ... } which is
-                // measurable CPU noise. Only forward when the value moves by ≥1%
-                // (or is a definitive 0.0 / 1.0 milestone).
+                // measurable CPU noise. Only forward when the value moves by
+                // ≥0.5% (or crosses one of the guaranteed milestones), so
+                // quick 50MB iCloud downloads that skip past a 1% delta still
+                // show at least a few progress updates instead of silently
+                // jumping from 0% straight to 100%.
                 let lastReported = ThrottledDouble()
                 options.progressHandler = { fraction, _, _, _ in
-                    guard lastReported.shouldReport(fraction, minDelta: 0.01) else { return }
+                    guard lastReported.shouldReport(
+                        fraction,
+                        minDelta: 0.005,
+                        milestones: [0.25, 0.5, 0.75]
+                    ) else { return }
                     // PhotoKit fires this on an arbitrary queue. Hop to main.
                     Task { @MainActor in
                         onProgress(fraction)
@@ -196,6 +245,9 @@ struct RecordingsService: Sendable {
                 continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
             }
             capturedRequestID = id
+            // Notify the caller synchronously so it can store the ID for
+            // mid-flight cancellation before awaiting the continuation.
+            onStart?(id)
         }
 
         return (url, capturedRequestID)
@@ -278,18 +330,37 @@ struct RecordingsService: Sendable {
 
 /// Small thread-safe helper for throttling repeated numeric callbacks.
 /// Reports when the new value moves by at least `minDelta` from the last
-/// reported value, or when it crosses the 0.0 / 1.0 boundary. Used to keep
-/// PhotoKit's high-frequency progressHandler from spawning a Task on every
-/// tick.
+/// reported value, when it crosses the 0.0 / 1.0 boundary, or when it
+/// crosses one of the caller-supplied milestones for the first time. Used
+/// to keep PhotoKit's high-frequency progressHandler from spawning a Task
+/// on every tick while still guaranteeing meaningful updates on quick
+/// downloads that would otherwise skip past the delta threshold.
 private final class ThrottledDouble: @unchecked Sendable {
     private let lock = NSLock()
     private var last: Double? = nil
+    private var reportedMilestones: Set<Double> = []
 
-    func shouldReport(_ value: Double, minDelta: Double) -> Bool {
+    /// - Parameters:
+    ///   - value: The candidate value in [0, 1].
+    ///   - minDelta: Minimum absolute change since the last reported value.
+    ///   - milestones: Values (0–1) that should always fire the first time
+    ///     they're reached, regardless of delta. Empty by default.
+    func shouldReport(
+        _ value: Double,
+        minDelta: Double,
+        milestones: [Double] = []
+    ) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         // Always report boundary values so callers see the true start/end.
         if value <= 0.0 || value >= 1.0 {
+            last = value
+            return true
+        }
+        // First crossing of a milestone always fires so quick downloads have
+        // at least a few visible updates even below the delta threshold.
+        for milestone in milestones where value >= milestone && !reportedMilestones.contains(milestone) {
+            reportedMilestones.insert(milestone)
             last = value
             return true
         }

@@ -120,10 +120,12 @@ struct RecordingsLibrarySheet: View {
     }
 
     private func deleteRecording(_ recording: Recording) async {
-        let assets = PHAsset.fetchAssets(withLocalIdentifiers: [recording.id], options: nil)
-        try? await PHPhotoLibrary.shared().performChanges {
-            PHAssetChangeRequest.deleteAssets(assets)
-        }
+        // Delegate to the nonisolated RecordingsService — inlining
+        // PHPhotoLibrary.performChanges from this @MainActor View method taints
+        // the change closure with MainActor isolation and crashes under Swift
+        // 6's executor check when PhotoKit dispatches it onto its own serial
+        // queue. See CameraView.onDelete for the matching fix.
+        _ = await RecordingsService().deleteRecording(recording)
         selectedRecording = nil
         selectedItems = []
         videoURL = nil

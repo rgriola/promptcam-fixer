@@ -327,21 +327,33 @@ struct CameraView: View {
                     recording: recording,
                     videoURL: viewModel.latestVideoURL,
                     onDelete: {
+                        // Delegate to the nonisolated RecordingsService instead
+                        // of inlining PHPhotoLibrary.performChanges here. The
+                        // Task { } below inherits @MainActor from the enclosing
+                        // View body; any closure captured inside it (including
+                        // the one PhotoKit passes to its serial changes queue)
+                        // gets tagged with MainActor isolation, which trips
+                        // Swift 6's executor mismatch check and crashes.
+                        // The service method is a nonisolated struct func, so
+                        // its internal closures run without MainActor taint.
+                        let recordingToDelete = recording
                         Task {
-                            let assets = PHAsset.fetchAssets(
-                                withLocalIdentifiers: [recording.id], options: nil)
-                            try? await PHPhotoLibrary.shared().performChanges {
-                                PHAssetChangeRequest.deleteAssets(assets)
-                            }
+                            _ = await RecordingsService().deleteRecording(recordingToDelete)
                             viewModel.showDirectPlayer = false
                             viewModel.refreshLatestRecording()
                         }
                     },
                     recentRecordings: viewModel.recentRecordings,
                     thumbnailLoader: { rec in
+                        // Visible carousel cell — use .opportunistic so
+                        // iCloud-offloaded thumbnails trigger a download and
+                        // render as soon as any rep (degraded or full) lands,
+                        // instead of returning nil and waiting for the cell's
+                        // 3s retry. Pre-warm / cover paths keep .fastFormat.
                         await RecordingsService().thumbnail(
                             for: rec,
-                            targetSize: CGSize(width: 144, height: 144)
+                            targetSize: CGSize(width: 144, height: 144),
+                            deliveryMode: .opportunistic
                         )
                     },
                     coverThumbnailLoader: { rec in
@@ -360,10 +372,14 @@ struct CameraView: View {
                     resolveURL: { rec in
                         await RecordingsService().resolveURL(for: rec)
                     },
-                    resolveURLWithProgress: { rec, reporter in
-                        let result = await RecordingsService().resolveURL(for: rec) { fraction in
-                            reporter.report(fraction)
-                        }
+                    resolveURLWithProgress: { rec, reporter, onStart in
+                        let result = await RecordingsService().resolveURL(
+                            for: rec,
+                            progress: { fraction in
+                                reporter.report(fraction)
+                            },
+                            onStart: onStart
+                        )
                         return result.url
                     },
                     onSelectRecording: { selected, _ in
@@ -492,7 +508,13 @@ struct CameraView: View {
             onTapSettings: {
                 viewModel.openSettings()
             },
-            isRecording: viewModel.isRecording
+            isRecording: viewModel.isRecording,
+            // Drives the LibraryThumbnailButton's `.task(id:)` so its thumbnail
+            // reloads whenever the latest recording changes (new save, delete,
+            // iCloud sync). `refreshLatestRecording()` in CameraViewModel is
+            // already wired to PhotoLibraryChangeMonitor, so this stays in
+            // sync automatically without adding another observer here.
+            latestRecordingID: viewModel.latestRecording?.id
         )
     }
 
