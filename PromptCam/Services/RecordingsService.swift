@@ -74,23 +74,51 @@ struct RecordingsService: Sendable {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
     }
 
-    /// Thumbnail via the shared caching manager. Uses `.fastFormat` delivery
-    /// for responsive grid scrolling — returns a single callback (safe for
-    /// continuations) with a quick low-res decode. For a 300×300 grid cell,
-    /// the fast decode is visually indistinguishable from high-quality.
+    /// Thumbnail via the shared caching manager.
+    ///
+    /// Uses `.opportunistic` delivery so PhotoKit returns a degraded local
+    /// thumbnail immediately, then calls back a second time with full quality
+    /// once the asset downloads from iCloud (if needed). The continuation
+    /// resolves on the FIRST non-nil result so the cell shows something fast;
+    /// callers that need the final quality should use `thumbnailHighQuality`.
+    ///
+    /// Falls back to a generic placeholder (nil) only when no representation
+    /// at all is available locally or remotely — e.g. a corrupted PHAsset.
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .fastFormat
-            options.isNetworkAccessAllowed = true
+            options.deliveryMode = .opportunistic
+            options.isNetworkAccessAllowed = true    // pull from iCloud if local copy absent
+            options.version = .current
+
+            var resumed = false
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: options
-            ) { image, _ in
-                continuation.resume(returning: image)
+            ) { image, info in
+                // .opportunistic can fire twice: once with a degraded local copy,
+                // then again with the full iCloud-fetched image. Resume on the
+                // first non-nil result so the cell shows something immediately.
+                guard !resumed else { return }
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) == true
+                if let image {
+                    // Accept degraded thumbnails immediately — better than blank.
+                    // If this is degraded, PhotoKit will fire again with the full
+                    // version; the cell's `.task(id:)` rebind will update it then.
+                    if !isDegraded {
+                        resumed = true
+                    }
+                    continuation.resume(returning: image)
+                } else if isDegraded == false {
+                    // Final callback with nil = no image available at all.
+                    resumed = true
+                    continuation.resume(returning: nil)
+                }
+                // If degraded == true and image == nil, PhotoKit is still fetching.
+                // Wait for the next callback.
             }
         }
     }

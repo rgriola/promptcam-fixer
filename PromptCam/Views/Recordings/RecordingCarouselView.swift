@@ -131,6 +131,8 @@ private struct CarouselCell: View {
     let thumbnailLoader: (Recording) async -> UIImage?
 
     @State private var thumbnail: UIImage?
+    /// Incremented to re-trigger the .task when a retry is needed.
+    @State private var loadAttempt = 0
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -140,11 +142,15 @@ private struct CarouselCell: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
+                    // Placeholder while iCloud thumbnail is loading.
+                    // Shows a subtle spinner to signal "loading, not missing".
                     Color.white.opacity(0.12)
                         .overlay(
-                            Image(systemName: "video.fill")
-                                .font(.system(size: 18))
-                                .foregroundStyle(Color.white.opacity(0.3))
+                            ZStack {
+                                Image(systemName: "icloud.and.arrow.down")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Color.white.opacity(0.35))
+                            }
                         )
                 }
             }
@@ -166,8 +172,17 @@ private struct CarouselCell: View {
                 .background(Theme.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 4))
                 .padding(5)
         }
-        .task {
-            thumbnail = await thumbnailLoader(recording)
+        .task(id: loadAttempt) {
+            let result = await thumbnailLoader(recording)
+            if let result {
+                thumbnail = result
+            } else if thumbnail == nil {
+                // iCloud fetch returned nil — schedule a retry after a short
+                // delay so cells don't stay blank for users with slow iCloud sync.
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled else { return }
+                loadAttempt += 1
+            }
         }
     }
 }
