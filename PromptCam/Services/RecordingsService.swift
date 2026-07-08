@@ -41,6 +41,10 @@ struct RecordingsService: Sendable {
     /// Thumbnail for the most recently saved video — used by the camera-roll
     /// button on the footer to mirror the iOS Camera app's thumbnail preview.
     /// Returns `nil` when the library is empty, not authorized, or the fetch fails.
+    ///
+    /// Uses `.opportunistic` delivery so iCloud-offloaded videos return a
+    /// degraded local thumbnail immediately (if cached), then the full image
+    /// when the download completes. Matches the pattern used by the carousel.
     func latestVideoThumbnail(targetSize: CGSize) async -> UIImage? {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return nil }
@@ -55,15 +59,28 @@ struct RecordingsService: Sendable {
 
         return await withCheckedContinuation { continuation in
             let imgOptions = PHImageRequestOptions()
-            imgOptions.deliveryMode = .fastFormat  // single callback, safe for continuation
+            imgOptions.deliveryMode = .opportunistic
             imgOptions.isNetworkAccessAllowed = true
+            imgOptions.version = .current
+
+            var resumed = false
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: imgOptions
-            ) { image, _ in
-                continuation.resume(returning: image)
+            ) { image, info in
+                guard !resumed else { return }
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) == true
+                if let image {
+                    if !isDegraded {
+                        resumed = true
+                    }
+                    continuation.resume(returning: image)
+                } else if isDegraded == false {
+                    resumed = true
+                    continuation.resume(returning: nil)
+                }
             }
         }
     }
@@ -149,19 +166,67 @@ struct RecordingsService: Sendable {
     ///
     /// Returns nil if the asset is unavailable or the URL cannot be resolved.
     func resolveURL(for recording: Recording) async -> URL? {
-        guard let asset = asset(for: recording.id) else { return nil }
-        return await withCheckedContinuation { continuation in
+        await resolveURL(for: recording, progress: nil).url
+    }
+
+    /// Resolves a recording's playable URL with optional progress reporting
+    /// for iCloud downloads. The returned `requestID` can be passed to
+    /// `PHImageManager.default().cancelImageRequest(_:)` to abort an in-flight
+    /// download (e.g. when the user closes the player before the video finishes
+    /// downloading from iCloud).
+    ///
+    /// - Parameters:
+    ///   - recording: The recording to resolve.
+    ///   - progress: Optional handler called on the main actor with a 0.0–1.0
+    ///     download progress value. Fires ONLY when PhotoKit needs to download
+    ///     the asset from iCloud; local videos resolve immediately with no
+    ///     progress callbacks.
+    /// - Returns: A tuple of (url, requestID). Either can be nil.
+    func resolveURL(
+        for recording: Recording,
+        progress: (@MainActor @Sendable (Double) -> Void)?
+    ) async -> (url: URL?, requestID: PHImageRequestID?) {
+        guard let asset = asset(for: recording.id) else { return (nil, nil) }
+
+        // Capture the progress handler as a local @Sendable so it can escape
+        // into PHVideoRequestOptions.progressHandler (which is called on an
+        // arbitrary queue).
+        let onProgress = progress
+
+        // Use a mutable holder so we can capture the request ID synchronously
+        // from requestAVAsset's return value.
+        nonisolated(unsafe) var capturedRequestID: PHImageRequestID?
+
+        let url = await withCheckedContinuation { (continuation: CheckedContinuation<URL?, Never>) in
             var resumed = false
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             options.version = .current
             options.deliveryMode = .highQualityFormat
-            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            if let onProgress {
+                options.progressHandler = { fraction, _, _, _ in
+                    // PhotoKit fires this on an arbitrary queue. Hop to main.
+                    Task { @MainActor in
+                        onProgress(fraction)
+                    }
+                }
+            }
+            let id = PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
                 guard !resumed else { return }
                 resumed = true
                 continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
             }
+            capturedRequestID = id
         }
+
+        return (url, capturedRequestID)
+    }
+
+    /// Cancels an in-flight iCloud download started by `resolveURL(for:progress:)`.
+    /// Safe to call with a nil ID or after the request has already completed.
+    func cancelResolveURL(requestID: PHImageRequestID?) {
+        guard let requestID else { return }
+        PHImageManager.default().cancelImageRequest(requestID)
     }
 
     /// Fetches the most recent video recording, or nil if the library is empty.

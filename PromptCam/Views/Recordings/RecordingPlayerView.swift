@@ -2,6 +2,7 @@
 // Full-screen video review with custom playback controls.
 // Uses AVPlayerHostingView (AVPlayerViewController, showsPlaybackControls = false)
 // so no native AirPlay / PiP icons appear. All chrome is ours.
+// July 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add iCloud download progress UI
 import AVKit
 import Combine
 import QuartzCore
@@ -23,6 +24,15 @@ struct RecordingPlayerView: View {
     var coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil
     /// Resolves a Recording to a playable URL — called when the carousel selects a new item.
     var resolveURL: ((Recording) async -> URL?)? = nil
+    /// Same as `resolveURL` but reports iCloud download progress (0.0–1.0)
+    /// while the video is being fetched from iCloud. When both are provided,
+    /// this one is used; the progress-less variant is kept for callers that
+    /// don't need download UI.
+    ///
+    /// A reference-type `PlayerProgressReporter` is used instead of a raw
+    /// closure to sidestep Swift 6's non-escaping-through-closure-boundary
+    /// restrictions on the progressHandler.
+    var resolveURLWithProgress: ((Recording, PlayerProgressReporter) async -> URL?)? = nil
     /// Called after a carousel selection so the parent ViewModel can stay in sync.
     var onSelectRecording: ((Recording, URL?) async -> Void)? = nil
 
@@ -37,6 +47,11 @@ struct RecordingPlayerView: View {
     @State private var showControls = true
     @State private var showDeleteConfirmation = false
     @State private var hideControlsTask: Task<Void, Never>?
+
+    /// iCloud download progress (0.0–1.0) while a video is being fetched.
+    /// Nil when no download is in flight. Drives the progress bar shown in
+    /// `loadingView` so users see progress instead of a silent black screen.
+    @State private var downloadProgress: Double? = nil
 
     /// Periodic time observer token — stored so we can remove it on disappear.
     @State private var timeObserverToken: Any?
@@ -80,6 +95,7 @@ struct RecordingPlayerView: View {
         thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         resolveURL: ((Recording) async -> URL?)? = nil,
+        resolveURLWithProgress: ((Recording, PlayerProgressReporter) async -> URL?)? = nil,
         onSelectRecording: ((Recording, URL?) async -> Void)? = nil
     ) {
         self.onDelete = onDelete
@@ -87,6 +103,7 @@ struct RecordingPlayerView: View {
         self.thumbnailLoader = thumbnailLoader
         self.coverThumbnailLoader = coverThumbnailLoader
         self.resolveURL = resolveURL
+        self.resolveURLWithProgress = resolveURLWithProgress
         self.onSelectRecording = onSelectRecording
         self._activeRecording = State(initialValue: recording)
         self._activeURL = State(initialValue: videoURL)
@@ -167,6 +184,15 @@ struct RecordingPlayerView: View {
         .task(id: activeURL) {
             await loadPlayer()
         }
+        .task {
+            // If the initial URL was nil (e.g. iCloud video whose prefetch
+            // hadn't finished when the player was opened), kick off a resolve
+            // so the progress UI can show up instead of an infinite spinner.
+            if activeURL == nil {
+                let url = await resolveURLWithReporting(activeRecording)
+                activeURL = url
+            }
+        }
         .onDisappear {
             teardownPlayer()
         }
@@ -187,10 +213,27 @@ struct RecordingPlayerView: View {
 
     private var loadingView: some View {
         VStack(spacing: Theme.space16) {
-            ProgressView().tint(Theme.primaryText)
-            Text("Queuing up video…")
-                .font(Theme.font16Regular)
-                .foregroundStyle(Theme.primaryText)
+            if let progress = downloadProgress {
+                // iCloud download in flight — show percentage + linear progress.
+                Image(systemName: "icloud.and.arrow.down")
+                    .font(.system(size: 36))
+                    .foregroundStyle(Theme.primaryText)
+                Text("Downloading from iCloud")
+                    .font(Theme.font16Regular)
+                    .foregroundStyle(Theme.primaryText)
+                ProgressView(value: progress)
+                    .progressViewStyle(.linear)
+                    .tint(Theme.primaryText)
+                    .frame(maxWidth: 220)
+                Text("\(Int(progress * 100))%")
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.secondaryText)
+            } else {
+                ProgressView().tint(Theme.primaryText)
+                Text("Queuing up video…")
+                    .font(Theme.font16Regular)
+                    .foregroundStyle(Theme.primaryText)
+            }
         }
     }
 
@@ -442,9 +485,31 @@ struct RecordingPlayerView: View {
     /// `loadPlayer` reuses the existing player via `replaceCurrentItem`.
     private func selectRecording(_ selected: Recording) async {
         activeRecording = selected
-        let url = await resolveURL?(selected)
+        let url = await resolveURLWithReporting(selected)
         activeURL = url                                   // triggers loadPlayer() which reuses the AVPlayer
         await onSelectRecording?(selected, url)
+    }
+
+    /// Resolves a Recording's URL, preferring the progress-reporting closure
+    /// when it's available. Manages `downloadProgress` so the loading view
+    /// can show a progress bar for iCloud downloads.
+    @MainActor
+    private func resolveURLWithReporting(_ recording: Recording) async -> URL? {
+        // Reset the placeholder — 0.0 shows an empty progress bar so the user
+        // sees SOMETHING is happening even before the first progressHandler fires.
+        downloadProgress = 0.0
+        defer { downloadProgress = nil }
+
+        if let progressLoader = resolveURLWithProgress {
+            let reporter = PlayerProgressReporter { fraction in
+                Task { @MainActor in
+                    downloadProgress = fraction
+                }
+            }
+            return await progressLoader(recording, reporter)
+        } else {
+            return await resolveURL?(recording)
+        }
     }
 
     @MainActor
@@ -590,5 +655,26 @@ struct VideoFile: Transferable {
                 throw CocoaError(.fileReadUnknown)
             }
         )
+    }
+}
+
+// MARK: - Progress Reporter
+
+/// Reference-type wrapper around a progress callback so it can be safely
+/// escaped across closure boundaries in Swift 6. Function-typed closure
+/// parameters cannot be marked `@escaping` when they appear inside another
+/// closure type — passing one to a function that stores it (e.g.
+/// PHVideoRequestOptions.progressHandler) triggers a non-escaping-parameter
+/// compile error. Wrapping the callback in a Sendable class sidesteps that.
+final class PlayerProgressReporter: Sendable {
+    private let callback: @Sendable (Double) -> Void
+
+    init(callback: @escaping @Sendable (Double) -> Void) {
+        self.callback = callback
+    }
+
+    /// Report a progress value (0.0–1.0). Safe to call from any thread.
+    func report(_ fraction: Double) {
+        callback(fraction)
     }
 }
