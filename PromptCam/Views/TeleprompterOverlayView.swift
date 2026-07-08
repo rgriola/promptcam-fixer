@@ -1,5 +1,6 @@
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 4: extract ScrollingTeleprompterText, TeleprompterMeasurement, TeleprompterDebugHUD
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add edge-fade mask and eyeline triangle indicator
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Tap-hold-drag: bake-in auto offset on drag start, rebase scrollStartTime on drag end, add minimumDistance to protect neighboring buttons
 import SwiftUI
 import os
 
@@ -63,13 +64,25 @@ struct TeleprompterOverlayView: View {
             }
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 0)
+                // minimumDistance: 4 protects neighboring buttons (Record, Play/Pause, Reset)
+                // from a bare tap accidentally toggling drag state, while still giving
+                // near-immediate 1:1 tracking once the finger moves.
+                DragGesture(minimumDistance: 4)
                     .updating($dragTranslationY) { value, state, _ in
                         state = value.translation.height
                     }
                     .onChanged { _ in
                         if !isUserDragging {
-                            tp("DRAG started manualOffset=\(Int(manualOffset))")
+                            // Bake current auto-scroll offset into manualOffset so the first
+                            // frame of the drag renders at the exact position the user sees.
+                            // Without this, autoOffset collapses to 0 while dragTranslationY
+                            // is still 0, snapping the text back to startOffset.
+                            if isScrolling {
+                                let elapsed = CGFloat(Date().timeIntervalSince(scrollStartTime))
+                                let autoApplied = -elapsed * CGFloat(config.speedPointsPerSecond)
+                                manualOffset += autoApplied
+                            }
+                            tp("DRAG started manualOffset=\(Int(manualOffset)) isScrolling=\(isScrolling)")
                         }
                         isUserDragging = true
                     }
@@ -78,8 +91,13 @@ struct TeleprompterOverlayView: View {
                         tp("DRAG ended delta=\(Int(delta)) manualOffset \(Int(manualOffset)) -> \(Int(manualOffset + delta))")
                         manualOffset += delta
                         isUserDragging = false
-                        // Update static snapshot so the paused branch shows correct position.
-                        if !isScrolling {
+                        // Never mutate isScrolling here — play/pause state is owned by the button.
+                        if isScrolling {
+                            // Rebase auto-scroll clock so it resumes from the new position
+                            // instead of jumping up by the seconds spent dragging.
+                            scrollStartTime = Date()
+                        } else {
+                            // Update static snapshot so the paused branch shows correct position.
                             staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
                         }
                     }

@@ -388,3 +388,18 @@ EV Bias Control Panel needs to say "EV Bias"
 Create a new 3 - toggle button to set the teleprompter script justification. Use SF Symbols; text.aligncenter (default), text.alignleft Step -1 , text.alignright Step 2, Return to default. Use Theme.white for the color, icon32 for the size.
 
 The user should be able to click through this toggle continuously. The button should be set to the left of the record button similar to how the scroll button is positioned. After reviewing, show me an implimentation plan.
+
+Change Tap Behavior When the Text is scrolling.
+
+User tap in teleprompter area causes text to jump up or down the screen.
+
+**_ Task _**
+Modify tap-hold-drag gesture in teleprompter view area to control the text movement.
+
+- Allow user to drag the text up and down with the tap-hold (no jumping text), or pause with no tap-hold, or play with tap-release (depends on Scroll Play/Pause State)
+
+- Tap-hold-drag does not change Scroll Play/Pause Button state - if playing continue, if paused continue.
+
+- Tap-hold-drag feature only valid in teleprompter view area, gesture should not interfere with other active buttons ie; Record, Scroll Play/Pause and Reset Text buttons - all others are gated. Review this gesture and create a plan to implement this change.
+
+**_ Context _** Current state the text jumps up and down the screen regaurdless of the place the tap occurs in the Teleprompter View area.

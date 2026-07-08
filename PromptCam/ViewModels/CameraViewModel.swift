@@ -1,5 +1,6 @@
 // May 31, 2026 - 2:30am - GitHub Copilot (Claude Opus 4.7)
 // June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - resetTeleprompterPosition no longer toggles isScrolling
 import AVFoundation
 import Combine
 import Photos
@@ -436,14 +437,13 @@ final class CameraViewModel {
     }
 
     /// Resets the teleprompter to its centered starting position.
-    /// Pauses scrolling first so the reset is visible to the user.
+    /// Independent of scroll play/pause state — used to "find" the script if
+    /// it has drifted off-screen. If auto-scroll is running it continues to run,
+    /// but restarts from the newly-centered position (overlay's resetScrollPosition
+    /// resets scrollStartTime so elapsed begins at 0 again).
     func resetTeleprompterPosition() {
-        if isScrolling {
-            isScrolling = false
-            Log.viewmodel.debug("resetTeleprompterPosition paused scrolling")
-        }
         teleprompterResetToken += 1
-        Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public)")
+        Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public) isScrolling=\(self.isScrolling, privacy: .public)")
     }
 
     private func presentSheet(_ route: CameraSheetRoute) {
