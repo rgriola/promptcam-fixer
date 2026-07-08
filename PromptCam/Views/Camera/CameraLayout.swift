@@ -50,7 +50,7 @@ enum CameraLayout {
     static let recordButtonDiameter: CGFloat = 72
 
     /// Vertical offset of the recording timer center from the preview's bottom edge.
-    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 200
+    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 270
 
     // MARK: - Footer Chrome
 
