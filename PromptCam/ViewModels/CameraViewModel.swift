@@ -301,7 +301,11 @@ final class CameraViewModel {
     /// Pre-warms carousel thumbnails in a sliding window around the given
     /// recording. Call this when the user navigates to a new item so adjacent
     /// thumbnails are ready before they scroll into view.
-    func warmCarouselCache(around recording: Recording, windowSize: Int = 4) {
+    ///
+    /// Window default expanded from ±4 to ±6 (Phase 2) so a full flick to a
+    /// far-away cell doesn't outrun the pre-warm on older devices (A11/A12)
+    /// where thumbnail decode is 60–100ms per cell.
+    func warmCarouselCache(around recording: Recording, windowSize: Int = 6) {
         guard let index = recentRecordings.firstIndex(where: { $0.id == recording.id }) else { return }
         let lo = max(0, index - windowSize)
         let hi = min(recentRecordings.count - 1, index + windowSize)

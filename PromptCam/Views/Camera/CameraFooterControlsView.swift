@@ -22,6 +22,11 @@ struct CameraFooterControlsView: View {
     let onTapSettings: () -> Void
     /// Whether recording is active — all footer buttons are disabled while recording.
     var isRecording: Bool = false
+    /// Identifier of the latest recording. Passed to the library-thumbnail
+    /// button as a `.task(id:)` key so the thumbnail reloads whenever the
+    /// latest recording changes (new save, delete, iCloud sync). Nil when
+    /// the library is empty — the button shows a placeholder in that case.
+    var latestRecordingID: String? = nil
 
     /// Footer control row for media import and utility actions.
     var body: some View {
@@ -33,6 +38,7 @@ struct CameraFooterControlsView: View {
             // of the labeled buttons.
             LibraryThumbnailButton(
                 size: CameraLayout.footerIconSize,
+                refreshTrigger: latestRecordingID,
                 action: onTapPhotoLibrary
             )
             .accessibilityLabel("Open photo library")
@@ -103,6 +109,10 @@ struct CameraFooterControlsView: View {
 struct LibraryThumbnailButton: View {
     /// Diameter of the circular button — should match `CameraLayout.footerIconSize`.
     let size: CGFloat
+    /// Identifier used as the `.task(id:)` key. Change this whenever the
+    /// underlying "latest recording" changes (delete, new save, iCloud sync)
+    /// so the thumbnail re-fetches. Nil when the library is empty.
+    var refreshTrigger: String? = nil
     /// Action fired when the button is tapped.
     let action: () -> Void
 
@@ -132,7 +142,14 @@ struct LibraryThumbnailButton: View {
                     .overlay(Circle().stroke(Theme.white.opacity(0.4), lineWidth: 1.5))
             }
         }
-        .task {
+        .task(id: refreshTrigger) {
+            // Clear the stale image immediately when the trigger flips to nil
+            // (library emptied) so the placeholder shows instead of the
+            // just-deleted video's thumbnail lingering on screen.
+            guard refreshTrigger != nil else {
+                thumbnail = nil
+                return
+            }
             // Target size: 2× pt size for Retina crispness without wasting memory.
             let px = size * 2
             thumbnail = await service.latestVideoThumbnail(
