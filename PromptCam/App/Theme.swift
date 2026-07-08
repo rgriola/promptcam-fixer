@@ -55,11 +55,14 @@ enum Theme {
 
     // Icons
     static let icon12 = fontFamily.font(size: 12)
+    static let icon14 = fontFamily.font(size: 14)
     static let icon16 = fontFamily.font(size: 16)
     static let icon20 = fontFamily.font(size: 20)
     static let icon24 = fontFamily.font(size: 24)
     static let icon28 = fontFamily.font(size: 28)
     static let icon32 = fontFamily.font(size: 32)
+    static let icon34 = fontFamily.font(size: 34)
+    static let icon38 = fontFamily.font(size: 38)
     static let icon44 = fontFamily.font(size: 44)
 
 
@@ -76,12 +79,11 @@ enum Theme {
     // FFD700/ Goldish for Oscar 
 
     static let blue = Color(hex: "#1E7AF0")
-    static let blueScrollPreview = Color(hex: "#3C74BD")
+
 
     static let green = Color(hex: "#30D158")
     static let red = Color(hex: "#FF3B30")
-    static let redRecordPreview = Color(hex: "#CC5650")
-
+   
     static let yellow = Color(hex: "#FFD60A")
     static let gray = Color(hex: "#8E8E93")
 
@@ -136,7 +138,6 @@ enum Theme {
 }
 
 // MARK: - View Extensions
-
 extension View {
     /// Applies a subtle card background: dark fill with light border.
     func cardBackground(

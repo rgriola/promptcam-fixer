@@ -27,22 +27,27 @@ struct RecordingClusterView: View {
     /// Native-like stacked record + scroll control cluster.
     var body: some View {
         ZStack {
-            RecordButton(isRecording: isRecording, isEnabled: isRecordEnabled, action: onRecordTap)
-                .frame(width: 72, height: 72)
+            RecordButton(
+                isRecording: isRecording, 
+                isEnabled: isRecordEnabled, 
+                action: onRecordTap)
 
-            ScrollToggleButton(isScrolling: isScrolling, isEnabled: true, action: onScrollTap)
-                .frame(width: 40, height: 40)
-                .offset(x: 72)
+            ScrollToggleButton(
+                isScrolling: isScrolling, 
+                isEnabled: true, 
+                action: onScrollTap)
+                    .offset(y: -80)
             
-            AlignmentToggleButton(alignment: textAlignment, isEnabled: !isRecording, action: onAlignmentTap)
-                .frame(width: 40, height: 40)
-                .offset(x: -72)
+            AlignmentToggleButton(
+                alignment: textAlignment, 
+                isEnabled: !isRecording, 
+                action: onAlignmentTap)
+                    .offset(x: -72)
         }
     }
 }
 
 // MARK: - Record Button
-
 /// Primary shutter control used for start/stop recording.
 /// Shows a red circle when idle and a white stop-square when recording.
 struct RecordButton: View {
@@ -57,19 +62,22 @@ struct RecordButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(
-                    isRecording ? Theme.redRecordPreview : Theme.red)
-                Circle().strokeBorder(Theme.white, lineWidth: 2)
-
-                if isRecording {
-                    Image(systemName: "square.fill")
-                        .font(Theme.icon28)
-                        .foregroundStyle(Theme.white)
-                }
+                Image(systemName: isRecording ? "square.fill" : "circle.fill")
+                    .font(Theme.icon34)
+                    .foregroundStyle(isRecording ? Theme.white : Theme.red)
+                    .padding()
+                    .background(
+                        Circle()
+                           // .fill(isRecording ? Theme.red : Theme.red.opacity(0.5))
+                            .fill(Theme.red)
+                    ) 
+                   .overlay(
+                        Circle().strokeBorder(Theme.white.opacity(0.4), lineWidth: 2)
+                    )
+                    
             }
         }
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.55)
         .accessibilityLabel(
             isRecording ? "Stop recording" : "Start recording")
         .accessibilityHint("Toggles video recording")
@@ -77,7 +85,6 @@ struct RecordButton: View {
 }
 
 // MARK: - Scroll Toggle Button
-
 /// Secondary control to pause/play teleprompter movement.
 /// Blue circle with play/pause icon.
 struct ScrollToggleButton: View {
@@ -92,22 +99,28 @@ struct ScrollToggleButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().strokeBorder(Theme.white, lineWidth: 4)
-                Circle().fill(isScrolling ? Theme.blueScrollPreview : Theme.blue)
                 Image(systemName: isScrolling ? "pause.fill" : "play.fill")
-                    .font(Theme.icon12)
+                    .font(Theme.icon34)
                     .foregroundStyle(Theme.white)
-            }
+                    .padding(10)
+                    .background(
+                        Circle()
+                            .fill(
+                                Theme.blue)
+                    )
+                    .overlay(
+                        Circle().strokeBorder(
+                            Theme.white.opacity(0.4), lineWidth: 2)
+                    )
+                }
         }
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.55)
         .accessibilityLabel(isScrolling ? "Pause teleprompter" : "Play teleprompter")
         .accessibilityHint("Toggles teleprompter scrolling")
     }
 }
 
 // MARK: - Alignment Toggle Button
-
 /// Tertiary control to cycle through text alignment options.
 /// White circle with alignment icon (center/left/right).
 struct AlignmentToggleButton: View {
@@ -122,27 +135,31 @@ struct AlignmentToggleButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Circle().strokeBorder(Theme.white, lineWidth: 4)
-                Circle().fill(Theme.blue)
                 Image(systemName: alignment.iconName)
-                    .font(Theme.icon16)
+                    .font(Theme.icon14)
                     .foregroundStyle(Theme.white)
+                    .padding(10)
+                .background(
+                     Circle()
+                        .fill(Theme.blue)
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(Theme.white.opacity(0.4), lineWidth: 2)
+                )
             }
         }
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.55)
         .accessibilityLabel("Text alignment: \(alignment.rawValue)")
         .accessibilityHint("Cycles between center, left, and right alignment")
     }
 }
 
 // MARK: - Component Previews
-
 #Preview("RecordButton - Idle") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         RecordButton(isRecording: false, isEnabled: true) {}
-            .frame(width: 72, height: 72)
     }
 }
 
@@ -150,7 +167,7 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         RecordButton(isRecording: true, isEnabled: true) {}
-            .frame(width: 72, height: 72)
+
     }
 }
 
@@ -158,7 +175,7 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         ScrollToggleButton(isScrolling: false, isEnabled: true) {}
-            .frame(width: 40, height: 40)
+
     }
 }
 
@@ -166,7 +183,6 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         ScrollToggleButton(isScrolling: true, isEnabled: true) {}
-            .frame(width: 40, height: 40)
     }
 }
 
@@ -174,7 +190,7 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         AlignmentToggleButton(alignment: .center, isEnabled: true) {}
-            .frame(width: 40, height: 40)
+
     }
 }
 
@@ -182,7 +198,7 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         AlignmentToggleButton(alignment: .left, isEnabled: true) {}
-            .frame(width: 40, height: 40)
+
     }
 }
 
