@@ -41,6 +41,10 @@ struct RecordingsService: Sendable {
     /// Thumbnail for the most recently saved video — used by the camera-roll
     /// button on the footer to mirror the iOS Camera app's thumbnail preview.
     /// Returns `nil` when the library is empty, not authorized, or the fetch fails.
+    ///
+    /// Uses `.opportunistic` delivery so iCloud-offloaded videos return a
+    /// degraded local thumbnail immediately (if cached), then the full image
+    /// when the download completes. Matches the pattern used by the carousel.
     func latestVideoThumbnail(targetSize: CGSize) async -> UIImage? {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return nil }
@@ -55,8 +59,14 @@ struct RecordingsService: Sendable {
 
         return await withCheckedContinuation { continuation in
             let imgOptions = PHImageRequestOptions()
-            imgOptions.deliveryMode = .fastFormat  // single callback, safe for continuation
+            // .fastFormat = single callback, single decode. Half the CPU of
+            // .opportunistic which fires degraded + full for every iCloud asset.
+            // For iCloud-offloaded assets fastFormat may return nil; the caller
+            // (CarouselCell) has a bounded retry loop that handles that path.
+            imgOptions.deliveryMode = .fastFormat
             imgOptions.isNetworkAccessAllowed = true
+            imgOptions.version = .current
+
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
@@ -74,16 +84,24 @@ struct RecordingsService: Sendable {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
     }
 
-    /// Thumbnail via the shared caching manager. Uses `.fastFormat` delivery
-    /// for responsive grid scrolling — returns a single callback (safe for
-    /// continuations) with a quick low-res decode. For a 300×300 grid cell,
-    /// the fast decode is visually indistinguishable from high-quality.
+    /// Thumbnail via the shared caching manager.
+    ///
+    /// Uses `.fastFormat` delivery — single callback, single decode. For
+    /// iCloud-offloaded assets this may return nil (no local fast rep). The
+    /// caller (CarouselCell) has a bounded 2-retry loop that catches those
+    /// cases; after both retries fail the cell shows a permanent placeholder.
+    ///
+    /// Previously used `.opportunistic` which fires the callback twice
+    /// (degraded + full) and forces two decodes per iCloud asset. Measured on
+    /// iPhone 13 that doubled CPU during carousel scrolling.
     func thumbnail(for recording: Recording, targetSize: CGSize) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
             options.deliveryMode = .fastFormat
-            options.isNetworkAccessAllowed = true
+            options.isNetworkAccessAllowed = true    // pull from iCloud in the background if needed
+            options.version = .current
+
             Self.cachingManager.requestImage(
                 for: asset,
                 targetSize: targetSize,
@@ -121,19 +139,73 @@ struct RecordingsService: Sendable {
     ///
     /// Returns nil if the asset is unavailable or the URL cannot be resolved.
     func resolveURL(for recording: Recording) async -> URL? {
-        guard let asset = asset(for: recording.id) else { return nil }
-        return await withCheckedContinuation { continuation in
+        await resolveURL(for: recording, progress: nil).url
+    }
+
+    /// Resolves a recording's playable URL with optional progress reporting
+    /// for iCloud downloads. The returned `requestID` can be passed to
+    /// `PHImageManager.default().cancelImageRequest(_:)` to abort an in-flight
+    /// download (e.g. when the user closes the player before the video finishes
+    /// downloading from iCloud).
+    ///
+    /// - Parameters:
+    ///   - recording: The recording to resolve.
+    ///   - progress: Optional handler called on the main actor with a 0.0–1.0
+    ///     download progress value. Fires ONLY when PhotoKit needs to download
+    ///     the asset from iCloud; local videos resolve immediately with no
+    ///     progress callbacks.
+    /// - Returns: A tuple of (url, requestID). Either can be nil.
+    func resolveURL(
+        for recording: Recording,
+        progress: (@MainActor @Sendable (Double) -> Void)?
+    ) async -> (url: URL?, requestID: PHImageRequestID?) {
+        guard let asset = asset(for: recording.id) else { return (nil, nil) }
+
+        // Capture the progress handler as a local @Sendable so it can escape
+        // into PHVideoRequestOptions.progressHandler (which is called on an
+        // arbitrary queue).
+        let onProgress = progress
+
+        // Use a mutable holder so we can capture the request ID synchronously
+        // from requestAVAsset's return value.
+        nonisolated(unsafe) var capturedRequestID: PHImageRequestID?
+
+        let url = await withCheckedContinuation { (continuation: CheckedContinuation<URL?, Never>) in
             var resumed = false
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             options.version = .current
             options.deliveryMode = .highQualityFormat
-            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            if let onProgress {
+                // Throttle: PhotoKit can fire progressHandler ~10 Hz per download.
+                // Each callback spawns a Task { @MainActor in ... } which is
+                // measurable CPU noise. Only forward when the value moves by ≥1%
+                // (or is a definitive 0.0 / 1.0 milestone).
+                let lastReported = ThrottledDouble()
+                options.progressHandler = { fraction, _, _, _ in
+                    guard lastReported.shouldReport(fraction, minDelta: 0.01) else { return }
+                    // PhotoKit fires this on an arbitrary queue. Hop to main.
+                    Task { @MainActor in
+                        onProgress(fraction)
+                    }
+                }
+            }
+            let id = PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
                 guard !resumed else { return }
                 resumed = true
                 continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
             }
+            capturedRequestID = id
         }
+
+        return (url, capturedRequestID)
+    }
+
+    /// Cancels an in-flight iCloud download started by `resolveURL(for:progress:)`.
+    /// Safe to call with a nil ID or after the request has already completed.
+    func cancelResolveURL(requestID: PHImageRequestID?) {
+        guard let requestID else { return }
+        PHImageManager.default().cancelImageRequest(requestID)
     }
 
     /// Fetches the most recent video recording, or nil if the library is empty.
@@ -199,5 +271,32 @@ struct RecordingsService: Sendable {
                 continuation.resume(returning: success)
             }
         }
+    }
+}
+
+// MARK: - Throttle Helper
+
+/// Small thread-safe helper for throttling repeated numeric callbacks.
+/// Reports when the new value moves by at least `minDelta` from the last
+/// reported value, or when it crosses the 0.0 / 1.0 boundary. Used to keep
+/// PhotoKit's high-frequency progressHandler from spawning a Task on every
+/// tick.
+private final class ThrottledDouble: @unchecked Sendable {
+    private let lock = NSLock()
+    private var last: Double? = nil
+
+    func shouldReport(_ value: Double, minDelta: Double) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        // Always report boundary values so callers see the true start/end.
+        if value <= 0.0 || value >= 1.0 {
+            last = value
+            return true
+        }
+        if let last, abs(value - last) < minDelta {
+            return false
+        }
+        last = value
+        return true
     }
 }

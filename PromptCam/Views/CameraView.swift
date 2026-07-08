@@ -19,19 +19,18 @@ import SwiftUI
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
-    /// View model that owns camera state, routes, and actions.
+    // View model that owns camera state, routes, and actions.
     @State var viewModel: CameraViewModel
-    /// Maximum absolute EV value used by focus/exposure drag calculations.
+    // Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
 
-    /// Current EV value shown in UI and bound to the EV panel slider.
+    // Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
-
-    // MARK: - Sheet / Picker State
 
     // MARK: - Teleprompter State
     /// Script text we last auto-centered for. Re-center whenever the text changes.
     @State private var lastCenteredScriptText: String?
+    // MARK: - Sheet / Picker State
     /// Controls visibility of the teleprompter adjustment panel.
     @State private var showAdjustmentPanel: Bool = false
     
@@ -55,7 +54,8 @@ struct CameraView: View {
 
             ZStack {
 
-                // Layer 1: Chrome Controls, placed first to be below Camera Preview, controls use background 
+                // MARK: - 1: Chrome Controls
+                // Foundation below Camera Preview View
                 VStack(spacing: Theme.space12) {
                     cameraControlsRow()
                     .padding(.top, 10)
@@ -69,8 +69,8 @@ struct CameraView: View {
                         alignment: .bottom)
 
 
-                // Layer 2: Live camera preview, top-anchored and ignoring the top safe area
-                // so it extends under the status bar / Dynamic Island.
+                // MARK: - 2: Camera Preview View
+                // Top-anchored, ignores top safe area extends under DI.
                 CameraPreviewView(
                     session: viewModel.session,
                     onTap: { devicePoint, viewPoint in
@@ -82,8 +82,8 @@ struct CameraView: View {
                 .ignoresSafeArea(.container, edges: .top)
                 .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing camera preview
 
-                // Layer 2.5: Audio VU meter on the left edge of the preview.
-                // Hidden when any modal sheet is open.
+                // MARK: - 3: Audio VU meter
+                // Hides when any modal sheet is open.
 
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
                     let meterHeight = layout.previewSize.height * 0.28
@@ -114,7 +114,7 @@ struct CameraView: View {
                     }
                 }
 
-                // Layer 3: Recording cluster positioned at bottom of camera preview
+                // MARK: - 4: Record cluster bewlow Camera Preview + Teleprompter
                 RecordingClusterView(
                     isRecording: viewModel.isRecording,
                     isScrolling: viewModel.isScrolling,
@@ -133,7 +133,7 @@ struct CameraView: View {
                 .position(x: proxy.size.width / 2,
                           y: layout.previewSize.height - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
                 
-                // Layer 4: Recording timer positioned above record button
+                // MARK: - 5: Record Timer
                 RecordingTimerPanel(
                     duration: viewModel.recordingDuration,
                     isRecording: viewModel.isRecording
@@ -142,7 +142,7 @@ struct CameraView: View {
                           y: layout.previewSize.height - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
                 
 
-                // Layer 5: Bottom-anchored teleprompter viewport.
+                // MARK: - 6: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
@@ -162,7 +162,7 @@ struct CameraView: View {
                             y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
                             )
 
-                // Layer 6: Reset button anchored to the bottom edge of the teleprompter viewport.
+                // MARK: - 7: Promopter Script Reset
                 TeleprompterCenterResetButton(
                     isDisabled: viewModel.isRecording,
                     action: {
@@ -171,8 +171,7 @@ struct CameraView: View {
                 )
                 .position(layout.teleprompterResetCenter)
 
-
-                // Layer 7: Teleprompter adjustment panel — standardised panel styling.
+                // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {
                     StandardPanelOverlay(onDismiss: {
                         showAdjustmentPanel = false
@@ -199,7 +198,7 @@ struct CameraView: View {
                     }
                 }
                 
-                // Layer 8: EV adjustment panel — standardised panel styling.
+                // MARK: - 9: EV adjustment panel
                 if showEVPanel {
                     StandardPanelOverlay(onDismiss: {
                         showEVPanel = false
@@ -226,8 +225,8 @@ struct CameraView: View {
                     }
                 }
 
-                // Layer 9: Cinematic aperture panel — standardised panel styling.
-                // Only rendered when cinematicApertureRange is non-nil (cinematic + iOS 26+).
+               // MARK: - 10: Cine Aperture
+                // Renders if cinematicApertureRange is non-nil (cinematic + iOS 26+)
                 if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
                     StandardPanelOverlay(onDismiss: {
                         showAperturePanel = false
@@ -253,7 +252,7 @@ struct CameraView: View {
                     }
                 }
 
-                // Layer 10: Temporary warning banner (top center).
+                // MARK: - 11: Warn Stop Recording (top center).
                 TemporaryWarningBanner(
                     message: "Stop recording to change format.",
                     systemImage: "exclamationmark.triangle.fill",
@@ -261,8 +260,8 @@ struct CameraView: View {
                     isPresented: $viewModel.showFormatLockedWarning
                 )
 
-                // Layer 11: Audio route changed warning (e.g. mic disconnect
-                // during recording). Body text is provided by the view model.
+                // MARK: - 12: Warn Audio Changed 
+                //(e.g. mic disconnectduring recording)
                 TemporaryWarningBanner(
                     message: viewModel.audioRouteChangedMessage,
                     systemImage: "mic.slash.fill",
@@ -270,8 +269,8 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioRouteChangedWarning
                 )
 
-                // Layer 12: Silence watchdog — sustained dead audio from
-                // an external mic (flaky cable, hardware mute, etc.).
+                // MARK: - 13: Warn No Audio — 
+                // sustained dead audio
                 TemporaryWarningBanner(
                     message: "No audio signal detected. Check microphone connection.",
                     systemImage: "waveform.badge.exclamationmark",
@@ -279,8 +278,8 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioSilenceWarning
                 )
 
-                // Layer 13: Audio source picker — dims 10% and shows input
-                // choice when a mic is plugged in or removed.
+                // MARK: - 14: Audio Source Picker — 
+                // Dims 10% givs input options. 
                 if viewModel.showAudioSourcePicker {
                     StandardPanelOverlay(onDismiss: {
                         viewModel.showAudioSourcePicker = false
@@ -307,7 +306,7 @@ struct CameraView: View {
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        // MARK: - Alerts & Pickers
+        // MARK: - 15: - Alerts & Pickers
         .alert("Error", isPresented: Binding(get: {
             viewModel.cameraError != nil
         }, set: { _ in
@@ -346,27 +345,30 @@ struct CameraView: View {
                         )
                     },
                     coverThumbnailLoader: { rec in
-                        // Screen-sized still (2x for retina) so the transition
-                        // cover doesn't visibly upscale over the sharp video.
-                        let scale = UIScreen.main.scale
-                        let size = UIScreen.main.bounds.size
+                        // Cover thumbnail shown during the ~200ms player transition.
+                        // Previously requested screenSize × 2x (retina) — for an
+                        // iCloud-offloaded video that forced a full-resolution
+                        // download just to show a 200ms fade. A 500pt max is
+                        // large enough that the transition doesn't look pixelated
+                        // when scaled up, and PhotoKit can serve it from a much
+                        // cheaper cached representation.
                         return await RecordingsService().thumbnail(
                             for: rec,
-                            targetSize: CGSize(
-                                width: size.width * scale,
-                                height: size.height * scale
-                            )
+                            targetSize: CGSize(width: 500, height: 500)
                         )
                     },
                     resolveURL: { rec in
                         await RecordingsService().resolveURL(for: rec)
                     },
+                    resolveURLWithProgress: { rec, reporter in
+                        let result = await RecordingsService().resolveURL(for: rec) { fraction in
+                            reporter.report(fraction)
+                        }
+                        return result.url
+                    },
                     onSelectRecording: { selected, _ in
                         // Do NOT overwrite viewModel.latestRecording here —
-                        // that would make the player reopen on the last-viewed
-                        // video instead of the most recently recorded one.
-                        // The RecordingPlayerView tracks its own @State
-                        // activeRecording for in-session swiping.
+                        // that would make the player reopen on the last-viewed video instead of the most recently recorded one. The RecordingPlayerView tracks its own @State activeRecording for in-session swiping.
                         viewModel.warmCarouselCache(around: selected)
                     }
                 )
@@ -385,7 +387,7 @@ struct CameraView: View {
             )
         }
 
-        // MARK: - Lifecycle
+        // MARK: - 15: - Lifecycle
         .onAppear {
             viewModel.onAppear()
         }
@@ -418,10 +420,8 @@ struct CameraView: View {
         }
     }
 
-    // MARK: - Controls Row & Footer Builders
-
-    /// Builds the top camera controls row (video mode, format, EV, lock).
-    /// - Returns: Configured controls row view.
+    // MARK: Top Row Build 
+    // Camera Mode, format, EV, lock Controls
     private func cameraControlsRow() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
@@ -468,9 +468,9 @@ struct CameraView: View {
         )
     }
 
-    /// Builds footer controls for photo picker, compose, and settings routes.
-    /// - Parameter safeBottomInset: Safe-area inset used to align footer above home indicator.
-    /// - Returns: Configured footer controls view.
+    // MARK: Footer Build
+    // Buttons; photo picker, script, prompter controils, settings routes.
+    // Returns: Configured footer controls view.
    private func cameraFooter() -> some View {
         CameraFooterControlsView(
             onTapPhotoLibrary: {

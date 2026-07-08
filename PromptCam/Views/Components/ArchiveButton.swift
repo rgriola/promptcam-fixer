@@ -12,7 +12,8 @@ struct ArchiveButton: View {
 
     var body: some View {
           Button(action: action) {
-               Image(systemName: "flame.gauge.open")
+              // Image(systemName: "flame.gauge.open")
+                Image(systemName: "square.and.arrow.down")
                     .font(Theme.icon16)
                     .foregroundStyle(Theme.white)
           }

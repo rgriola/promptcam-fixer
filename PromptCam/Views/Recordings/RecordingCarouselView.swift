@@ -131,6 +131,19 @@ private struct CarouselCell: View {
     let thumbnailLoader: (Recording) async -> UIImage?
 
     @State private var thumbnail: UIImage?
+    /// Incremented to re-trigger the .task when a retry is needed.
+    @State private var loadAttempt = 0
+    /// Set true once we've exhausted retries and give up.
+    /// Stops the infinite retry loop that pegged CPU for iCloud assets
+    /// that never resolved (no network, deleted, permissions).
+    @State private var loadFailed = false
+
+    /// Retry ceiling. After this many failed attempts we stop trying and
+    /// show the unavailable placeholder. Kept small because each retry
+    /// fires a real PhotoKit request.
+    private static let maxRetries = 2
+    /// Backoff delays in seconds: [attempt 1 → wait 3s, attempt 2 → wait 8s].
+    private static let retryDelays: [UInt64] = [3, 8]
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -139,12 +152,21 @@ private struct CarouselCell: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                } else {
+                } else if loadFailed {
+                    // Permanent placeholder — no more retries.
                     Color.white.opacity(0.12)
                         .overlay(
-                            Image(systemName: "video.fill")
-                                .font(.system(size: 18))
-                                .foregroundStyle(Color.white.opacity(0.3))
+                            Image(systemName: "exclamationmark.icloud")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.white.opacity(0.4))
+                        )
+                } else {
+                    // Placeholder while iCloud thumbnail is loading.
+                    Color.white.opacity(0.12)
+                        .overlay(
+                            Image(systemName: "icloud.and.arrow.down")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.white.opacity(0.35))
                         )
                 }
             }
@@ -166,8 +188,22 @@ private struct CarouselCell: View {
                 .background(Theme.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 4))
                 .padding(5)
         }
-        .task {
-            thumbnail = await thumbnailLoader(recording)
+        .task(id: loadAttempt) {
+            let result = await thumbnailLoader(recording)
+            if let result {
+                thumbnail = result
+                return
+            }
+            // Nil result — decide whether to retry or give up.
+            guard thumbnail == nil else { return }
+            guard loadAttempt < Self.maxRetries else {
+                loadFailed = true
+                return
+            }
+            let waitSeconds = Self.retryDelays[loadAttempt]
+            try? await Task.sleep(nanoseconds: waitSeconds * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            loadAttempt += 1
         }
     }
 }
