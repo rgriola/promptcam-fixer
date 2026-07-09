@@ -235,6 +235,7 @@ Phase 7 preparation notes:
 Objective: Ship safely and monitor user outcomes.
 
 Checklist:
+- [x] Create Phase 8 rollout execution checklist and launch gates.
 - [ ] Internal beta for permission denial/recovery scenarios.
 - [ ] TestFlight phased rollout.
 - [ ] Monitor blocked-to-recovered conversion rate.
@@ -245,6 +246,11 @@ Checklist:
 
 Deliverable:
 - Rollout report with follow-up action list.
+
+Phase 8 implementation notes:
+1. Rollout execution checklist and launch gates are defined in `docs/PHASE8_ROLLOUT_CHECKLIST.md`.
+2. Phase 8 is now started for rollout planning and launch readiness tracking.
+3. Production rollout execution remains gated on completing remaining Phase 7 analytics instrumentation.
 
 ## Acceptance Criteria
 
@@ -257,10 +263,14 @@ Deliverable:
 
 ## Open Questions
 
-1. Should Location remain optional or become required for this product version?
+1. Should Location remain optional or become required for this product version? Optional
 2. Is Photo Library Limited enough for all save and playback workflows?
+Yes
 3. Should users have a restricted read-only mode if they refuse required permissions?
+No - app is useless. 
 4. What is the preferred tone for permission copy (strict, neutral, or coaching)?
+Neutral
+
 5. Which speech permission status labels should be shown for denied and restricted?
 
 ## Suggested Next Step
