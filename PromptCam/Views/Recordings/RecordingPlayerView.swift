@@ -5,6 +5,8 @@
 // July 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add iCloud download progress UI
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Phase 1: cancel in-flight PHImageRequestID,
 //     observe AVPlayerItem.status, add 60s resolve timeout, id: on fallback .task
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Delete confirmation stays in player view
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Auto-advance to next video after delete
 import AVKit
 import Combine
 import Photos
@@ -223,6 +225,19 @@ struct RecordingPlayerView: View {
             activeURL = url
             if url == nil { loadFailed = true }
         }
+        .onChange(of: recentRecordings) { _, newRecordings in
+            // If the active recording was deleted, auto-advance.
+            let isActiveStillInList = newRecordings.contains { $0.id == activeRecording.id }
+            if !isActiveStillInList {
+                if !newRecordings.isEmpty {
+                    // Select the first available recording in the refreshed list
+                    Task { await selectRecording(newRecordings[0]) }
+                } else {
+                    // No recordings left, close the player
+                    dismiss()
+                }
+            }
+        }
         .onDisappear {
             teardownPlayer()
         }
@@ -232,10 +247,10 @@ struct RecordingPlayerView: View {
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) { onDelete(); dismiss() }
+            Button("Delete", role: .destructive) { onDelete() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Video will be permanently deleted.")
+            Text("Permanently deleting this video.")
         }
     }
 
