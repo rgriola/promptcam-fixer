@@ -154,16 +154,24 @@ Phase 4 implementation notes:
 Objective: Ensure app routing always reflects current permission reality.
 
 Checklist:
-- [ ] Re-check required permissions on launch.
-- [ ] Re-check required permissions on foreground resume.
-- [ ] Route to Required Access gate whenever required access is missing.
-- [ ] Keep in-camera Settings route available as backup recovery.
-- [ ] Verify no navigation loops when returning from Settings unchanged.
+- [x] Re-check required permissions on launch.
+- [x] Re-check required permissions on foreground resume.
+- [x] Route to Required Access gate whenever required access is missing.
+- [x] Keep in-camera Settings route available as backup recovery.
+- [x] Verify no navigation loops when returning from Settings unchanged.
 - [x] Keep Speech-to-Text status visible in Settings without blocking navigation.
-- [ ] Add unit tests for launch-routing decisions.
+- [x] Add unit tests for launch-routing decisions.
 
 Deliverable:
 - Navigation state diagram with transitions.
+
+Phase 5 implementation notes:
+1. Added `AppEntryRouter` as the centralized route decision for camera vs required-access gate.
+2. `PromptCamApp` now re-checks required permission state on launch (`onAppear`) and on foreground resume (`scenePhase == .active`).
+3. App entry now immediately routes to the required-access gate if any required permission is revoked after onboarding.
+4. In-camera settings remains available as secondary recovery from camera surfaces.
+5. Added route stability coverage for unchanged Settings returns to avoid navigation loop regressions.
+6. Added launch-routing unit tests in `AppEntryRouterTests`.
 
 ## Phase 6: QA Matrix and Acceptance
 
