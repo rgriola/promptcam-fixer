@@ -179,6 +179,7 @@ Phase 5 implementation notes:
 Objective: Validate all denial and recovery paths before rollout.
 
 Checklist:
+- [x] Run automated preflight test suite for routing/policy/recovery/copy coverage.
 - [ ] Fresh install: allow all permissions.
 - [ ] Fresh install: deny Camera.
 - [ ] Fresh install: deny Microphone.
@@ -202,6 +203,11 @@ Phase 6 implementation notes:
 4. Automated preflight verification completed (27 tests, 0 failures) for routing/policy/recovery/copy coverage.
 5. Phase 6 status: In Progress (manual device execution pending).
 
+Phase 6 next actions:
+1. Execute P6-01 through P6-15 on physical device.
+2. Update `docs/PHASE6_QA_MATRIX.md` status and evidence columns for each scenario.
+3. Publish signed QA report with go/no-go decision.
+
 ## Phase 7: Analytics and Supportability
 
 Objective: Measure recovery success and detect dead-end friction.
@@ -218,6 +224,11 @@ Checklist:
 
 Deliverable:
 - Event taxonomy and dashboard definition.
+
+Phase 7 preparation notes:
+1. Initial event taxonomy and payload contract are defined in `docs/PHASE7_ANALYTICS_PREP.md`.
+2. Events are organized around gate visibility, recovery actions, settings return deltas, and optional Speech-to-Text state.
+3. Implementation should begin only after Phase 6 manual QA sign-off.
 
 ## Phase 8: Rollout
 
