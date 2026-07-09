@@ -61,8 +61,11 @@ struct CameraLockStatusBadgeView: View {
             .opacity(isDisabled ? 0.4 : 1.0)
         }
         .disabled(status == .unsupported || isDisabled)
-        .accessibilityLabel("Focus/Exposure lock")
-        .accessibilityHint(isDisabled ? "Auto Only in Cine Mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock"))
+        .accessibilityLabel("Focus and exposure lock")
+        .accessibilityHint(
+            isDisabled
+                ? "Auto Only in Cine Mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock")
+        )
         .accessibilityValue(status.text)
     }
 }
