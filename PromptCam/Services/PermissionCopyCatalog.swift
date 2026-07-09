@@ -38,4 +38,37 @@ enum PermissionCopyCatalog {
                return "Optional: enables automatic transcript features."
           }
      }
+
+     static func requiredPermissionRecoveryTitle(for key: PermissionCopyKey) -> String {
+          switch key {
+          case .camera:
+               return "Camera Access Required"
+          case .microphone:
+               return "Microphone Access Required"
+          case .photoLibrary:
+               return "Photo Library Access Required"
+          case .location:
+               return "Location Access"
+          case .speechToText:
+               return "Speech to Text Access"
+          }
+     }
+
+     static func requiredPermissionRecoveryMessage(for key: PermissionCopyKey) -> String {
+          switch key {
+          case .camera:
+               return "PromptCam cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
+          case .microphone:
+               return "PromptCam cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
+          case .photoLibrary:
+               return "PromptCam cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
+          case .location:
+               return "Location access is optional and only used for GPS metadata."
+          case .speechToText:
+               return optionalSpeechRecoveryMessage
+          }
+     }
+
+     static let optionalSpeechRecoveryMessage =
+          "Speech to Text is optional. Enable it in Settings if you want transcript features; recording still works without it."
 }

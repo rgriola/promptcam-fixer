@@ -118,6 +118,13 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: speechStatus),
                         statusColor: PermissionStatusDisplay.color(for: speechStatus)
                     )
+
+                    if let speechRecovery = PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: speechStatus) {
+                        Text(speechRecovery)
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                            .padding(.vertical, Theme.space4)
+                    }
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)

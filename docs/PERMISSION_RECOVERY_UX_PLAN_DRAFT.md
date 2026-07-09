@@ -130,16 +130,24 @@ Phase 3 implementation notes:
 Objective: Remove dead-end errors and provide immediate recovery actions.
 
 Checklist:
-- [ ] Map each permission-related technical error to a user-friendly recovery message.
-- [ ] Add Open Settings as a primary action in blocked runtime states.
-- [ ] Ensure photo save failures provide an immediate recovery route.
-- [ ] Prevent generic error-only dead ends for known permission failures.
-- [ ] Document fallback behavior for restricted permissions.
-- [ ] Add optional recovery messaging for Speech-to-Text-only denial.
-- [ ] Add unit tests for error-to-recovery mapping logic.
+- [x] Map each permission-related technical error to a user-friendly recovery message.
+- [x] Add Open Settings as a primary action in blocked runtime states.
+- [x] Ensure photo save failures provide an immediate recovery route.
+- [x] Prevent generic error-only dead ends for known permission failures.
+- [x] Document fallback behavior for restricted permissions.
+- [x] Add optional recovery messaging for Speech-to-Text-only denial.
+- [x] Add unit tests for error-to-recovery mapping logic.
 
 Deliverable:
 - Error-to-recovery mapping table.
+
+Phase 4 implementation notes:
+1. Added `PermissionRecoveryMapper` to convert `CameraError` + live permission snapshot into a recovery message and primary action.
+2. Runtime camera alert now promotes `Open Settings` when required permission states are blocked (denied/restricted).
+3. Photo save failures with permission-like details now route users directly to Settings recovery.
+4. Added restricted fallback guidance by reusing required-permission recovery copy for denied and restricted states.
+5. Added optional Speech-to-Text recovery messaging in settings when speech permission is denied/restricted.
+6. Added mapper unit tests in `PermissionRecoveryMapperTests`.
 
 ## Phase 5: Navigation and Lifecycle Integration
 

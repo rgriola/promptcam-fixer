@@ -33,6 +33,7 @@
 		55F6FB9B93DFF0F9ECC8877A /* AudioMeterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0758B72A7B23803C0E912B5 /* AudioMeterService.swift */; };
 		565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */; };
 		5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */; };
+		5E3E4E6C71F3F90F655E4795 /* PermissionRecoveryMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A4D33377CAAF319D4002F4 /* PermissionRecoveryMapperTests.swift */; };
 		5FC7FAA3D5F5AAC2866BBD59 /* CinematicAperturePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 439A02F5797E4C147A1FC37D /* CinematicAperturePanel.swift */; };
 		66C99E501D11E320B116BDEE /* TeleprompterGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48A220E9D7B1A148FE578A1 /* TeleprompterGeometry.swift */; };
 		696F11B84A16D657A42C5405 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE97ACFCDD1B0F053B05DC00 /* NetworkMonitor.swift */; };
@@ -64,6 +65,7 @@
 		AB33FECF05CF97E9AFCA5EEB /* RecordingFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6602AD9D3CC7FCA71B5CCBC5 /* RecordingFormat.swift */; };
 		AC56EC5CA7D852F223052444 /* CloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8468ECD58FD36041762DF16 /* CloseButton.swift */; };
 		AC8A3E035773D456DF5C7000 /* CameraSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */; };
+		B15E54875CE03EB48F1C5211 /* PermissionRecoveryMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F6230B7A6D3CB0D061019BA /* PermissionRecoveryMapper.swift */; };
 		B1C58674F76FA902933ADFF7 /* RecordingCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D3873C1AE0EBBFF66FB5A0 /* RecordingCarouselView.swift */; };
 		B322E89ABDD58EF7F35B6E3E /* PhotoLibraryChangeMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */; };
 		B4D31512FFE492F6B0BD9155 /* Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FF44041128C203B6A0CE91 /* Recording.swift */; };
@@ -134,6 +136,7 @@
 		439A02F5797E4C147A1FC37D /* CinematicAperturePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CinematicAperturePanel.swift; sourceTree = "<group>"; };
 		451BB829FD09329B426D70AF /* RecordingThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingThumbnailView.swift; sourceTree = "<group>"; };
 		463E5A1C4A78819AE4720942 /* PermissionsOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsOnboardingView.swift; sourceTree = "<group>"; };
+		47A4D33377CAAF319D4002F4 /* PermissionRecoveryMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRecoveryMapperTests.swift; sourceTree = "<group>"; };
 		47FD3AF655746777B570B885 /* RecordingClusterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingClusterView.swift; sourceTree = "<group>"; };
 		4B100BCA59583D5DCDF2920E /* TeleprompterAdjustmentPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterAdjustmentPanel.swift; sourceTree = "<group>"; };
 		4E6CF1CBDA28AF2C0D93B83A /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
@@ -149,6 +152,7 @@
 		64FF44041128C203B6A0CE91 /* Recording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recording.swift; sourceTree = "<group>"; };
 		6602AD9D3CC7FCA71B5CCBC5 /* RecordingFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFormat.swift; sourceTree = "<group>"; };
 		67F55FD6F602D966B7207F6E /* CameraTopControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTopControlsView.swift; sourceTree = "<group>"; };
+		6F6230B7A6D3CB0D061019BA /* PermissionRecoveryMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionRecoveryMapper.swift; sourceTree = "<group>"; };
 		71440E54776D121738FE8505 /* TeleprompterDebugHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterDebugHUD.swift; sourceTree = "<group>"; };
 		7268218A2CC3AD4D761F72DD /* TeleprompterMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterMeasurement.swift; sourceTree = "<group>"; };
 		753F73EFB38C7673680AD164 /* RecordingsLibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsLibraryViewModel.swift; sourceTree = "<group>"; };
@@ -205,6 +209,7 @@
 				A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */,
 				97FE5EA979E431FA603788FF /* PermissionCopyCatalogTests.swift */,
 				86B267A7F8A4F641A78D8DF2 /* PermissionPolicySnapshotTests.swift */,
+				47A4D33377CAAF319D4002F4 /* PermissionRecoveryMapperTests.swift */,
 				CFB5AF6298B99D147B09A4E5 /* PermissionStatusDisplayTests.swift */,
 				3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */,
 				BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */,
@@ -227,6 +232,7 @@
 				515E59847CCAEAF9F3ECDBA7 /* ExternalDisplayService.swift */,
 				BE97ACFCDD1B0F053B05DC00 /* NetworkMonitor.swift */,
 				27C29C958DC64AAE85A56C2A /* PermissionCopyCatalog.swift */,
+				6F6230B7A6D3CB0D061019BA /* PermissionRecoveryMapper.swift */,
 				55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */,
 				CE60C4B00CAE887C0AB3B754 /* PhotoLibraryChangeMonitor.swift */,
 				B6175464BB708CE805EDD350 /* PhotoLibrarySaver.swift */,
@@ -548,6 +554,7 @@
 				48965C15F496BB1BD799A0E0 /* Log.swift in Sources */,
 				696F11B84A16D657A42C5405 /* NetworkMonitor.swift in Sources */,
 				964A4C918DB9556C2FD859F6 /* PermissionCopyCatalog.swift in Sources */,
+				B15E54875CE03EB48F1C5211 /* PermissionRecoveryMapper.swift in Sources */,
 				A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */,
 				EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */,
 				5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */,
@@ -604,6 +611,7 @@
 				F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */,
 				A02FF406AE6D45CF2A9DCFE7 /* PermissionCopyCatalogTests.swift in Sources */,
 				D6CC0F3F02D9817A69817079 /* PermissionPolicySnapshotTests.swift in Sources */,
+				5E3E4E6C71F3F90F655E4795 /* PermissionRecoveryMapperTests.swift in Sources */,
 				17AD00AEDF7652BA72FB8AB6 /* PermissionStatusDisplayTests.swift in Sources */,
 				B322E89ABDD58EF7F35B6E3E /* PhotoLibraryChangeMonitorTests.swift in Sources */,
 				F9571A615D04517E7ECC75EA /* RecordingFormatTests.swift in Sources */,
