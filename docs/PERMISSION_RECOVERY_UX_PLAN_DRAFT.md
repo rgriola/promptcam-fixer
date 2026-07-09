@@ -44,15 +44,16 @@ The app currently has recoverability paths, but they are fragmented and not alwa
 ## Current Branch Progress Snapshot
 
 Implemented:
-1. Speech-to-Text added as optional permission in this plan.
-2. Settings now includes a Speech-to-Text permission status row.
-3. Shared permission status helpers include Speech status mapping.
-4. Unit tests added for permission status mapping, including Speech-to-Text.
+1. Phase 1 through Phase 5 implementation is complete and pushed.
+2. Runtime recovery mapping + Open Settings CTA flow is implemented for required blocked states.
+3. App entry routing re-checks required permissions on launch and foreground resume.
+4. Speech-to-Text remains optional and visible in settings without blocking core flow.
+5. Phase 6 QA matrix artifact is complete and ready for manual execution.
 
 Pending:
-1. Required Access gate redesign and routing updates.
-2. Runtime blocked-state recovery prompts with Open Settings primary CTA.
-3. Full QA matrix execution and phased rollout activities.
+1. Execute device QA scenarios P6-01 through P6-15 and fill evidence.
+2. Produce signed QA report and go/no-go recommendation.
+3. Start Phase 7 analytics instrumentation after QA sign-off.
 
 ## Phased Plan With Checklists
 
@@ -198,7 +199,8 @@ Phase 6 implementation notes:
 1. Added executable QA matrix with scenario IDs, setup, expected outcomes, and evidence fields in `docs/PHASE6_QA_MATRIX.md`.
 2. Matrix includes all required checklist scenarios: fresh install denials, post-grant revocations, recovery flows, limited-photos handling, optional speech denial, restricted states, and foreground refresh stability.
 3. Added go/no-go criteria and defect template to support sign-off.
-4. Phase 6 status: In Progress (artifact complete; execution pending).
+4. Automated preflight verification completed (27 tests, 0 failures) for routing/policy/recovery/copy coverage.
+5. Phase 6 status: In Progress (manual device execution pending).
 
 ## Phase 7: Analytics and Supportability
 

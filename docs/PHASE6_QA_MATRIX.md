@@ -4,6 +4,22 @@ Last updated: July 9, 2026
 Owner: iOS QA + Product
 Scope: Permission denial/recovery validation for required and optional permissions
 
+## Automated Preflight (Completed)
+
+Date: July 9, 2026
+
+1. Command: `xcodegen generate`
+2. Command: `xcodebuild -project PromptCam.xcodeproj -scheme PromptCam -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:PromptCamTests/AppEntryRouterTests -only-testing:PromptCamTests/PermissionPolicySnapshotTests -only-testing:PromptCamTests/RequiredAccessGateStateTests -only-testing:PromptCamTests/PermissionRecoveryMapperTests -only-testing:PromptCamTests/PermissionCopyCatalogTests test`
+3. Result: 27 tests executed, 0 failures.
+4. Coverage intent:
+	- App-entry lifecycle routing decisions
+	- Required/optional permission policy behavior
+	- Required-access gate reducer behavior
+	- Runtime error-to-recovery mapping behavior
+	- Permission copy consistency behavior
+
+Note: Device-level permission prompts, Settings round-trips, and restricted-state scenarios still require manual execution of P6-01 through P6-15.
+
 ## Environment
 
 1. Device: iPhone (physical device preferred for permission prompts)
