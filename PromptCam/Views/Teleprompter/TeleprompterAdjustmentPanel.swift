@@ -114,9 +114,8 @@ private struct SliderRow: View {
                 .foregroundStyle(Theme.primaryText)
                 .frame(width: 90, alignment: .leading)
 
+            // slider is define in the init()
             Slider(value: $value, in: range, step: step)
-                .controlSize(.large)
-                .tint(Theme.accent)
 
             Text(valueLabel)
                 .font(Theme.font16Medium)

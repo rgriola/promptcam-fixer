@@ -339,7 +339,7 @@ struct CameraView: View {
                         let recordingToDelete = recording
                         Task {
                             _ = await RecordingsService().deleteRecording(recordingToDelete)
-                            viewModel.showDirectPlayer = false
+                            // Keep player open — user can manually close or select another video
                             viewModel.refreshLatestRecording()
                         }
                     },

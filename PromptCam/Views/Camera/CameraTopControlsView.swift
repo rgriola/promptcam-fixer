@@ -38,6 +38,8 @@ struct CameraControlsRowView: View {
     /// Header layout containing EV, lock status, grid, and format controls.
     var body: some View {
         HStack {
+            Spacer()
+
             // Video Mode Badge — sizes to content, vertically centered.
             VideoModeBadgeView(
                 mode: videoMode,
@@ -86,6 +88,7 @@ struct CameraControlsRowView: View {
                 onToggle: onTapLock,
                 isDisabled: videoMode == .cinematic
             )
+            Spacer()
         }
         .padding(.horizontal, Theme.space12)
         //.padding(.bottom, Theme.space8)

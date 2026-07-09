@@ -25,6 +25,8 @@ struct PromptCamApp: App {
         let sceneCount = UIApplication.shared.connectedScenes.count
         let sessionCount = UIApplication.shared.openSessions.count
         Log.hdmi.info("PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)")
+
+        configureUIAppearance()
     }
 
     var body: some Scene {
@@ -41,5 +43,19 @@ struct PromptCamApp: App {
             }
             .preferredColorScheme(.dark)
         }
+    }
+
+    private func configureUIAppearance() {
+        // Set slider thumb appearance globally — runs once on app launch
+        let thumbImage = UIImage(
+                            systemName: "circle.fill")?
+                                .withTintColor(UIColor(Theme.white))
+        
+        UISlider.appearance()
+            .setThumbImage(thumbImage, for: .normal)
+
+        // You can also style the track if needed
+        UISlider.appearance().minimumTrackTintColor = UIColor(Theme.accent)
+        UISlider.appearance().maximumTrackTintColor = UIColor(Theme.accent.opacity(0.2))
     }
 }

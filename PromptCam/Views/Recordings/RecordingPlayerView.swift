@@ -143,7 +143,6 @@ struct RecordingPlayerView: View {
 
     var body: some View {
         ZStack {
-            Theme.bgGrad.ignoresSafeArea()
 
             // ── Full-screen pager ──────────────────────────────────────────
             // Slot[i] center = i * screenWidth. Active slot is always slot 0.
@@ -296,7 +295,7 @@ struct RecordingPlayerView: View {
         }
     }
 
-    /// Transparent overlay containing top action bar + bottom playback controls.
+    /// Controls for Video Player UI
     private var controlOverlay: some View {
         VStack {
             topBar
@@ -377,7 +376,7 @@ struct RecordingPlayerView: View {
                 } label: {
                     Image(
                         systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(Theme.icon28)
+                        .font(Theme.icon44)
                         .foregroundStyle(Theme.white)
                 }
                 .accessibilityLabel(isPlaying ? "Pause" : "Play")
@@ -391,24 +390,6 @@ struct RecordingPlayerView: View {
         .padding(.bottom, Theme.space16)// clears the home indicator
         .background(Theme.black.opacity(0.1))
         .frame(maxWidth: .infinity)
-        .mask(alignment: .center) {
-                VStack(spacing: 0) {
-                    // this is not used but keep it for now. RG June 4, 2026.
-                    LinearGradient(
-                        colors: [.clear, .black],
-                        startPoint: .top, endPoint: .bottom
-                        )
-                        .frame(height: 20)
-
-                    Theme.black
-
-                    LinearGradient( 
-                        colors: [.black, .clear],
-                        startPoint: .top, endPoint: .bottom
-                        )
-                        .frame(height: 20) // taller fade at bottom — text enters here
-                }
-            }
             
     }
 
@@ -422,12 +403,6 @@ struct RecordingPlayerView: View {
             ),
             in: 0...max(duration, 0.001)
         )
-        .onAppear {
-                let thumbImage = UIImage(systemName: "circle.fill") // Or UIImage(named: "yourCustomImage")
-                UISlider.appearance().setThumbImage(thumbImage, for: .normal)
-            }
-      //  .frame(maxWidth: .infinity)
-        .tint(Theme.accent)
         .accessibilityLabel("Playback position")
     }
 
@@ -454,7 +429,7 @@ struct RecordingPlayerView: View {
     private func controlIcon(_ name: String, tint: Color) -> some View {
         Image(systemName: name)
             .symbolRenderingMode(.palette)
-            .font(Theme.icon32)
+            .font(Theme.icon44)
             .foregroundStyle(Theme.black, tint)
             //.foregroundStyle(Theme.white)      
     }
