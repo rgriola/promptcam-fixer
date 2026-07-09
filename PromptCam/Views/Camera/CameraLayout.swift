@@ -13,8 +13,8 @@ enum CameraLayout {
     // MARK: - Preview Geometry
 
     /// Standard 9:16 aspect ratio used to compute preview height from width.
-    /// 
-    static let previewAspect: CGFloat = 9.0 / 16.0 // 0.5625 aspect ratio
+    ///
+    static let previewAspect: CGFloat = 9.0 / 16.0  // 0.5625 aspect ratio
 
     /// Points of vertical drag to traverse the full ±exposure range (10 EV total).
     /// Used by `FocusIndicatorView` EV drag calculations.
@@ -26,13 +26,13 @@ enum CameraLayout {
     /// - Returns: Preview height (top-pinned) and bottom chrome height.
     static func previewFrame(containerSize: CGSize) -> (
         previewHeight: CGFloat,
-        bottomChromeHeight: CGFloat)
-        {
+        bottomChromeHeight: CGFloat
+    ) {
         let rawHeight = containerSize.width / previewAspect
         let previewHeight = min(rawHeight, containerSize.height)
         let bottomChromeHeight = max(containerSize.height - previewHeight, 0)
         return (previewHeight, bottomChromeHeight)
-        }
+    }
 
     // MARK: - Controls Row Chrome
     /// Horizontal inset for controls row (video mode, format pill, EV, lock).
@@ -80,8 +80,12 @@ enum CameraLayout {
     /// This move the horiz pos of both text and button
     static let teleprompterResetEdgeInset: CGFloat = 35
 
-    /// button Size. 
+    /// button Size.
     static let teleprompterResetButtonSize: CGFloat = 40
+
+    /// Shared size for teleprompter utility controls (Justify + Reset).
+    static let teleprompterUtilityButtonWidth: CGFloat = 30
+    static let teleprompterUtilityButtonHeight: CGFloat = 30
 
     // MARK: - VU Meter
 
@@ -136,19 +140,20 @@ struct CameraScreenLayout {
     let safeTopInset: CGFloat
     let safeBottomInset: CGFloat
 
-    init(containerSize: CGSize, 
-         safeAreaInsets: EdgeInsets) 
-        {
+    init(
+        containerSize: CGSize,
+        safeAreaInsets: EdgeInsets
+    ) {
         let frame = CameraLayout.previewFrame(containerSize: containerSize)
-        
+
         let topY: CGFloat = 0
         let bottomY = topY + frame.previewHeight
         let centerX = containerSize.width / 2
 
         self.previewSize = CGSize(
-            width: containerSize.width, 
+            width: containerSize.width,
             height: frame.previewHeight
-            )
+        )
 
         self.previewTopY = topY
         self.previewBottomY = bottomY
@@ -159,12 +164,12 @@ struct CameraScreenLayout {
         let rawViewportH = CameraLayout.teleprompterViewportHeight
 
         let viewportH = min(max(rawViewportH, 0), frame.previewHeight)
-        
-        let minCenterY = topY + viewportH / 2 // clamp
-        let maxCenterY = bottomY - viewportH / 2 // clamp
-        
+
+        let minCenterY = topY + viewportH / 2  // clamp
+        let maxCenterY = bottomY - viewportH / 2  // clamp
+
         let requestedCenterY = topY + CameraLayout.teleprompterCenterFromPreviewTop
-       
+
         let centerY = min(max(requestedCenterY, minCenterY), maxCenterY)
 
         self.teleprompterViewportHeight = viewportH

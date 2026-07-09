@@ -33,15 +33,15 @@ struct CameraView: View {
     // MARK: - Sheet / Picker State
     /// Controls visibility of the teleprompter adjustment panel.
     @State private var showAdjustmentPanel: Bool = false
-    
+
     // MARK: - EV Panel State
     /// Controls visibility of the EV adjustment panel.
     @State private var showEVPanel: Bool = false
-    
+
     // MARK: - Aperture Panel State
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
-    
+
     // MARK: - Body
 
     var body: some View {
@@ -49,7 +49,7 @@ struct CameraView: View {
         return GeometryReader { proxy in
             let layout = CameraScreenLayout(
                 containerSize: proxy.size,
-                safeAreaInsets: proxy.safeAreaInsets // pad for notch
+                safeAreaInsets: proxy.safeAreaInsets  // pad for notch
             )
 
             ZStack {
@@ -58,16 +58,16 @@ struct CameraView: View {
                 // Foundation below Camera Preview View
                 VStack(spacing: Theme.space12) {
                     cameraControlsRow()
-                    .padding(.top, 10)
-                    .padding(.bottom, 4)
-                    .background(Theme.black.opacity(0.1))
+                        .padding(.top, 10)
+                        .padding(.bottom, 4)
+                        .background(Theme.black.opacity(0.1))
                     cameraFooter()
-                      //  .padding(.bottom)
+                    //  .padding(.bottom)
                 }
-                .frame( maxWidth: .infinity, 
-                        maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
-                        alignment: .bottom)
-
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
+                    alignment: .bottom)
 
                 // MARK: - 2: Camera Preview View
                 // Top-anchored, ignores top safe area extends under DI.
@@ -78,9 +78,11 @@ struct CameraView: View {
                     }
                 )
                 .frame(width: layout.previewSize.width, height: layout.previewSize.height)
-                .position(x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2)
+                .position(
+                    x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2
+                )
                 .ignoresSafeArea(.container, edges: .top)
-                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing camera preview
+                .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing camera preview
 
                 // MARK: - 3: Audio VU meter
                 // Hides when any modal sheet is open.
@@ -93,7 +95,7 @@ struct CameraView: View {
                         isExternalMic: viewModel.isExternalMic,
                         isRecording: viewModel.isRecording,
                         level2: viewModel.isStereoInput ? viewModel.audioLevel2 : nil,
-                        peak2:  viewModel.isStereoInput ? viewModel.audioPeak2  : nil,
+                        peak2: viewModel.isStereoInput ? viewModel.audioPeak2 : nil,
                         sourceNameHint: viewModel.audioSourceHint
                     )
                     .frame(
@@ -102,7 +104,8 @@ struct CameraView: View {
                     )
                     .roundedBackground()
                     .position(
-                        x: CameraLayout.vuMeterHorizontalInset + CameraLayout.vuMeterHorizontalNudge,
+                        x: CameraLayout.vuMeterHorizontalInset
+                            + CameraLayout.vuMeterHorizontalNudge,
                         // Align meter bottom with record-button bottom.
                         y: layout.previewSize.height
                             - CameraLayout.vuMeterBottomOffsetFromPreviewBottom
@@ -130,37 +133,42 @@ struct CameraView: View {
                         viewModel.cycleTextAlignment()
                     }
                 )
-                .position(x: proxy.size.width / 2,
-                          y: layout.previewSize.height - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
-                
+                .position(
+                    x: proxy.size.width / 2,
+                    y: layout.previewSize.height
+                        - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
+
                 // MARK: - 5: Record Timer
                 RecordingTimerPanel(
                     duration: viewModel.recordingDuration,
                     isRecording: viewModel.isRecording
                 )
-                .position(x: proxy.size.width / 2,
-                          y: layout.previewSize.height - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
-                
+                .position(
+                    x: proxy.size.width / 2,
+                    y: layout.previewSize.height
+                        - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
 
                 // MARK: - 6: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
                     config: viewModel.config,
                     isScrolling: viewModel.isScrolling,
                     resetToken: viewModel.teleprompterResetToken,
-                    onTextHeightChanged: { measuredHeight in 
+                    onTextHeightChanged: { measuredHeight in
                         let currentText = viewModel.config.text
                         if lastCenteredScriptText != currentText,
-                           measuredHeight > 0 {
+                            measuredHeight > 0
+                        {
                             viewModel.resetTeleprompterPosition()
                             lastCenteredScriptText = currentText
                         }
                     }
                 )
                 .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
-                .ignoresSafeArea(.keyboard) // Prevent keyboard from resizing teleprompter viewport
-                .position(  x: layout.teleprompterCenter.x,
-                            y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
-                            )
+                .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing teleprompter viewport
+                .position(
+                    x: layout.teleprompterCenter.x,
+                    y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
+                )
 
                 // MARK: - 7: Promopter Script Reset
                 TeleprompterCenterResetButton(
@@ -183,11 +191,12 @@ struct CameraView: View {
                                 set: { viewModel.updateTeleprompterStyle($0) }
                             ),
                             onReset: {
-                                viewModel.updateTeleprompterStyle({
-                                    var defaults = TeleprompterConfig.default
-                                    defaults.text = viewModel.config.text
-                                    return defaults
-                                }())
+                                viewModel.updateTeleprompterStyle(
+                                    {
+                                        var defaults = TeleprompterConfig.default
+                                        defaults.text = viewModel.config.text
+                                        return defaults
+                                    }())
                             },
                             onDismiss: {
                                 withAnimation(.easeOut(duration: 0.25)) {
@@ -197,7 +206,7 @@ struct CameraView: View {
                         )
                     }
                 }
-                
+
                 // MARK: - 9: EV adjustment panel
                 if showEVPanel {
                     StandardPanelOverlay(onDismiss: {
@@ -225,7 +234,7 @@ struct CameraView: View {
                     }
                 }
 
-               // MARK: - 10: Cine Aperture
+                // MARK: - 10: Cine Aperture
                 // Renders if cinematicApertureRange is non-nil (cinematic + iOS 26+)
                 if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
                     StandardPanelOverlay(onDismiss: {
@@ -238,7 +247,8 @@ struct CameraView: View {
                             defaultAperture: apertureRange.lowerBound,  // f/5.6 after clamping
                             onReset: {
                                 viewModel.setSimulatedAperture(apertureRange.lowerBound)
-                                Log.ui.debug("Aperture reset to default (f/\(apertureRange.lowerBound))")
+                                Log.ui.debug(
+                                    "Aperture reset to default (f/\(apertureRange.lowerBound))")
                             },
                             onAdjust: { value in
                                 viewModel.setSimulatedAperture(value)
@@ -260,7 +270,7 @@ struct CameraView: View {
                     isPresented: $viewModel.showFormatLockedWarning
                 )
 
-                // MARK: - 12: Warn Audio Changed 
+                // MARK: - 12: Warn Audio Changed
                 //(e.g. mic disconnectduring recording)
                 TemporaryWarningBanner(
                     message: viewModel.audioRouteChangedMessage,
@@ -269,7 +279,7 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioRouteChangedWarning
                 )
 
-                // MARK: - 13: Warn No Audio — 
+                // MARK: - 13: Warn No Audio —
                 // sustained dead audio
                 TemporaryWarningBanner(
                     message: "No audio signal detected. Check microphone connection.",
@@ -278,8 +288,8 @@ struct CameraView: View {
                     isPresented: $viewModel.showAudioSilenceWarning
                 )
 
-                // MARK: - 14: Audio Source Picker — 
-                // Dims 10% givs input options. 
+                // MARK: - 14: Audio Source Picker —
+                // Dims 10% givs input options.
                 if viewModel.showAudioSourcePicker {
                     StandardPanelOverlay(onDismiss: {
                         viewModel.showAudioSourcePicker = false
@@ -302,16 +312,21 @@ struct CameraView: View {
                 }
 
             }
-            .background(Theme.bgGrad) // background for main view ZStack
-            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
+            .background(Theme.bgGrad)  // background for main view ZStack
+            .ignoresSafeArea(.keyboard)  // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         // MARK: - 15: - Alerts & Pickers
-        .alert("Error", isPresented: Binding(get: {
-            viewModel.cameraError != nil
-        }, set: { _ in
-            viewModel.cameraError = nil
-        })) {
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: {
+                    viewModel.cameraError != nil
+                },
+                set: { _ in
+                    viewModel.cameraError = nil
+                })
+        ) {
             Button("OK", role: .cancel) {
                 viewModel.cameraError = nil
             }
@@ -436,14 +451,15 @@ struct CameraView: View {
         }
     }
 
-    // MARK: Top Row Build 
+    // MARK: Top Row Build
     // Camera Mode, format, EV, lock Controls
     private func cameraControlsRow() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
 
         // Build aperture label when cinematicApertureRange is available.
-        let apertureText: String? = viewModel.cinematicApertureRange != nil
+        let apertureText: String? =
+            viewModel.cinematicApertureRange != nil
             ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
             : nil
 
@@ -487,7 +503,7 @@ struct CameraView: View {
     // MARK: Footer Build
     // Buttons; photo picker, script, prompter controils, settings routes.
     // Returns: Configured footer controls view.
-   private func cameraFooter() -> some View {
+    private func cameraFooter() -> some View {
         CameraFooterControlsView(
             onTapPhotoLibrary: {
                 viewModel.openPhotoLibrary()
@@ -529,7 +545,7 @@ struct CameraView: View {
     }
 
     // MARK: - Lock Toggle Helpers
-    
+
     /// Toggles AF/AE lock on/off. When locking, uses the last focus point
     /// if available, otherwise uses screen center.
     /// Cinematic mode only supports continuous autofocus, so lock is disabled.
@@ -539,7 +555,7 @@ struct CameraView: View {
             Log.ui.info("AF/AE lock blocked — cinematic mode requires continuous autofocus")
             return
         }
-        
+
         if viewModel.lockStatus.isLocked {
             // Unlock: return to continuous auto
             viewModel.unlockFocusExposure()

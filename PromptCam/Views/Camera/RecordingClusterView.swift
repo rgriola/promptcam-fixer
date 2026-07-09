@@ -29,21 +29,23 @@ struct RecordingClusterView: View {
     var body: some View {
         ZStack {
             RecordButton(
-                isRecording: isRecording, 
-                isEnabled: isRecordEnabled, 
+                isRecording: isRecording,
+                isEnabled: isRecordEnabled,
                 action: onRecordTap)
 
             ScrollToggleButton(
-                isScrolling: isScrolling, 
-                isEnabled: true, 
-                action: onScrollTap)
-                    .offset(y: -80)
-            
+                isScrolling: isScrolling,
+                isEnabled: true,
+                action: onScrollTap
+            )
+            .offset(y: -80)
+
             AlignmentToggleButton(
-                alignment: textAlignment, 
+                alignment: textAlignment,
                 isEnabled: !isRecording,
-                action: onAlignmentTap)
-                    .offset(x: 160, y:-20)
+                action: onAlignmentTap
+            )
+            .offset(x: 165, y: -40)
         }
     }
 }
@@ -69,18 +71,19 @@ struct RecordButton: View {
                     .padding()
                     .background(
                         Circle()
-                           // .fill(isRecording ? Theme.red : Theme.red.opacity(0.5))
+                            // .fill(isRecording ? Theme.red : Theme.red.opacity(0.5))
                             .fill(Theme.red)
-                    ) 
-                   .overlay(
+                    )
+                    .overlay(
                         Circle().strokeBorder(Theme.white.opacity(0.4), lineWidth: 2)
                     )
-                    
+
             }
         }
         .disabled(!isEnabled)
         .accessibilityLabel(
-            isRecording ? "Stop recording" : "Start recording")
+            isRecording ? "Stop recording" : "Start recording"
+        )
         .accessibilityHint("Toggles video recording")
     }
 }
@@ -112,7 +115,7 @@ struct ScrollToggleButton: View {
                         Circle().strokeBorder(
                             Theme.white.opacity(0.4), lineWidth: 2)
                     )
-                }
+            }
         }
         .disabled(!isEnabled)
         .accessibilityLabel(isScrolling ? "Pause teleprompter" : "Play teleprompter")
@@ -130,7 +133,7 @@ struct AlignmentToggleButton: View {
     let isEnabled: Bool
     /// Callback to advance to next alignment.
     let action: () -> Void
-    
+
     /// Tertiary control to cycle through text alignment options.
     var body: some View {
         Button(action: action) {
@@ -138,10 +141,14 @@ struct AlignmentToggleButton: View {
                 Image(systemName: alignment.iconName)
                     .font(Theme.icon16)
                     .foregroundStyle(Theme.white)
-                Text("Justify")
+                Text("Align")
                     .font(Theme.font10Regular)
                     .foregroundStyle(Theme.primaryText)
             }
+            .frame(
+                width: CameraLayout.teleprompterUtilityButtonWidth,
+                height: CameraLayout.teleprompterUtilityButtonHeight
+            )
             .roundedBackground()
             .contentShape(
                 RoundedRectangle(cornerRadius: 8, style: .continuous))

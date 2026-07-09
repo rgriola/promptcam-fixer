@@ -22,9 +22,13 @@ struct TeleprompterCenterResetButton: View {
                     .font(Theme.font10Regular)
                     .foregroundStyle(Theme.primaryText)
             }
+            .frame(
+                width: CameraLayout.teleprompterUtilityButtonWidth,
+                height: CameraLayout.teleprompterUtilityButtonHeight
+            )
             .roundedBackground()
             .contentShape(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)) // ← tap target matches shape
+                RoundedRectangle(cornerRadius: 8, style: .continuous))  // ← tap target matches shape
         }
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.3 : 1)
