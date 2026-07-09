@@ -144,7 +144,8 @@ struct PermissionsOnboardingView: View {
 
                 if gateState.hasUndeterminedPermission {
                     Button {
-                        PermissionAnalyticsService.trackGrantAccessTapped(snapshot: gateState.snapshot)
+                        PermissionAnalyticsService.trackGrantAccessTapped(
+                            snapshot: gateState.snapshot)
                         requestAllPermissions()
                     } label: {
                         HStack(spacing: Theme.space8) {

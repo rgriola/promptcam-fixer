@@ -483,8 +483,12 @@ struct CameraView: View {
     private var runtimePermissionType: PermissionAnalyticsPermission {
         let snapshot = permissionService.policySnapshot
         if snapshot.camera == .denied || snapshot.camera == .restricted { return .camera }
-        if snapshot.microphone == .denied || snapshot.microphone == .restricted { return .microphone }
-        if snapshot.photoLibrary == .denied || snapshot.photoLibrary == .restricted { return .photoLibrary }
+        if snapshot.microphone == .denied || snapshot.microphone == .restricted {
+            return .microphone
+        }
+        if snapshot.photoLibrary == .denied || snapshot.photoLibrary == .restricted {
+            return .photoLibrary
+        }
         return .unknown
     }
 

@@ -92,14 +92,18 @@ enum PermissionAnalyticsPayloadBuilder {
      static func undeterminedPermissionString(from snapshot: PermissionPolicySnapshot) -> String {
           var undetermined: [String] = []
 
-          if snapshot.camera == .notDetermined { undetermined.append(PermissionAnalyticsPermission.camera.rawValue) }
+          if snapshot.camera == .notDetermined {
+               undetermined.append(PermissionAnalyticsPermission.camera.rawValue)
+          }
           if snapshot.microphone == .notDetermined {
                undetermined.append(PermissionAnalyticsPermission.microphone.rawValue)
           }
           if snapshot.photoLibrary == .notDetermined {
                undetermined.append(PermissionAnalyticsPermission.photoLibrary.rawValue)
           }
-          if snapshot.location == .notDetermined { undetermined.append(PermissionAnalyticsPermission.location.rawValue) }
+          if snapshot.location == .notDetermined {
+               undetermined.append(PermissionAnalyticsPermission.location.rawValue)
+          }
           if snapshot.speechToText == .notDetermined {
                undetermined.append(PermissionAnalyticsPermission.speechToText.rawValue)
           }
@@ -132,7 +136,9 @@ enum PermissionAnalyticsService {
           track(payload)
      }
 
-     static func trackGrantAccessTapped(snapshot: PermissionPolicySnapshot, sourceScreen: String = "onboarding") {
+     static func trackGrantAccessTapped(
+          snapshot: PermissionPolicySnapshot, sourceScreen: String = "onboarding"
+     ) {
           let payload = PermissionAnalyticsPayloadBuilder.grantAccessTapped(
                snapshot: snapshot,
                sourceScreen: sourceScreen
