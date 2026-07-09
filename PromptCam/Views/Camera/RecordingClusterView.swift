@@ -1,6 +1,7 @@
 // PromptCam — Recording Cluster (Record + Scroll Controls)
 // Extracted from CameraView.swift (refactor June 1, 2026)
 // July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add AlignmentToggleButton
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - AlignmentToggleButton styling matches TeleprompterCenterResetButton
 import SwiftUI
 
 // MARK: - Center Record Cluster
@@ -40,9 +41,9 @@ struct RecordingClusterView: View {
             
             AlignmentToggleButton(
                 alignment: textAlignment, 
-                isEnabled: !isRecording, 
+                isEnabled: !isRecording,
                 action: onAlignmentTap)
-                    .offset(x: -72)
+                    .offset(x: 160, y:-20)
         }
     }
 }
@@ -84,7 +85,7 @@ struct RecordButton: View {
     }
 }
 
-// MARK: - Scroll Toggle Button
+// MARK: - Prompter Pause/Play Toggle Button
 /// Secondary control to pause/play teleprompter movement.
 /// Blue circle with play/pause icon.
 struct ScrollToggleButton: View {
@@ -95,14 +96,13 @@ struct ScrollToggleButton: View {
     /// Callback to toggle scroll state.
     let action: () -> Void
 
-    /// Secondary control to pause/play teleprompter movement.
     var body: some View {
         Button(action: action) {
             ZStack {
                 Image(systemName: isScrolling ? "pause.fill" : "play.fill")
                     .font(Theme.icon34)
                     .foregroundStyle(Theme.white)
-                    .padding(10)
+                    .padding()
                     .background(
                         Circle()
                             .fill(
@@ -134,22 +134,20 @@ struct AlignmentToggleButton: View {
     /// Tertiary control to cycle through text alignment options.
     var body: some View {
         Button(action: action) {
-            ZStack {
+            VStack(spacing: 3) {
                 Image(systemName: alignment.iconName)
-                    .font(Theme.icon14)
+                    .font(Theme.icon16)
                     .foregroundStyle(Theme.white)
-                    .padding(10)
-                .background(
-                     Circle()
-                        .fill(Theme.blue)
-                )
-                .overlay(
-                    Circle()
-                        .strokeBorder(Theme.white.opacity(0.4), lineWidth: 2)
-                )
+                Text("Justify")
+                    .font(Theme.font10Regular)
+                    .foregroundStyle(Theme.primaryText)
             }
+            .roundedBackground()
+            .contentShape(
+                RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.3)
         .accessibilityLabel("Text alignment: \(alignment.rawValue)")
         .accessibilityHint("Cycles between center, left, and right alignment")
     }
@@ -208,7 +206,6 @@ struct AlignmentToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         AlignmentToggleButton(alignment: .right, isEnabled: true) {}
-            .frame(width: 40, height: 40)
     }
 }
 */
