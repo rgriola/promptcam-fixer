@@ -113,12 +113,16 @@ enum PermissionStatusDisplay {
 struct OpenSettingsButton: View {
     var permission: PermissionAnalyticsPermission = .unknown
     var sourceSurface: PermissionAnalyticsSurface = .settings
+    /// Live permission snapshot at tap time. Required for accurate
+    /// settings-return diff and recovery-success analytics.
+    var snapshot: PermissionPolicySnapshot? = nil
 
     var body: some View {
         Button {
             PermissionAnalyticsService.trackOpenSettingsTapped(
                 permission: permission,
-                sourceSurface: sourceSurface
+                sourceSurface: sourceSurface,
+                snapshot: snapshot
             )
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)

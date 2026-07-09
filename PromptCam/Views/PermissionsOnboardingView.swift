@@ -81,7 +81,8 @@ struct PermissionsOnboardingView: View {
                     description: PermissionCopyCatalog.description(for: .camera),
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
-                    showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
+                    showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
@@ -92,7 +93,8 @@ struct PermissionsOnboardingView: View {
                     description: PermissionCopyCatalog.description(for: .microphone),
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
-                    showSettingsLink: micStatus == .denied || micStatus == .restricted
+                    showSettingsLink: micStatus == .denied || micStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
@@ -103,7 +105,8 @@ struct PermissionsOnboardingView: View {
                     description: PermissionCopyCatalog.description(for: .photoLibrary),
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
-                    showSettingsLink: photoStatus == .denied || photoStatus == .restricted
+                    showSettingsLink: photoStatus == .denied || photoStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
@@ -114,7 +117,8 @@ struct PermissionsOnboardingView: View {
                     description: PermissionCopyCatalog.description(for: .location),
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
-                    showSettingsLink: locationStatus == .denied || locationStatus == .restricted
+                    showSettingsLink: locationStatus == .denied || locationStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
@@ -125,7 +129,8 @@ struct PermissionsOnboardingView: View {
                     description: PermissionCopyCatalog.description(for: .speechToText),
                     status: PermissionStatusDisplay.label(for: speechStatus),
                     statusColor: PermissionStatusDisplay.color(for: speechStatus),
-                    showSettingsLink: speechStatus == .denied || speechStatus == .restricted
+                    showSettingsLink: speechStatus == .denied || speechStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
             }
             .padding(.horizontal, Theme.space24)
@@ -188,6 +193,7 @@ struct PermissionsOnboardingView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshStatuses()
+                trackBlockedGateReentryIfNeeded()
             }
         }
         .onChange(of: gateState.canContinue) { _, _ in
@@ -239,6 +245,14 @@ struct PermissionsOnboardingView: View {
         hasTrackedGateShown = true
         PermissionAnalyticsService.trackGateShown(snapshot: gateState.snapshot)
     }
+
+    /// Re-fires `permission_gate_shown` when the app returns from background
+    /// while the gate is still blocked. This is what allows the analytics
+    /// service to detect real blocked loops within a single session.
+    private func trackBlockedGateReentryIfNeeded() {
+        guard !gateState.canContinue else { return }
+        PermissionAnalyticsService.trackGateShown(snapshot: gateState.snapshot)
+    }
 }
 
 // MARK: - Onboarding Permission Row
@@ -255,6 +269,7 @@ private struct OnboardingPermissionRow: View {
     let status: String
     let statusColor: Color
     let showSettingsLink: Bool
+    var snapshot: PermissionPolicySnapshot? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -292,7 +307,11 @@ private struct OnboardingPermissionRow: View {
                 }
 
                 if showSettingsLink {
-                    OpenSettingsButton(permission: permission, sourceSurface: .gate)
+                    OpenSettingsButton(
+                        permission: permission,
+                        sourceSurface: .gate,
+                        snapshot: snapshot
+                    )
                 }
             }
         }

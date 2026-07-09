@@ -85,7 +85,8 @@ struct CameraSettingsSheet: View {
                         title: "Camera",
                         status: PermissionStatusDisplay.label(for: cameraStatus),
                         statusColor: PermissionStatusDisplay.color(for: cameraStatus),
-                        permission: .camera
+                        permission: .camera,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -94,7 +95,8 @@ struct CameraSettingsSheet: View {
                         title: "Microphone",
                         status: PermissionStatusDisplay.label(for: micStatus),
                         statusColor: PermissionStatusDisplay.color(for: micStatus),
-                        permission: .microphone
+                        permission: .microphone,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -103,7 +105,8 @@ struct CameraSettingsSheet: View {
                         title: "Photo Library",
                         status: PermissionStatusDisplay.label(for: photoStatus),
                         statusColor: PermissionStatusDisplay.color(for: photoStatus),
-                        permission: .photoLibrary
+                        permission: .photoLibrary,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -112,7 +115,8 @@ struct CameraSettingsSheet: View {
                         title: "Location",
                         status: PermissionStatusDisplay.label(for: locationStatus),
                         statusColor: PermissionStatusDisplay.color(for: locationStatus),
-                        permission: .location
+                        permission: .location,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -121,7 +125,8 @@ struct CameraSettingsSheet: View {
                         title: "Speech to Text",
                         status: PermissionStatusDisplay.label(for: speechStatus),
                         statusColor: PermissionStatusDisplay.color(for: speechStatus),
-                        permission: .speechToText
+                        permission: .speechToText,
+                        snapshot: policySnapshot
                     )
 
                     if let speechRecovery = PermissionRecoveryMapper.optionalSpeechRecoveryMessage(

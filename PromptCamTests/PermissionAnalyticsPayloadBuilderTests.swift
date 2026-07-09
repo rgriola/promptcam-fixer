@@ -208,4 +208,56 @@ final class PermissionAnalyticsPayloadBuilderTests: XCTestCase {
           XCTAssertEqual(payload.fields["requiredPermissionsGranted"], "true")
           XCTAssertEqual(payload.fields["speechToText"], "notDetermined")
      }
+
+     func testSettingsReturnedPayloadWithoutPreviousReportsBaseline() {
+          let current = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.settingsReturned(
+               previousSnapshot: nil,
+               currentSnapshot: current,
+               timeInSettingsMs: nil
+          )
+
+          XCTAssertEqual(payload.event, .permissionSettingsReturned)
+          XCTAssertNil(payload.fields["timeInSettingsMs"])
+          XCTAssertEqual(
+               payload.fields["changedPermissions"],
+               "camera,microphone,photoLibrary,location,speechToText")
+          XCTAssertEqual(payload.fields["unchangedPermissions"], "")
+     }
+
+     func testRecoverySuccessPayloadIsEmptyWhenNothingRecovered() {
+          let previous = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let current = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.recoverySuccess(
+               previousSnapshot: previous,
+               currentSnapshot: current,
+               recoverySurface: .runtimeAlert,
+               recoveryDurationMs: 500
+          )
+
+          XCTAssertEqual(payload.event, .permissionRecoverySuccess)
+          XCTAssertEqual(payload.fields["recoveredPermissions"], "")
+          XCTAssertEqual(payload.fields["recoverySurface"], "runtimeAlert")
+     }
 }
