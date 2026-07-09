@@ -43,7 +43,9 @@ struct CameraView: View {
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
 
-    private let permissionService = PermissionService()
+    /// Shared permission service injected from the app root via `\.permissionService`.
+    /// A view-local default keeps previews and any unhosted uses working out of the box.
+    @Environment(\.permissionService) private var permissionService
 
     private var runtimeRecoveryMessage: PermissionRecoveryMessage? {
         guard let error = viewModel.cameraError else { return nil }
