@@ -1,6 +1,40 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
+
+/// Snapshot of permission states used to evaluate required-vs-optional policy.
+struct PermissionPolicySnapshot: Equatable, Sendable {
+    let camera: AVAuthorizationStatus
+    let microphone: AVAuthorizationStatus
+    let photoLibrary: PHAuthorizationStatus
+    let location: CLAuthorizationStatus
+    let speechToText: SFSpeechRecognizerAuthorizationStatus
+
+    /// Required permissions for core recording flow.
+    var requiredPermissionsGranted: Bool {
+        camera == .authorized
+            && microphone == .authorized
+            && (photoLibrary == .authorized || photoLibrary == .limited)
+    }
+
+    /// Optional permissions should never gate camera entry.
+    var optionalPermissionsGranted: Bool {
+        let locationGranted = location == .authorizedWhenInUse || location == .authorizedAlways
+        let speechGranted = speechToText == .authorized
+        return locationGranted && speechGranted
+    }
+
+    /// App entry should be blocked only by missing required permissions.
+    var shouldBlockAppEntry: Bool {
+        !requiredPermissionsGranted
+    }
+
+    /// Speech-to-Text is optional and only impacts transcription surfaces.
+    var isSpeechToTextAvailable: Bool {
+        speechToText == .authorized
+    }
+}
 
 struct PermissionService {
     // MARK: - Status Getters (no prompt triggered)
@@ -22,11 +56,25 @@ struct PermissionService {
         CLLocationManager().authorizationStatus
     }
 
+    /// Current speech recognition authorization status (read-only, no prompt).
+    var speechToTextStatus: SFSpeechRecognizerAuthorizationStatus {
+        SFSpeechRecognizer.authorizationStatus()
+    }
+
+    /// Live policy snapshot for app routing decisions.
+    var policySnapshot: PermissionPolicySnapshot {
+        PermissionPolicySnapshot(
+            camera: cameraStatus,
+            microphone: microphoneStatus,
+            photoLibrary: photoLibraryStatus,
+            location: locationStatus,
+            speechToText: speechToTextStatus
+        )
+    }
+
     /// Returns `true` only when camera, mic, and photo library are all authorized.
     var allPermissionsGranted: Bool {
-        cameraStatus == .authorized
-            && microphoneStatus == .authorized
-            && (photoLibraryStatus == .authorized || photoLibraryStatus == .limited)
+        policySnapshot.requiredPermissionsGranted
     }
 
     /// Returns `true` when camera and microphone are both authorized.

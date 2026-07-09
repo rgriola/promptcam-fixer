@@ -3,6 +3,7 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
 import SwiftUI
 
 // MARK: - Permission Status Display
@@ -75,6 +76,29 @@ enum PermissionStatusDisplay {
     static func color(for status: CLAuthorizationStatus) -> Color {
         switch status {
         case .authorizedWhenInUse, .authorizedAlways: return .green
+        case .notDetermined: return .orange
+        case .denied, .restricted: return .red
+        @unknown default: return .gray
+        }
+    }
+
+    // MARK: - Speech Recognition (Speech-to-Text)
+
+    /// Human-readable label for speech recognition authorization status.
+    static func label(for status: SFSpeechRecognizerAuthorizationStatus) -> String {
+        switch status {
+        case .authorized: return "Granted"
+        case .notDetermined: return "Not Set"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    /// Semantic color for speech recognition authorization status.
+    static func color(for status: SFSpeechRecognizerAuthorizationStatus) -> Color {
+        switch status {
+        case .authorized: return .green
         case .notDetermined: return .orange
         case .denied, .restricted: return .red
         @unknown default: return .gray
