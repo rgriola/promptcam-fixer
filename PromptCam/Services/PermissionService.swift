@@ -36,6 +36,35 @@ struct PermissionPolicySnapshot: Equatable, Sendable {
     }
 }
 
+/// View-facing state reducer for the required-access gate UI.
+/// Keeps gate logic centralized and unit-testable.
+struct RequiredAccessGateState: Equatable, Sendable {
+    let snapshot: PermissionPolicySnapshot
+
+    /// Continue button state — only required permissions gate entry.
+    var canContinue: Bool {
+        snapshot.requiredPermissionsGranted
+    }
+
+    /// Show warning copy when a required permission is blocked.
+    var hasBlockedRequiredPermission: Bool {
+        let cameraBlocked = snapshot.camera == .denied || snapshot.camera == .restricted
+        let micBlocked = snapshot.microphone == .denied || snapshot.microphone == .restricted
+        let photoBlocked = snapshot.photoLibrary == .denied || snapshot.photoLibrary == .restricted
+        return cameraBlocked || micBlocked || photoBlocked
+    }
+
+    /// Controls visibility of the grant-permissions CTA.
+    /// Includes optional permissions so users can opt in early.
+    var hasUndeterminedPermission: Bool {
+        snapshot.camera == .notDetermined
+            || snapshot.microphone == .notDetermined
+            || snapshot.photoLibrary == .notDetermined
+            || snapshot.location == .notDetermined
+            || snapshot.speechToText == .notDetermined
+    }
+}
+
 struct PermissionService {
     // MARK: - Status Getters (no prompt triggered)
 
@@ -109,6 +138,15 @@ struct PermissionService {
     func requestPhotoLibraryAccess() async -> Bool {
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         return status == .authorized || status == .limited
+    }
+
+    /// Requests speech recognition access for optional transcription features.
+    func requestSpeechToTextAccess() async -> Bool {
+        await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status == .authorized)
+            }
+        }
     }
 
     /// Requests "when in use" location access for video geo-tagging.

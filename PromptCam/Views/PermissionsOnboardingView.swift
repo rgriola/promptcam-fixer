@@ -3,6 +3,7 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
 import SwiftUI
 
 /// Full-screen onboarding view that requests camera, microphone,
@@ -20,31 +21,24 @@ struct PermissionsOnboardingView: View {
         for: .readWrite)
     @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
         .authorizationStatus
+    @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
+        SFSpeechRecognizer.authorizationStatus()
     @State private var isRequesting = false
 
     @Environment(\.scenePhase) private var scenePhase
 
     private let permissionService = PermissionService()
 
-    /// Continue is enabled once camera + mic are both authorized.
-    private var canContinue: Bool {
-        cameraStatus == .authorized && micStatus == .authorized
-    }
-
-    /// True when any required permission is denied/restricted.
-    private var hasBlockedRequiredPermission: Bool {
-        let cameraBlocked = cameraStatus == .denied || cameraStatus == .restricted
-        let micBlocked = micStatus == .denied || micStatus == .restricted
-        let photoBlocked = photoStatus == .denied || photoStatus == .restricted
-        return cameraBlocked || micBlocked || photoBlocked
-    }
-
-    /// True when at least one permission is still in not-determined state.
-    private var hasUndetermined: Bool {
-        cameraStatus == .notDetermined
-            || micStatus == .notDetermined
-            || photoStatus == .notDetermined
-            || locationStatus == .notDetermined
+    /// Centralized gate reducer derived from current permission statuses.
+    private var gateState: RequiredAccessGateState {
+        RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: cameraStatus,
+                microphone: micStatus,
+                photoLibrary: photoStatus,
+                location: locationStatus,
+                speechToText: speechStatus
+            ))
     }
 
     var body: some View {
@@ -117,6 +111,16 @@ struct PermissionsOnboardingView: View {
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
                     showSettingsLink: locationStatus == .denied || locationStatus == .restricted
                 )
+
+                OnboardingPermissionRow(
+                    icon: "waveform",
+                    iconColor: .purple,
+                    title: "Speech to Text",
+                    description: PermissionCopyCatalog.description(for: .speechToText),
+                    status: PermissionStatusDisplay.label(for: speechStatus),
+                    statusColor: PermissionStatusDisplay.color(for: speechStatus),
+                    showSettingsLink: speechStatus == .denied || speechStatus == .restricted
+                )
             }
             .padding(.horizontal, Theme.space24)
 
@@ -124,7 +128,7 @@ struct PermissionsOnboardingView: View {
 
             // Action buttons
             VStack(spacing: Theme.space12) {
-                if hasBlockedRequiredPermission {
+                if gateState.hasBlockedRequiredPermission {
                     Text(PermissionCopyCatalog.onboardingBlockedRequiredMessage)
                         .font(Theme.font12Regular)
                         .foregroundStyle(Theme.secondaryText)
@@ -132,7 +136,7 @@ struct PermissionsOnboardingView: View {
                         .padding(.horizontal, Theme.space24)
                 }
 
-                if hasUndetermined {
+                if gateState.hasUndeterminedPermission {
                     Button {
                         requestAllPermissions()
                     } label: {
@@ -160,11 +164,11 @@ struct PermissionsOnboardingView: View {
                         .font(Theme.font16Semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(canContinue ? Color.blue : Color.gray.opacity(0.3))
-                        .foregroundStyle(canContinue ? .white : .gray)
+                        .background(gateState.canContinue ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundStyle(gateState.canContinue ? .white : .gray)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(!canContinue)
+                .disabled(!gateState.canContinue)
             }
             .padding(.horizontal, Theme.space24)
             .padding(.bottom, 40)
@@ -196,6 +200,9 @@ struct PermissionsOnboardingView: View {
                 // Status is refreshed when the scene becomes active again.
                 permissionService.requestLocationAccess()
             }
+            if speechStatus == .notDetermined {
+                _ = await permissionService.requestSpeechToTextAccess()
+            }
             refreshStatuses()
             isRequesting = false
         }
@@ -206,6 +213,7 @@ struct PermissionsOnboardingView: View {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
+        speechStatus = SFSpeechRecognizer.authorizationStatus()
     }
 }
 

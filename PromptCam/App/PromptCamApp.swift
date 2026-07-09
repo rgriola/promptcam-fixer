@@ -12,6 +12,8 @@ struct PromptCamApp: App {
     /// Stable ViewModel instance — survives body re-evaluation.
     @State private var viewModel = CameraViewModel()
 
+    private let permissionService = PermissionService()
+
     /// UI-test bypass: launch with `-uitest-skip-onboarding` to land directly on the camera.
     private var skipOnboardingForUITest: Bool {
         ProcessInfo.processInfo.arguments.contains("-uitest-skip-onboarding")
@@ -24,15 +26,20 @@ struct PromptCamApp: App {
         // presence is reported via ExternalSceneDelegate when a scene attaches.
         let sceneCount = UIApplication.shared.connectedScenes.count
         let sessionCount = UIApplication.shared.openSessions.count
-        Log.hdmi.info("PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)")
+        Log.hdmi.info(
+            "PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)"
+        )
 
         configureUIAppearance()
     }
 
     var body: some Scene {
         WindowGroup {
+            let hasRequiredPermissions = !permissionService.policySnapshot.shouldBlockAppEntry
             Group {
-                if hasCompletedOnboarding || showCamera || skipOnboardingForUITest {
+                if skipOnboardingForUITest
+                    || ((hasCompletedOnboarding || showCamera) && hasRequiredPermissions)
+                {
                     CameraView(viewModel: viewModel)
                 } else {
                     PermissionsOnboardingView {
@@ -48,9 +55,9 @@ struct PromptCamApp: App {
     private func configureUIAppearance() {
         // Set slider thumb appearance globally — runs once on app launch
         let thumbImage = UIImage(
-                            systemName: "circle.fill")?
-                                .withTintColor(UIColor(Theme.white))
-        
+            systemName: "circle.fill")?
+            .withTintColor(UIColor(Theme.white))
+
         UISlider.appearance()
             .setThumbImage(thumbImage, for: .normal)
 

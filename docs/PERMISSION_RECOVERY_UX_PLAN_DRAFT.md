@@ -106,17 +106,24 @@ Phase 2 implementation notes:
 Objective: Implement a single blocking gate for missing required permissions.
 
 Checklist:
-- [ ] Design gate layout with per-permission status rows.
-- [ ] Add per-row Open Settings action.
-- [ ] Add Grant Access action for Not Determined states.
-- [ ] Gate Continue until all required permissions are granted.
-- [ ] Ensure status refresh on app foreground return.
-- [ ] Add clear explanation of why each permission is required.
+- [x] Design gate layout with per-permission status rows.
+- [x] Add per-row Open Settings action.
+- [x] Add Grant Access action for Not Determined states.
+- [x] Gate Continue until all required permissions are granted.
+- [x] Ensure status refresh on app foreground return.
+- [x] Add clear explanation of why each permission is required.
 - [x] Add Speech-to-Text as optional status row (never blocks Continue).
-- [ ] Add unit tests for Required Access gate state reducer/view model logic.
+- [x] Add unit tests for Required Access gate state reducer/view model logic.
 
 Deliverable:
 - Annotated wireframes and interaction spec.
+
+Phase 3 implementation notes:
+1. Onboarding gate now uses a centralized `RequiredAccessGateState` reducer.
+2. Continue is now gated by all required permissions (Camera + Microphone + Photo Library).
+3. Speech-to-Text is shown on onboarding as optional and does not block Continue.
+4. App entry now routes back to the gate when required permissions are missing after prior onboarding.
+5. Unit tests added for gate reducer behavior (`RequiredAccessGateStateTests`).
 
 ## Phase 4: Runtime Recovery UX
 
