@@ -27,6 +27,14 @@ struct PermissionsOnboardingView: View {
         cameraStatus == .authorized && micStatus == .authorized
     }
 
+    /// True when any required permission is denied/restricted.
+    private var hasBlockedRequiredPermission: Bool {
+        let cameraBlocked = cameraStatus == .denied || cameraStatus == .restricted
+        let micBlocked = micStatus == .denied || micStatus == .restricted
+        let photoBlocked = photoStatus == .denied || photoStatus == .restricted
+        return cameraBlocked || micBlocked || photoBlocked
+    }
+
     /// True when at least one permission is still in not-determined state.
     private var hasUndetermined: Bool {
         cameraStatus == .notDetermined
@@ -49,9 +57,15 @@ struct PermissionsOnboardingView: View {
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
 
-                Text("Required access to camera, mic, photo library & location.")
+                Text("PromptCam needs Camera, Microphone, and Photo Library to record and save videos.")
                     .font(Theme.font16Regular)
                     .foregroundStyle(Theme.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.space32)
+
+                Text("Location and Speech-to-Text are optional and can be enabled later in Settings.")
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.space32)
             }
@@ -64,7 +78,7 @@ struct PermissionsOnboardingView: View {
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
-                    description: "Need Video.",
+                    description: "Required to capture video.",
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                     showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
@@ -74,7 +88,7 @@ struct PermissionsOnboardingView: View {
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
-                    description: "No Audio, No Bueno",
+                    description: "Required to record audio.",
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
                     showSettingsLink: micStatus == .denied || micStatus == .restricted
@@ -84,7 +98,7 @@ struct PermissionsOnboardingView: View {
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
-                    description: "Saves your recording",
+                    description: "Required to save recordings.",
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
@@ -94,7 +108,7 @@ struct PermissionsOnboardingView: View {
                     icon: "location.fill",
                     iconColor: .teal,
                     title: "Location",
-                    description: "GPS tags your video",
+                    description: "Optional: adds GPS tags to clips.",
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
                     showSettingsLink: locationStatus == .denied || locationStatus == .restricted
@@ -106,6 +120,14 @@ struct PermissionsOnboardingView: View {
 
             // Action buttons
             VStack(spacing: Theme.space12) {
+                if hasBlockedRequiredPermission {
+                    Text("One or more required permissions are off. Tap Settings on the row to enable access.")
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(Theme.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Theme.space24)
+                }
+
                 if hasUndetermined {
                     Button {
                         requestAllPermissions()

@@ -83,16 +83,21 @@ Phase 1 implementation notes:
 Objective: Make messaging clear, consistent, and action-oriented.
 
 Checklist:
-- [ ] Replace ambiguous permission copy with impact-based text.
-- [ ] Standardize status labels (Granted, Not Set, Denied, Restricted).
-- [ ] Add a consistent recovery instruction pattern: Open Settings, enable access, return.
-- [ ] Write dedicated blocked-state copy for each required permission.
-- [ ] Add optional-state copy for Speech-to-Text (feature unavailable, app still usable).
+- [x] Replace ambiguous permission copy with impact-based text.
+- [x] Standardize status labels (Granted, Not Set, Denied, Restricted).
+- [x] Add a consistent recovery instruction pattern: Open Settings, enable access, return.
+- [x] Write dedicated blocked-state copy for each required permission.
+- [x] Add optional-state copy for Speech-to-Text (feature unavailable, app still usable).
 - [ ] Review copy for tone and accessibility.
 - [ ] Add unit tests for copy-key/state mapping utilities if implemented.
 
 Deliverable:
 - Approved copy deck for all permission states and screens.
+
+Phase 2 implementation notes:
+1. Onboarding copy now explicitly labels Camera, Microphone, and Photo Library as required.
+2. Onboarding copy now labels Location and Speech-to-Text as optional.
+3. Recovery guidance now explicitly tells users to use the row-level Settings actions when required access is blocked.
 
 ## Phase 3: Required Access Gate UX
 
