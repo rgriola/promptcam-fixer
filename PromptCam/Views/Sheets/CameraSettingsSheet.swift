@@ -84,7 +84,8 @@ struct CameraSettingsSheet: View {
                         iconColor: .blue,
                         title: "Camera",
                         status: PermissionStatusDisplay.label(for: cameraStatus),
-                        statusColor: PermissionStatusDisplay.color(for: cameraStatus)
+                        statusColor: PermissionStatusDisplay.color(for: cameraStatus),
+                        permission: .camera
                     )
 
                     PermissionStatusRow(
@@ -92,7 +93,8 @@ struct CameraSettingsSheet: View {
                         iconColor: .orange,
                         title: "Microphone",
                         status: PermissionStatusDisplay.label(for: micStatus),
-                        statusColor: PermissionStatusDisplay.color(for: micStatus)
+                        statusColor: PermissionStatusDisplay.color(for: micStatus),
+                        permission: .microphone
                     )
 
                     PermissionStatusRow(
@@ -100,7 +102,8 @@ struct CameraSettingsSheet: View {
                         iconColor: .green,
                         title: "Photo Library",
                         status: PermissionStatusDisplay.label(for: photoStatus),
-                        statusColor: PermissionStatusDisplay.color(for: photoStatus)
+                        statusColor: PermissionStatusDisplay.color(for: photoStatus),
+                        permission: .photoLibrary
                     )
 
                     PermissionStatusRow(
@@ -108,7 +111,8 @@ struct CameraSettingsSheet: View {
                         iconColor: .teal,
                         title: "Location",
                         status: PermissionStatusDisplay.label(for: locationStatus),
-                        statusColor: PermissionStatusDisplay.color(for: locationStatus)
+                        statusColor: PermissionStatusDisplay.color(for: locationStatus),
+                        permission: .location
                     )
 
                     PermissionStatusRow(
@@ -116,7 +120,8 @@ struct CameraSettingsSheet: View {
                         iconColor: .purple,
                         title: "Speech to Text",
                         status: PermissionStatusDisplay.label(for: speechStatus),
-                        statusColor: PermissionStatusDisplay.color(for: speechStatus)
+                        statusColor: PermissionStatusDisplay.color(for: speechStatus),
+                        permission: .speechToText
                     )
 
                     if let speechRecovery = PermissionRecoveryMapper.optionalSpeechRecoveryMessage(

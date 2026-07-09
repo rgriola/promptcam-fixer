@@ -471,8 +471,21 @@ struct CameraView: View {
     }
 
     private func openAppSettings() {
+        PermissionAnalyticsService.trackOpenSettingsTapped(
+            permission: runtimePermissionType,
+            sourceSurface: .runtimeAlert,
+            snapshot: permissionService.policySnapshot
+        )
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+    }
+
+    private var runtimePermissionType: PermissionAnalyticsPermission {
+        let snapshot = permissionService.policySnapshot
+        if snapshot.camera == .denied || snapshot.camera == .restricted { return .camera }
+        if snapshot.microphone == .denied || snapshot.microphone == .restricted { return .microphone }
+        if snapshot.photoLibrary == .denied || snapshot.photoLibrary == .restricted { return .photoLibrary }
+        return .unknown
     }
 
     // MARK: Top Row Build

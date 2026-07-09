@@ -24,6 +24,7 @@ struct PermissionsOnboardingView: View {
     @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
         SFSpeechRecognizer.authorizationStatus()
     @State private var isRequesting = false
+    @State private var hasTrackedGateShown = false
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -76,6 +77,7 @@ struct PermissionsOnboardingView: View {
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
+                    permission: .camera,
                     description: PermissionCopyCatalog.description(for: .camera),
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
@@ -86,6 +88,7 @@ struct PermissionsOnboardingView: View {
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
+                    permission: .microphone,
                     description: PermissionCopyCatalog.description(for: .microphone),
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
@@ -96,6 +99,7 @@ struct PermissionsOnboardingView: View {
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
+                    permission: .photoLibrary,
                     description: PermissionCopyCatalog.description(for: .photoLibrary),
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
@@ -106,6 +110,7 @@ struct PermissionsOnboardingView: View {
                     icon: "location.fill",
                     iconColor: .teal,
                     title: "Location",
+                    permission: .location,
                     description: PermissionCopyCatalog.description(for: .location),
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
@@ -116,6 +121,7 @@ struct PermissionsOnboardingView: View {
                     icon: "waveform",
                     iconColor: .purple,
                     title: "Speech to Text",
+                    permission: .speechToText,
                     description: PermissionCopyCatalog.description(for: .speechToText),
                     status: PermissionStatusDisplay.label(for: speechStatus),
                     statusColor: PermissionStatusDisplay.color(for: speechStatus),
@@ -138,6 +144,7 @@ struct PermissionsOnboardingView: View {
 
                 if gateState.hasUndeterminedPermission {
                     Button {
+                        PermissionAnalyticsService.trackGrantAccessTapped(snapshot: gateState.snapshot)
                         requestAllPermissions()
                     } label: {
                         HStack(spacing: Theme.space8) {
@@ -174,10 +181,16 @@ struct PermissionsOnboardingView: View {
             .padding(.bottom, 40)
         }
         .background(Theme.bgGrad)
+        .onAppear {
+            trackGateShownIfNeeded()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshStatuses()
             }
+        }
+        .onChange(of: gateState.canContinue) { _, _ in
+            trackGateShownIfNeeded()
         }
     }
 
@@ -215,6 +228,12 @@ struct PermissionsOnboardingView: View {
         locationStatus = CLLocationManager().authorizationStatus
         speechStatus = SFSpeechRecognizer.authorizationStatus()
     }
+
+    private func trackGateShownIfNeeded() {
+        guard !gateState.canContinue, !hasTrackedGateShown else { return }
+        hasTrackedGateShown = true
+        PermissionAnalyticsService.trackGateShown(snapshot: gateState.snapshot)
+    }
 }
 
 // MARK: - Onboarding Permission Row
@@ -226,6 +245,7 @@ private struct OnboardingPermissionRow: View {
     let icon: String
     let iconColor: Color
     let title: String
+    let permission: PermissionAnalyticsPermission
     let description: String
     let status: String
     let statusColor: Color
@@ -267,7 +287,7 @@ private struct OnboardingPermissionRow: View {
                 }
 
                 if showSettingsLink {
-                    OpenSettingsButton()
+                    OpenSettingsButton(permission: permission, sourceSurface: .gate)
                 }
             }
         }

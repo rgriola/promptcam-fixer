@@ -213,14 +213,14 @@ Phase 6 next actions:
 Objective: Measure recovery success and detect dead-end friction.
 
 Checklist:
-- [ ] Instrument gate shown event.
-- [ ] Instrument Grant Access and Open Settings taps.
+- [x] Instrument gate shown event.
+- [x] Instrument Grant Access and Open Settings taps.
 - [ ] Instrument return-from-settings status delta.
 - [ ] Instrument recovery success event (all required granted).
 - [ ] Instrument repeated blocked loops.
 - [ ] Add internal support diagnostic summary for current permission states.
 - [ ] Add analytics events for optional Speech-to-Text enablement and denial.
-- [ ] Add unit tests for analytics event payload builders.
+- [x] Add unit tests for analytics event payload builders.
 
 Deliverable:
 - Event taxonomy and dashboard definition.
@@ -228,7 +228,7 @@ Deliverable:
 Phase 7 preparation notes:
 1. Initial event taxonomy and payload contract are defined in `docs/PHASE7_ANALYTICS_PREP.md`.
 2. Events are organized around gate visibility, recovery actions, settings return deltas, and optional Speech-to-Text state.
-3. Implementation should begin only after Phase 6 manual QA sign-off.
+3. Implementation started with payload builders + instrumentation for `permission_gate_shown` and `permission_open_settings_tapped`.
 
 ## Phase 8: Rollout
 

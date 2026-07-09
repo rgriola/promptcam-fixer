@@ -111,8 +111,15 @@ enum PermissionStatusDisplay {
 /// Reusable button that deep-links to the app's iOS Settings page.
 /// Used in permission rows when a permission has been denied or restricted.
 struct OpenSettingsButton: View {
+    var permission: PermissionAnalyticsPermission = .unknown
+    var sourceSurface: PermissionAnalyticsSurface = .settings
+
     var body: some View {
         Button {
+            PermissionAnalyticsService.trackOpenSettingsTapped(
+                permission: permission,
+                sourceSurface: sourceSurface
+            )
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)
             }
