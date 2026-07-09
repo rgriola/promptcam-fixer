@@ -18,6 +18,12 @@ struct RecordingsService: Sendable {
     )
 
     /// Fetches videos from the user's library, newest first.
+    ///
+    /// Capped at `Self.maxFetchCount` (200) so refreshes triggered by save,
+    /// delete, and iCloud sync don't re-enumerate the entire video library
+    /// on devices with thousands of clips. The carousel is UX-designed for
+    /// RECENT recordings; users who need the full library go through
+    /// `RecordingsLibrarySheet`.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
@@ -28,6 +34,7 @@ struct RecordingsService: Sendable {
         return await Task.detached(priority: .userInitiated) {
             let options = PHFetchOptions()
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            options.fetchLimit = Self.maxFetchCount
 
             // mediaType: .video already excludes photos and Live Photo images.
             let fetch = PHAsset.fetchAssets(with: .video, options: options)
@@ -37,6 +44,10 @@ struct RecordingsService: Sendable {
             return out
         }.value
     }
+
+    /// Maximum number of recent recordings surfaced through `fetchAllRecordings()`.
+    /// Bounded so post-save / post-delete refreshes stay fast on large libraries.
+    static let maxFetchCount = 200
 
     /// Thumbnail for the most recently saved video — used by the camera-roll
     /// button on the footer to mirror the iOS Camera app's thumbnail preview.
