@@ -40,8 +40,12 @@ struct RecordingsLibrarySheet: View {
             RecordingPlayerView(
                 recording: recording,
                 videoURL: videoURL,
-                onDelete: {
-                    Task { await deleteRecording(recording) }
+                onDelete: { recordingToDelete in
+                    // Player passes the currently active recording so we
+                    // delete what the user actually sees, not what they
+                    // originally picked. In this sheet the two are the same,
+                    // but the signature is now callback-driven.
+                    Task { await deleteRecording(recordingToDelete) }
                 }
             )
         }
