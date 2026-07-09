@@ -24,10 +24,10 @@ struct RecordingCarouselView: View {
     let thumbnailLoader: (Recording) async -> UIImage?
     let onSelect: (Recording) -> Void
 
-    private let cellWidth:  CGFloat = 84
+    private let cellWidth: CGFloat = 84
     private let cellHeight: CGFloat = 84
-    private let spacing:    CGFloat = 10
-    private var slotWidth:  CGFloat { cellWidth + spacing }
+    private let spacing: CGFloat = 10
+    private var slotWidth: CGFloat { cellWidth + spacing }
 
     /// Offset index: baseOffset = -i * slotWidth centers item i.
     @State private var baseOffset: CGFloat = 0
@@ -39,11 +39,13 @@ struct RecordingCarouselView: View {
             // Offset so item 0's left edge starts at (screenWidth-cellWidth)/2,
             // placing item 0's center at screenWidth/2.
             let centerInitial = (geo.size.width - cellWidth) / 2
-            let totalOffset   = centerInitial + baseOffset + dragOffset
+            let totalOffset = centerInitial + baseOffset + dragOffset
 
             HStack(spacing: spacing) {
-                ForEach(Array(recordings.enumerated()), 
-                         id: \.element.id) { index, recording in
+                ForEach(
+                    Array(recordings.enumerated()),
+                    id: \.element.id
+                ) { index, recording in
                     let isActive = recording.id == activeRecordingID
 
                     CarouselCell(
@@ -79,39 +81,57 @@ struct RecordingCarouselView: View {
                         dragOffset = value.translation.width
                     }
                     .onEnded { value in
-                        let velocity    = value.velocity.width
-                        let rawIndex    = -(baseOffset + dragOffset) / slotWidth
-                        var targetIndex: Int
-
-                        if velocity > 300 {
-                            targetIndex = Int(floor(rawIndex))      // flick right → prev
-                        } else if velocity < -300 {
-                            targetIndex = Int(ceil(rawIndex))       // flick left → next
-                        } else {
-                            targetIndex = Int(round(rawIndex))
-                        }
-                        targetIndex = max(0, min(recordings.count - 1, targetIndex))
+                        let target = CarouselDragMath.targetIndex(
+                            baseOffset: baseOffset,
+                            dragOffset: dragOffset,
+                            slotWidth: slotWidth,
+                            velocity: value.velocity.width,
+                            count: recordings.count
+                        )
 
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            baseOffset = -CGFloat(targetIndex) * slotWidth
+                            baseOffset = CarouselDragMath.baseOffset(
+                                forIndex: target,
+                                slotWidth: slotWidth
+                            )
                             dragOffset = 0
                         }
-                        onSelect(recordings[targetIndex])
+                        onSelect(recordings[target])
                     }
             )
             // Scroll active item to center when selection changes from outside.
             .onChange(of: activeRecordingID) { _, newID in
                 if let index = recordings.firstIndex(where: { $0.id == newID }) {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        baseOffset = -CGFloat(index) * slotWidth
+                        baseOffset = CarouselDragMath.baseOffset(
+                            forIndex: index,
+                            slotWidth: slotWidth
+                        )
                         dragOffset = 0
                     }
                 }
             }
+            // Recenter (no animation) when the recordings array mutates but
+            // the active ID is unchanged — e.g. a delete/save/iCloud sync
+            // shifts the active recording's index. Without this, the yellow
+            // active-cell border visibly drifts off center. Also cancels any
+            // mid-flight drag so it can't commit to a stale target index.
+            .onChange(of: recordings) { _, newRecordings in
+                guard let index = newRecordings.firstIndex(where: { $0.id == activeRecordingID })
+                else { return }
+                baseOffset = CarouselDragMath.baseOffset(
+                    forIndex: index,
+                    slotWidth: slotWidth
+                )
+                dragOffset = 0
+            }
             .onAppear {
                 // No animation on initial positioning.
                 if let index = recordings.firstIndex(where: { $0.id == activeRecordingID }) {
-                    baseOffset = -CGFloat(index) * slotWidth
+                    baseOffset = CarouselDragMath.baseOffset(
+                        forIndex: index,
+                        slotWidth: slotWidth
+                    )
                 }
             }
         }
