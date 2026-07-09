@@ -194,6 +194,12 @@ Checklist:
 Deliverable:
 - Signed QA report and go/no-go recommendation.
 
+Phase 6 implementation notes:
+1. Added executable QA matrix with scenario IDs, setup, expected outcomes, and evidence fields in `docs/PHASE6_QA_MATRIX.md`.
+2. Matrix includes all required checklist scenarios: fresh install denials, post-grant revocations, recovery flows, limited-photos handling, optional speech denial, restricted states, and foreground refresh stability.
+3. Added go/no-go criteria and defect template to support sign-off.
+4. Phase 6 status: In Progress (artifact complete; execution pending).
+
 ## Phase 7: Analytics and Supportability
 
 Objective: Measure recovery success and detect dead-end friction.
