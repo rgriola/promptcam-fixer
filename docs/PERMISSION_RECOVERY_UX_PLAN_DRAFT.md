@@ -180,17 +180,17 @@ Objective: Validate all denial and recovery paths before rollout.
 
 Checklist:
 - [x] Run automated preflight test suite for routing/policy/recovery/copy coverage.
-- [ ] Fresh install: allow all permissions.
-- [ ] Fresh install: deny Camera.
-- [ ] Fresh install: deny Microphone.
-- [ ] Fresh install: deny Photo Library.
-- [ ] Allow all, then revoke one permission in iOS Settings.
-- [ ] Recover from denied to granted for each required permission.
-- [ ] Validate behavior for Photo Library Limited.
-- [ ] Validate Speech-to-Text denied while all required permissions are granted.
-- [ ] Validate restricted state (Screen Time or MDM).
-- [ ] Validate background/foreground status refresh.
-- [ ] Validate copy and CTA consistency across all states.
+- [x] Fresh install: allow all permissions.
+- [x] Fresh install: deny Camera.
+- [x] Fresh install: deny Microphone.
+- [x] Fresh install: deny Photo Library.
+- [x] Allow all, then revoke one permission in iOS Settings.
+- [x] Recover from denied to granted for each required permission.
+- [x] Validate behavior for Photo Library Limited.
+- [x] Validate Speech-to-Text denied while all required permissions are granted.
+- [x] Validate restricted state (Screen Time or MDM).
+- [x] Validate background/foreground status refresh.
+- [x] Validate copy and CTA consistency across all states.
 - [x] Add/update unit tests for implemented phase-level logic before sign-off.
 
 Deliverable:
