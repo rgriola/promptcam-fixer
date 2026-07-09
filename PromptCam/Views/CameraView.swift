@@ -348,7 +348,9 @@ struct CameraView: View {
                 viewModel.cameraError = nil
             }
         } message: {
-            Text(runtimeRecoveryMessage?.message ?? viewModel.cameraError?.localizedDescription ?? "Unknown error")
+            Text(
+                runtimeRecoveryMessage?.message ?? viewModel.cameraError?.localizedDescription
+                    ?? "Unknown error")
         }
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)

@@ -13,99 +13,99 @@ import XCTest
 
 final class PermissionRecoveryMapperTests: XCTestCase {
 
-    func testRuntimeRecoveryMapsCameraDeniedToOpenSettings() {
-        let snapshot = PermissionPolicySnapshot(
-            camera: .denied,
-            microphone: .authorized,
-            photoLibrary: .authorized,
-            location: .authorizedWhenInUse,
-            speechToText: .authorized
-        )
+     func testRuntimeRecoveryMapsCameraDeniedToOpenSettings() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .denied,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
 
-        let result = PermissionRecoveryMapper.runtimeRecovery(
-            for: .sessionNotReady,
-            snapshot: snapshot
-        )
+          let result = PermissionRecoveryMapper.runtimeRecovery(
+               for: .sessionNotReady,
+               snapshot: snapshot
+          )
 
-        XCTAssertEqual(result.action, .openSettings)
-        XCTAssertTrue(result.title.contains("Camera"))
-    }
+          XCTAssertEqual(result.action, .openSettings)
+          XCTAssertTrue(result.title.contains("Camera"))
+     }
 
-    func testRuntimeRecoveryMapsMicrophoneRestrictedToOpenSettings() {
-        let snapshot = PermissionPolicySnapshot(
-            camera: .authorized,
-            microphone: .restricted,
-            photoLibrary: .authorized,
-            location: .authorizedWhenInUse,
-            speechToText: .authorized
-        )
+     func testRuntimeRecoveryMapsMicrophoneRestrictedToOpenSettings() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .restricted,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
 
-        let result = PermissionRecoveryMapper.runtimeRecovery(
-            for: .recordingFailed("input lost"),
-            snapshot: snapshot
-        )
+          let result = PermissionRecoveryMapper.runtimeRecovery(
+               for: .recordingFailed("input lost"),
+               snapshot: snapshot
+          )
 
-        XCTAssertEqual(result.action, .openSettings)
-        XCTAssertTrue(result.title.contains("Microphone"))
-    }
+          XCTAssertEqual(result.action, .openSettings)
+          XCTAssertTrue(result.title.contains("Microphone"))
+     }
 
-    func testRuntimeRecoveryMapsPhotoDeniedToOpenSettings() {
-        let snapshot = PermissionPolicySnapshot(
-            camera: .authorized,
-            microphone: .authorized,
-            photoLibrary: .denied,
-            location: .authorizedWhenInUse,
-            speechToText: .authorized
-        )
+     func testRuntimeRecoveryMapsPhotoDeniedToOpenSettings() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .denied,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
 
-        let result = PermissionRecoveryMapper.runtimeRecovery(
-            for: .photoLibraryPermissionDenied,
-            snapshot: snapshot
-        )
+          let result = PermissionRecoveryMapper.runtimeRecovery(
+               for: .photoLibraryPermissionDenied,
+               snapshot: snapshot
+          )
 
-        XCTAssertEqual(result.action, .openSettings)
-        XCTAssertTrue(result.title.contains("Photo Library"))
-    }
+          XCTAssertEqual(result.action, .openSettings)
+          XCTAssertTrue(result.title.contains("Photo Library"))
+     }
 
-    func testRuntimeRecoveryMapsPermissionLikeSaveFailureToOpenSettings() {
-        let snapshot = PermissionPolicySnapshot(
-            camera: .authorized,
-            microphone: .authorized,
-            photoLibrary: .authorized,
-            location: .authorizedWhenInUse,
-            speechToText: .authorized
-        )
+     func testRuntimeRecoveryMapsPermissionLikeSaveFailureToOpenSettings() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
 
-        let result = PermissionRecoveryMapper.runtimeRecovery(
-            for: .photoLibrarySaveFailed("permission denied while writing asset"),
-            snapshot: snapshot
-        )
+          let result = PermissionRecoveryMapper.runtimeRecovery(
+               for: .photoLibrarySaveFailed("permission denied while writing asset"),
+               snapshot: snapshot
+          )
 
-        XCTAssertEqual(result.action, .openSettings)
-        XCTAssertTrue(result.title.contains("Photo Library"))
-    }
+          XCTAssertEqual(result.action, .openSettings)
+          XCTAssertTrue(result.title.contains("Photo Library"))
+     }
 
-    func testRuntimeRecoveryKeepsNonPermissionSaveFailureDismissOnly() {
-        let snapshot = PermissionPolicySnapshot(
-            camera: .authorized,
-            microphone: .authorized,
-            photoLibrary: .authorized,
-            location: .authorizedWhenInUse,
-            speechToText: .authorized
-        )
+     func testRuntimeRecoveryKeepsNonPermissionSaveFailureDismissOnly() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
 
-        let result = PermissionRecoveryMapper.runtimeRecovery(
-            for: .photoLibrarySaveFailed("disk full"),
-            snapshot: snapshot
-        )
+          let result = PermissionRecoveryMapper.runtimeRecovery(
+               for: .photoLibrarySaveFailed("disk full"),
+               snapshot: snapshot
+          )
 
-        XCTAssertEqual(result.action, .dismiss)
-        XCTAssertTrue(result.title.contains("Save"))
-    }
+          XCTAssertEqual(result.action, .dismiss)
+          XCTAssertTrue(result.title.contains("Save"))
+     }
 
-    func testOptionalSpeechRecoveryMessageShownForDeniedOrRestricted() {
-        XCTAssertNotNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .denied))
-        XCTAssertNotNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .restricted))
-        XCTAssertNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .authorized))
-    }
+     func testOptionalSpeechRecoveryMessageShownForDeniedOrRestricted() {
+          XCTAssertNotNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .denied))
+          XCTAssertNotNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .restricted))
+          XCTAssertNil(PermissionRecoveryMapper.optionalSpeechRecoveryMessage(for: .authorized))
+     }
 }

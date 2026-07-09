@@ -29,6 +29,7 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: PromptCam needs camera access to record videos.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: PromptCam can record microphone audio with your videos.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: PromptCam needs photo library access to save and review your recordings.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: PromptCam uses speech recognition for optional transcript features.
 
         INFOPLIST_KEY_CFBundleDisplayName: A1-Telepromter
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.video

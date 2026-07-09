@@ -57,11 +57,14 @@ enum PermissionCopyCatalog {
      static func requiredPermissionRecoveryMessage(for key: PermissionCopyKey) -> String {
           switch key {
           case .camera:
-               return "PromptCam cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
+               return
+                    "PromptCam cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
           case .microphone:
-               return "PromptCam cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
+               return
+                    "PromptCam cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
           case .photoLibrary:
-               return "PromptCam cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
+               return
+                    "PromptCam cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
           case .location:
                return "Location access is optional and only used for GPS metadata."
           case .speechToText:
