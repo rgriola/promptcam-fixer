@@ -88,8 +88,8 @@ Checklist:
 - [x] Add a consistent recovery instruction pattern: Open Settings, enable access, return.
 - [x] Write dedicated blocked-state copy for each required permission.
 - [x] Add optional-state copy for Speech-to-Text (feature unavailable, app still usable).
-- [ ] Review copy for tone and accessibility.
-- [ ] Add unit tests for copy-key/state mapping utilities if implemented.
+- [x] Review copy for tone and accessibility.
+- [x] Add unit tests for copy-key/state mapping utilities if implemented.
 
 Deliverable:
 - Approved copy deck for all permission states and screens.
@@ -98,6 +98,8 @@ Phase 2 implementation notes:
 1. Onboarding copy now explicitly labels Camera, Microphone, and Photo Library as required.
 2. Onboarding copy now labels Location and Speech-to-Text as optional.
 3. Recovery guidance now explicitly tells users to use the row-level Settings actions when required access is blocked.
+4. Copy is centralized in `PermissionCopyCatalog` to keep messaging consistent across onboarding surfaces.
+5. `PermissionCopyCatalogTests` verifies required-vs-optional copy mapping and summary text presence.
 
 ## Phase 3: Required Access Gate UX
 

@@ -12,10 +12,14 @@ struct PermissionsOnboardingView: View {
     /// Callback fired when the user taps Continue to proceed to camera.
     let onContinue: () -> Void
 
-    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
+    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .video)
+    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .audio)
+    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(
+        for: .readWrite)
+    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
+        .authorizationStatus
     @State private var isRequesting = false
 
     @Environment(\.scenePhase) private var scenePhase
@@ -53,17 +57,17 @@ struct PermissionsOnboardingView: View {
                     .font(Theme.display44)
                     .foregroundStyle(Theme.white)
 
-                Text("A1-Teleprompter")
+                Text(PermissionCopyCatalog.onboardingTitle)
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
 
-                Text("PromptCam needs Camera, Microphone, and Photo Library to record and save videos.")
+                Text(PermissionCopyCatalog.onboardingRequiredSummary)
                     .font(Theme.font16Regular)
                     .foregroundStyle(Theme.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.space32)
 
-                Text("Location and Speech-to-Text are optional and can be enabled later in Settings.")
+                Text(PermissionCopyCatalog.onboardingOptionalSummary)
                     .font(Theme.font12Regular)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
@@ -78,7 +82,7 @@ struct PermissionsOnboardingView: View {
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
-                    description: "Required to capture video.",
+                    description: PermissionCopyCatalog.description(for: .camera),
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                     showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
@@ -88,7 +92,7 @@ struct PermissionsOnboardingView: View {
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
-                    description: "Required to record audio.",
+                    description: PermissionCopyCatalog.description(for: .microphone),
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
                     showSettingsLink: micStatus == .denied || micStatus == .restricted
@@ -98,7 +102,7 @@ struct PermissionsOnboardingView: View {
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
-                    description: "Required to save recordings.",
+                    description: PermissionCopyCatalog.description(for: .photoLibrary),
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted
@@ -108,7 +112,7 @@ struct PermissionsOnboardingView: View {
                     icon: "location.fill",
                     iconColor: .teal,
                     title: "Location",
-                    description: "Optional: adds GPS tags to clips.",
+                    description: PermissionCopyCatalog.description(for: .location),
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
                     showSettingsLink: locationStatus == .denied || locationStatus == .restricted
@@ -121,7 +125,7 @@ struct PermissionsOnboardingView: View {
             // Action buttons
             VStack(spacing: Theme.space12) {
                 if hasBlockedRequiredPermission {
-                    Text("One or more required permissions are off. Tap Settings on the row to enable access.")
+                    Text(PermissionCopyCatalog.onboardingBlockedRequiredMessage)
                         .font(Theme.font12Regular)
                         .foregroundStyle(Theme.secondaryText)
                         .multilineTextAlignment(.center)

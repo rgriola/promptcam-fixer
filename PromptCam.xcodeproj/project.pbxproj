@@ -54,7 +54,9 @@
 		8F4B6FC5DA69AA3A8975AC6C /* EVAdjustmentPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA5E5344875D6CB4076D11F /* EVAdjustmentPanel.swift */; };
 		919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7EEE9468E02324BB4E04FD /* VideoModeBadgeView.swift */; };
 		9262A40C7236311E5A13B761 /* InstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70874E673904C8E434BD20C /* InstructionsView.swift */; };
+		964A4C918DB9556C2FD859F6 /* PermissionCopyCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27C29C958DC64AAE85A56C2A /* PermissionCopyCatalog.swift */; };
 		9CBF80AC47D52F451921F8BA /* CameraError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA93F6B0683EAD2D7B78DD4 /* CameraError.swift */; };
+		A02FF406AE6D45CF2A9DCFE7 /* PermissionCopyCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97FE5EA979E431FA603788FF /* PermissionCopyCatalogTests.swift */; };
 		A23F1AAB79BEC4162246E355 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23CDB9C19D4CF372C72C62D /* CameraViewModel.swift */; };
 		A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */; };
 		A82A98A6DFEC958503F82421 /* DeviceCapabilitiesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */; };
@@ -116,6 +118,7 @@
 		20A368D49CA342BD4D926A35 /* TeleprompterConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterConfig.swift; sourceTree = "<group>"; };
 		260A828C38B379D7070292C3 /* ScriptArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptArchive.swift; sourceTree = "<group>"; };
 		26EEA7971142FD517E1511C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		27C29C958DC64AAE85A56C2A /* PermissionCopyCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCopyCatalog.swift; sourceTree = "<group>"; };
 		282D751A219D3E66926CBBD2 /* ArchiveButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveButton.swift; sourceTree = "<group>"; };
 		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMeterServiceTests.swift; sourceTree = "<group>"; };
@@ -151,6 +154,7 @@
 		8DC275511A122EFB62D38A85 /* PermissionStatusRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusRow.swift; sourceTree = "<group>"; };
 		923418788547770366446818 /* ComposeScriptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeScriptSheet.swift; sourceTree = "<group>"; };
 		946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraErrorTests.swift; sourceTree = "<group>"; };
+		97FE5EA979E431FA603788FF /* PermissionCopyCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCopyCatalogTests.swift; sourceTree = "<group>"; };
 		9F2625E9C2B12E38C35EC1EC /* PromptCamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCamUITests.swift; sourceTree = "<group>"; };
 		A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCameraService.swift; sourceTree = "<group>"; };
 		A6EAB42380C4781DDAD757D2 /* AudioSourcePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSourcePickerView.swift; sourceTree = "<group>"; };
@@ -197,6 +201,7 @@
 				AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */,
 				42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */,
 				A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */,
+				97FE5EA979E431FA603788FF /* PermissionCopyCatalogTests.swift */,
 				86B267A7F8A4F641A78D8DF2 /* PermissionPolicySnapshotTests.swift */,
 				CFB5AF6298B99D147B09A4E5 /* PermissionStatusDisplayTests.swift */,
 				3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */,
@@ -218,6 +223,7 @@
 				07CD4E201E8DD159B20FF392 /* CameraServiceProtocol.swift */,
 				515E59847CCAEAF9F3ECDBA7 /* ExternalDisplayService.swift */,
 				BE97ACFCDD1B0F053B05DC00 /* NetworkMonitor.swift */,
+				27C29C958DC64AAE85A56C2A /* PermissionCopyCatalog.swift */,
 				55DB6D46EDEB48AB26EFE131 /* PermissionService.swift */,
 				CE60C4B00CAE887C0AB3B754 /* PhotoLibraryChangeMonitor.swift */,
 				B6175464BB708CE805EDD350 /* PhotoLibrarySaver.swift */,
@@ -538,6 +544,7 @@
 				9262A40C7236311E5A13B761 /* InstructionsView.swift in Sources */,
 				48965C15F496BB1BD799A0E0 /* Log.swift in Sources */,
 				696F11B84A16D657A42C5405 /* NetworkMonitor.swift in Sources */,
+				964A4C918DB9556C2FD859F6 /* PermissionCopyCatalog.swift in Sources */,
 				A548125CADA261404E3C29F7 /* PermissionService.swift in Sources */,
 				EB3DA0B4B3856440DB8849F1 /* PermissionStatusHelpers.swift in Sources */,
 				5B3D2C50BC22FB30C160C6FB /* PermissionStatusRow.swift in Sources */,
@@ -592,6 +599,7 @@
 				565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */,
 				A82A98A6DFEC958503F82421 /* DeviceCapabilitiesTests.swift in Sources */,
 				F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */,
+				A02FF406AE6D45CF2A9DCFE7 /* PermissionCopyCatalogTests.swift in Sources */,
 				D6CC0F3F02D9817A69817079 /* PermissionPolicySnapshotTests.swift in Sources */,
 				17AD00AEDF7652BA72FB8AB6 /* PermissionStatusDisplayTests.swift in Sources */,
 				B322E89ABDD58EF7F35B6E3E /* PhotoLibraryChangeMonitorTests.swift in Sources */,
