@@ -228,6 +228,10 @@ struct PermissionsOnboardingView: View {
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
         speechStatus = SFSpeechRecognizer.authorizationStatus()
+        PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
+            status: speechStatus,
+            sourceScreen: "onboarding"
+        )
     }
 
     private func trackGateShownIfNeeded() {

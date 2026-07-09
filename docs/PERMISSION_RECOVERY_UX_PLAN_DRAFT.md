@@ -53,7 +53,7 @@ Implemented:
 Pending:
 1. Execute device QA scenarios P6-01 through P6-15 and fill evidence.
 2. Produce signed QA report and go/no-go recommendation.
-3. Start Phase 7 analytics instrumentation after QA sign-off.
+3. Execute device QA to validate analytics events on physical hardware and clear rollout gates.
 
 ## Phased Plan With Checklists
 
@@ -215,11 +215,11 @@ Objective: Measure recovery success and detect dead-end friction.
 Checklist:
 - [x] Instrument gate shown event.
 - [x] Instrument Grant Access and Open Settings taps.
-- [ ] Instrument return-from-settings status delta.
-- [ ] Instrument recovery success event (all required granted).
-- [ ] Instrument repeated blocked loops.
-- [ ] Add internal support diagnostic summary for current permission states.
-- [ ] Add analytics events for optional Speech-to-Text enablement and denial.
+- [x] Instrument return-from-settings status delta.
+- [x] Instrument recovery success event (all required granted).
+- [x] Instrument repeated blocked loops.
+- [x] Add internal support diagnostic summary for current permission states.
+- [x] Add analytics events for optional Speech-to-Text enablement and denial.
 - [x] Add unit tests for analytics event payload builders.
 
 Deliverable:
@@ -228,7 +228,9 @@ Deliverable:
 Phase 7 preparation notes:
 1. Initial event taxonomy and payload contract are defined in `docs/PHASE7_ANALYTICS_PREP.md`.
 2. Events are organized around gate visibility, recovery actions, settings return deltas, and optional Speech-to-Text state.
-3. Implementation started with payload builders + instrumentation for `permission_gate_shown` and `permission_open_settings_tapped`.
+3. Implemented events now include settings-return deltas, recovery success, blocked-loop detection, speech observed/open-settings actions, and support diagnostic summary logging.
+4. Added support diagnostics summary surface in Settings to speed internal triage during QA/device validation.
+5. Expanded analytics payload builder tests; unit suite now verifies these payloads in `PermissionAnalyticsPayloadBuilderTests`.
 
 ## Phase 8: Rollout
 
@@ -250,8 +252,8 @@ Deliverable:
 Phase 8 implementation notes:
 1. Rollout execution checklist and launch gates are defined in `docs/PHASE8_ROLLOUT_CHECKLIST.md`.
 2. Phase 8 is now started for rollout planning and launch readiness tracking.
-3. Production rollout execution remains gated on completing remaining Phase 7 analytics instrumentation.
-4. Initial gate check recorded on July 9, 2026: Gate 3 Ready (129 unit tests passed), Gates 1/2/4 Blocked.
+3. Production rollout execution is currently gated on Phase 6 device QA evidence and zero-critical severity sign-off.
+4. Updated gate check recorded on July 9, 2026: Gates 2 and 3 Ready; Gates 1 and 4 remain Blocked pending device QA evidence and severity sign-off.
 
 ## Acceptance Criteria
 
@@ -276,4 +278,4 @@ Neutral
 
 ## Suggested Next Step
 
-Run a 30-minute review with Product, Design, and iOS to lock Phase 1 decisions, then convert this draft into an implementation ticket set.
+Execute the physical-device QA matrix (P6-01 through P6-15), capture evidence, and publish the signed go/no-go recommendation to clear Gate 1 for rollout.

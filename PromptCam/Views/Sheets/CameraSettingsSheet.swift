@@ -136,6 +136,15 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
+                Section("Support Diagnostics") {
+                    Text(permissionSupportSummary)
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(Theme.primaryText)
+                        .textSelection(.enabled)
+                        .padding(.vertical, Theme.space4)
+                }
+                .settingsSectionHeaderStyle()
+
                 // MARK: - Formats Accordion
                 Section {
 
@@ -218,6 +227,20 @@ struct CameraSettingsSheet: View {
         return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
+    private var policySnapshot: PermissionPolicySnapshot {
+        PermissionPolicySnapshot(
+            camera: cameraStatus,
+            microphone: micStatus,
+            photoLibrary: photoStatus,
+            location: locationStatus,
+            speechToText: speechStatus
+        )
+    }
+
+    private var permissionSupportSummary: String {
+        PermissionAnalyticsService.supportSummaryText(from: policySnapshot)
+    }
+
     /// Reusable format row — renders from a validated RecordingFormat pair.
     private func formatRow(_ format: RecordingFormat, icon: String = "video.fill") -> some View {
         HStack(spacing: Theme.space8) {
@@ -238,6 +261,16 @@ struct CameraSettingsSheet: View {
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
         speechStatus = SFSpeechRecognizer.authorizationStatus()
+
+        let snapshot = policySnapshot
+        PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
+            status: speechStatus,
+            sourceScreen: "settings"
+        )
+        PermissionAnalyticsService.trackSupportDiagnosticSummary(
+            snapshot: snapshot,
+            sourceScreen: "settings"
+        )
     }
 
     // MARK: - Slack Deep Link

@@ -84,4 +84,128 @@ final class PermissionAnalyticsPayloadBuilderTests: XCTestCase {
           XCTAssertEqual(payload.fields["sourceScreen"], "onboarding")
           XCTAssertEqual(payload.fields["undeterminedPermissions"], "camera,microphone,location")
      }
+
+     func testSettingsReturnedPayloadIncludesDiffAndDuration() {
+          let previous = PermissionPolicySnapshot(
+               camera: .denied,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .denied
+          )
+
+          let current = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.settingsReturned(
+               previousSnapshot: previous,
+               currentSnapshot: current,
+               timeInSettingsMs: 1200
+          )
+
+          XCTAssertEqual(payload.event, .permissionSettingsReturned)
+          XCTAssertEqual(payload.fields["timeInSettingsMs"], "1200")
+          XCTAssertEqual(
+               payload.fields["changedPermissions"],
+               "camera:denied->authorized,speechToText:denied->authorized")
+          XCTAssertEqual(payload.fields["unchangedPermissions"], "microphone,photoLibrary,location")
+     }
+
+     func testRecoverySuccessPayloadIncludesRecoveredPermissionsAndSurface() {
+          let previous = PermissionPolicySnapshot(
+               camera: .denied,
+               microphone: .restricted,
+               photoLibrary: .denied,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let current = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .limited,
+               location: .authorizedWhenInUse,
+               speechToText: .authorized
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.recoverySuccess(
+               previousSnapshot: previous,
+               currentSnapshot: current,
+               recoverySurface: .gate,
+               recoveryDurationMs: 3000
+          )
+
+          XCTAssertEqual(payload.event, .permissionRecoverySuccess)
+          XCTAssertEqual(payload.fields["recoveredPermissions"], "camera,microphone,photoLibrary")
+          XCTAssertEqual(payload.fields["recoverySurface"], "gate")
+          XCTAssertEqual(payload.fields["recoveryDurationMs"], "3000")
+     }
+
+     func testBlockedLoopPayloadIncludesLoopCountAndBlockedPermissions() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .denied,
+               microphone: .authorized,
+               photoLibrary: .restricted,
+               location: .notDetermined,
+               speechToText: .notDetermined
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.blockedLoopDetected(
+               loopCount: 2,
+               snapshot: snapshot,
+               lastAction: "gateShown"
+          )
+
+          XCTAssertEqual(payload.event, .permissionBlockedLoopDetected)
+          XCTAssertEqual(payload.fields["loopCount"], "2")
+          XCTAssertEqual(payload.fields["blockedPermissions"], "camera,photoLibrary")
+          XCTAssertEqual(payload.fields["lastAction"], "gateShown")
+     }
+
+     func testSpeechStatusPayloadIncludesSourceAndStatus() {
+          let payload = PermissionAnalyticsPayloadBuilder.speechPermissionStatusObserved(
+               status: .restricted,
+               sourceScreen: "settings"
+          )
+
+          XCTAssertEqual(payload.event, .speechPermissionStatusObserved)
+          XCTAssertEqual(payload.fields["speechStatus"], "restricted")
+          XCTAssertEqual(payload.fields["sourceScreen"], "settings")
+     }
+
+     func testSpeechOpenSettingsPayloadIncludesSurfaceAndStatus() {
+          let payload = PermissionAnalyticsPayloadBuilder.speechPermissionOpenSettingsTapped(
+               sourceSurface: .settings,
+               speechStatus: .denied
+          )
+
+          XCTAssertEqual(payload.event, .speechPermissionOpenSettingsTapped)
+          XCTAssertEqual(payload.fields["sourceSurface"], "settings")
+          XCTAssertEqual(payload.fields["speechStatus"], "denied")
+     }
+
+     func testSupportDiagnosticSummaryPayloadIncludesRequiredFlag() {
+          let snapshot = PermissionPolicySnapshot(
+               camera: .authorized,
+               microphone: .authorized,
+               photoLibrary: .authorized,
+               location: .authorizedWhenInUse,
+               speechToText: .notDetermined
+          )
+
+          let payload = PermissionAnalyticsPayloadBuilder.supportDiagnosticSummary(
+               snapshot: snapshot,
+               sourceScreen: "settings"
+          )
+
+          XCTAssertEqual(payload.event, .permissionSupportDiagnosticSummary)
+          XCTAssertEqual(payload.fields["sourceScreen"], "settings")
+          XCTAssertEqual(payload.fields["requiredPermissionsGranted"], "true")
+          XCTAssertEqual(payload.fields["speechToText"], "notDetermined")
+     }
 }

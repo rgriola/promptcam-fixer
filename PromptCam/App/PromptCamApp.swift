@@ -74,7 +74,10 @@ struct PromptCamApp: App {
     }
 
     private func refreshRequiredPermissionState() {
-        let next = !permissionService.policySnapshot.shouldBlockAppEntry
+        let snapshot = permissionService.policySnapshot
+        PermissionAnalyticsService.trackSettingsReturnedIfNeeded(currentSnapshot: snapshot)
+
+        let next = !snapshot.shouldBlockAppEntry
         if hasRequiredPermissions != next {
             hasRequiredPermissions = next
         }
