@@ -27,8 +27,8 @@ struct PermissionsOnboardingView: View {
     @State private var hasTrackedGateShown = false
 
     @Environment(\.scenePhase) private var scenePhase
-
-    private let permissionService = PermissionService()
+    /// Shared permission service injected from the app root via `\.permissionService`.
+    @Environment(\.permissionService) private var permissionService
 
     /// Centralized gate reducer derived from current permission statuses.
     private var gateState: RequiredAccessGateState {

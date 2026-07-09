@@ -62,6 +62,7 @@ struct PromptCamApp: App {
                 }
             }
             .preferredColorScheme(.dark)
+            .environment(\.permissionService, permissionService)
             .onAppear {
                 refreshRequiredPermissionState()
             }

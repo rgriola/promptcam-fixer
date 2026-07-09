@@ -2,6 +2,7 @@ import AVFoundation
 import CoreLocation
 import Photos
 import Speech
+import SwiftUI
 
 /// Snapshot of permission states used to evaluate required-vs-optional policy.
 struct PermissionPolicySnapshot: Equatable, Sendable {
@@ -166,5 +167,22 @@ struct PermissionService {
 
     func requestPhotoLibraryAddAccess() async -> Bool {
         await requestPhotoLibraryAccess()
+    }
+}
+
+// MARK: - Environment Injection
+
+/// Environment key that vends a shared `PermissionService` to any view that
+/// reads `@Environment(\.permissionService)`. Views should prefer this over
+/// creating their own `PermissionService()` instance so a single source of
+/// truth (and any future mock) can be swapped from the app root.
+private struct PermissionServiceKey: EnvironmentKey {
+    static let defaultValue = PermissionService()
+}
+
+extension EnvironmentValues {
+    var permissionService: PermissionService {
+        get { self[PermissionServiceKey.self] }
+        set { self[PermissionServiceKey.self] = newValue }
     }
 }
