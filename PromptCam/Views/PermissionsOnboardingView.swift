@@ -3,6 +3,7 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
 import SwiftUI
 
 /// Full-screen onboarding view that requests camera, microphone,
@@ -12,27 +13,33 @@ struct PermissionsOnboardingView: View {
     /// Callback fired when the user taps Continue to proceed to camera.
     let onContinue: () -> Void
 
-    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
+    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .video)
+    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .audio)
+    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(
+        for: .readWrite)
+    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
+        .authorizationStatus
+    @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
+        SFSpeechRecognizer.authorizationStatus()
     @State private var isRequesting = false
+    @State private var hasTrackedGateShown = false
 
     @Environment(\.scenePhase) private var scenePhase
 
     private let permissionService = PermissionService()
 
-    /// Continue is enabled once camera + mic are both authorized.
-    private var canContinue: Bool {
-        cameraStatus == .authorized && micStatus == .authorized
-    }
-
-    /// True when at least one permission is still in not-determined state.
-    private var hasUndetermined: Bool {
-        cameraStatus == .notDetermined
-            || micStatus == .notDetermined
-            || photoStatus == .notDetermined
-            || locationStatus == .notDetermined
+    /// Centralized gate reducer derived from current permission statuses.
+    private var gateState: RequiredAccessGateState {
+        RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: cameraStatus,
+                microphone: micStatus,
+                photoLibrary: photoStatus,
+                location: locationStatus,
+                speechToText: speechStatus
+            ))
     }
 
     var body: some View {
@@ -45,13 +52,19 @@ struct PermissionsOnboardingView: View {
                     .font(Theme.display44)
                     .foregroundStyle(Theme.white)
 
-                Text("A1-Teleprompter")
+                Text(PermissionCopyCatalog.onboardingTitle)
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
 
-                Text("Required access to camera, mic, photo library & location.")
+                Text(PermissionCopyCatalog.onboardingRequiredSummary)
                     .font(Theme.font16Regular)
                     .foregroundStyle(Theme.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.space32)
+
+                Text(PermissionCopyCatalog.onboardingOptionalSummary)
+                    .font(Theme.font12Regular)
+                    .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.space32)
             }
@@ -64,40 +77,60 @@ struct PermissionsOnboardingView: View {
                     icon: "camera.fill",
                     iconColor: .blue,
                     title: "Camera",
-                    description: "Need Video.",
+                    permission: .camera,
+                    description: PermissionCopyCatalog.description(for: .camera),
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
-                    showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted
+                    showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
                     icon: "mic.fill",
                     iconColor: .orange,
                     title: "Microphone",
-                    description: "No Audio, No Bueno",
+                    permission: .microphone,
+                    description: PermissionCopyCatalog.description(for: .microphone),
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
-                    showSettingsLink: micStatus == .denied || micStatus == .restricted
+                    showSettingsLink: micStatus == .denied || micStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
                     icon: "photo.on.rectangle",
                     iconColor: .green,
                     title: "Photo Library",
-                    description: "Saves your recording",
+                    permission: .photoLibrary,
+                    description: PermissionCopyCatalog.description(for: .photoLibrary),
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
-                    showSettingsLink: photoStatus == .denied || photoStatus == .restricted
+                    showSettingsLink: photoStatus == .denied || photoStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
 
                 OnboardingPermissionRow(
                     icon: "location.fill",
                     iconColor: .teal,
                     title: "Location",
-                    description: "GPS tags your video",
+                    permission: .location,
+                    description: PermissionCopyCatalog.description(for: .location),
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
-                    showSettingsLink: locationStatus == .denied || locationStatus == .restricted
+                    showSettingsLink: locationStatus == .denied || locationStatus == .restricted,
+                    snapshot: gateState.snapshot
+                )
+
+                OnboardingPermissionRow(
+                    icon: "waveform",
+                    iconColor: .purple,
+                    title: "Speech to Text",
+                    permission: .speechToText,
+                    description: PermissionCopyCatalog.description(for: .speechToText),
+                    status: PermissionStatusDisplay.label(for: speechStatus),
+                    statusColor: PermissionStatusDisplay.color(for: speechStatus),
+                    showSettingsLink: speechStatus == .denied || speechStatus == .restricted,
+                    snapshot: gateState.snapshot
                 )
             }
             .padding(.horizontal, Theme.space24)
@@ -106,8 +139,18 @@ struct PermissionsOnboardingView: View {
 
             // Action buttons
             VStack(spacing: Theme.space12) {
-                if hasUndetermined {
+                if gateState.hasBlockedRequiredPermission {
+                    Text(PermissionCopyCatalog.onboardingBlockedRequiredMessage)
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(Theme.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Theme.space24)
+                }
+
+                if gateState.hasUndeterminedPermission {
                     Button {
+                        PermissionAnalyticsService.trackGrantAccessTapped(
+                            snapshot: gateState.snapshot)
                         requestAllPermissions()
                     } label: {
                         HStack(spacing: Theme.space8) {
@@ -134,20 +177,27 @@ struct PermissionsOnboardingView: View {
                         .font(Theme.font16Semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(canContinue ? Color.blue : Color.gray.opacity(0.3))
-                        .foregroundStyle(canContinue ? .white : .gray)
+                        .background(gateState.canContinue ? Color.blue : Color.gray.opacity(0.3))
+                        .foregroundStyle(gateState.canContinue ? .white : .gray)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(!canContinue)
+                .disabled(!gateState.canContinue)
             }
             .padding(.horizontal, Theme.space24)
             .padding(.bottom, 40)
         }
         .background(Theme.bgGrad)
+        .onAppear {
+            trackGateShownIfNeeded()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshStatuses()
+                trackBlockedGateReentryIfNeeded()
             }
+        }
+        .onChange(of: gateState.canContinue) { _, _ in
+            trackGateShownIfNeeded()
         }
     }
 
@@ -170,6 +220,9 @@ struct PermissionsOnboardingView: View {
                 // Status is refreshed when the scene becomes active again.
                 permissionService.requestLocationAccess()
             }
+            if speechStatus == .notDetermined {
+                _ = await permissionService.requestSpeechToTextAccess()
+            }
             refreshStatuses()
             isRequesting = false
         }
@@ -180,6 +233,25 @@ struct PermissionsOnboardingView: View {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
+        speechStatus = SFSpeechRecognizer.authorizationStatus()
+        PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
+            status: speechStatus,
+            sourceScreen: "onboarding"
+        )
+    }
+
+    private func trackGateShownIfNeeded() {
+        guard !gateState.canContinue, !hasTrackedGateShown else { return }
+        hasTrackedGateShown = true
+        PermissionAnalyticsService.trackGateShown(snapshot: gateState.snapshot)
+    }
+
+    /// Re-fires `permission_gate_shown` when the app returns from background
+    /// while the gate is still blocked. This is what allows the analytics
+    /// service to detect real blocked loops within a single session.
+    private func trackBlockedGateReentryIfNeeded() {
+        guard !gateState.canContinue else { return }
+        PermissionAnalyticsService.trackGateShown(snapshot: gateState.snapshot)
     }
 }
 
@@ -192,10 +264,12 @@ private struct OnboardingPermissionRow: View {
     let icon: String
     let iconColor: Color
     let title: String
+    let permission: PermissionAnalyticsPermission
     let description: String
     let status: String
     let statusColor: Color
     let showSettingsLink: Bool
+    var snapshot: PermissionPolicySnapshot? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -233,7 +307,11 @@ private struct OnboardingPermissionRow: View {
                 }
 
                 if showSettingsLink {
-                    OpenSettingsButton()
+                    OpenSettingsButton(
+                        permission: permission,
+                        sourceSurface: .gate,
+                        snapshot: snapshot
+                    )
                 }
             }
         }

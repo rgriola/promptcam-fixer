@@ -3,6 +3,7 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
 import SwiftUI
 
 // MARK: - Permission Status Display
@@ -80,6 +81,29 @@ enum PermissionStatusDisplay {
         @unknown default: return .gray
         }
     }
+
+    // MARK: - Speech Recognition (Speech-to-Text)
+
+    /// Human-readable label for speech recognition authorization status.
+    static func label(for status: SFSpeechRecognizerAuthorizationStatus) -> String {
+        switch status {
+        case .authorized: return "Granted"
+        case .notDetermined: return "Not Set"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    /// Semantic color for speech recognition authorization status.
+    static func color(for status: SFSpeechRecognizerAuthorizationStatus) -> Color {
+        switch status {
+        case .authorized: return .green
+        case .notDetermined: return .orange
+        case .denied, .restricted: return .red
+        @unknown default: return .gray
+        }
+    }
 }
 
 // MARK: - Open Settings Button
@@ -87,8 +111,19 @@ enum PermissionStatusDisplay {
 /// Reusable button that deep-links to the app's iOS Settings page.
 /// Used in permission rows when a permission has been denied or restricted.
 struct OpenSettingsButton: View {
+    var permission: PermissionAnalyticsPermission = .unknown
+    var sourceSurface: PermissionAnalyticsSurface = .settings
+    /// Live permission snapshot at tap time. Required for accurate
+    /// settings-return diff and recovery-success analytics.
+    var snapshot: PermissionPolicySnapshot? = nil
+
     var body: some View {
         Button {
+            PermissionAnalyticsService.trackOpenSettingsTapped(
+                permission: permission,
+                sourceSurface: sourceSurface,
+                snapshot: snapshot
+            )
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)
             }

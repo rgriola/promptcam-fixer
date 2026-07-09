@@ -19,9 +19,19 @@ struct PermissionStatusRow: View {
     let status: String
     /// Semantic color matching the authorization state.
     let statusColor: Color
+    /// Permission identifier used for analytics instrumentation.
+    let permission: PermissionAnalyticsPermission
+    /// Live permission snapshot at tap time. Required for accurate
+    /// settings-return diff and recovery-success analytics.
+    var snapshot: PermissionPolicySnapshot? = nil
 
     var body: some View {
         Button {
+            PermissionAnalyticsService.trackOpenSettingsTapped(
+                permission: permission,
+                sourceSurface: .settings,
+                snapshot: snapshot
+            )
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)
             }

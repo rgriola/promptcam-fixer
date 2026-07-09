@@ -5,6 +5,7 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import Speech
 import SwiftUI
 
 // MARK: - Settings Sheet
@@ -18,10 +19,16 @@ struct CameraSettingsSheet: View {
     /// Callback to dismiss settings sheet.
     let onClose: () -> Void
 
-    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager().authorizationStatus
+    @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .video)
+    @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
+        for: .audio)
+    @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(
+        for: .readWrite)
+    @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
+        .authorizationStatus
+    @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
+        SFSpeechRecognizer.authorizationStatus()
     /// Controls the format accordion open/closed state.
     @State private var formatsExpanded = false
     /// Controls presentation of the in-app instructions.
@@ -55,9 +62,12 @@ struct CameraSettingsSheet: View {
                         openSlackChannel()
                     } label: {
                         HStack {
-                            Label("Slack #mvp\nMobile Video Production", systemImage: "bubble.left.and.bubble.right.fill")
-                                .font(Theme.font16Regular)
-                                .foregroundStyle(Theme.white)
+                            Label(
+                                "Slack #mvp\nMobile Video Production",
+                                systemImage: "bubble.left.and.bubble.right.fill"
+                            )
+                            .font(Theme.font16Regular)
+                            .foregroundStyle(Theme.white)
                             Spacer()
                             Image(systemName: "chevron.up.forward.dotted.2")
                                 .font(Theme.font16Regular)
@@ -67,7 +77,6 @@ struct CameraSettingsSheet: View {
                 }
                 .settingsSectionHeaderStyle()
 
-            
                 Section("Permissions") {
 
                     PermissionStatusRow(
@@ -75,7 +84,9 @@ struct CameraSettingsSheet: View {
                         iconColor: .blue,
                         title: "Camera",
                         status: PermissionStatusDisplay.label(for: cameraStatus),
-                        statusColor: PermissionStatusDisplay.color(for: cameraStatus)
+                        statusColor: PermissionStatusDisplay.color(for: cameraStatus),
+                        permission: .camera,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -83,7 +94,9 @@ struct CameraSettingsSheet: View {
                         iconColor: .orange,
                         title: "Microphone",
                         status: PermissionStatusDisplay.label(for: micStatus),
-                        statusColor: PermissionStatusDisplay.color(for: micStatus)
+                        statusColor: PermissionStatusDisplay.color(for: micStatus),
+                        permission: .microphone,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -91,7 +104,9 @@ struct CameraSettingsSheet: View {
                         iconColor: .green,
                         title: "Photo Library",
                         status: PermissionStatusDisplay.label(for: photoStatus),
-                        statusColor: PermissionStatusDisplay.color(for: photoStatus)
+                        statusColor: PermissionStatusDisplay.color(for: photoStatus),
+                        permission: .photoLibrary,
+                        snapshot: policySnapshot
                     )
 
                     PermissionStatusRow(
@@ -99,15 +114,45 @@ struct CameraSettingsSheet: View {
                         iconColor: .teal,
                         title: "Location",
                         status: PermissionStatusDisplay.label(for: locationStatus),
-                        statusColor: PermissionStatusDisplay.color(for: locationStatus)
+                        statusColor: PermissionStatusDisplay.color(for: locationStatus),
+                        permission: .location,
+                        snapshot: policySnapshot
                     )
+
+                    PermissionStatusRow(
+                        icon: "waveform",
+                        iconColor: .purple,
+                        title: "Speech to Text",
+                        status: PermissionStatusDisplay.label(for: speechStatus),
+                        statusColor: PermissionStatusDisplay.color(for: speechStatus),
+                        permission: .speechToText,
+                        snapshot: policySnapshot
+                    )
+
+                    if let speechRecovery = PermissionRecoveryMapper.optionalSpeechRecoveryMessage(
+                        for: speechStatus)
+                    {
+                        Text(speechRecovery)
+                            .font(Theme.font12Regular)
+                            .foregroundStyle(Theme.primaryText)
+                            .padding(.vertical, Theme.space4)
+                    }
                 }
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                 // MARK: - Formats Accordion
+                Section("Support Diagnostics") {
+                    Text(permissionSupportSummary)
+                        .font(Theme.font12Regular)
+                        .foregroundStyle(Theme.primaryText)
+                        .textSelection(.enabled)
+                        .padding(.vertical, Theme.space4)
+                }
+                .settingsSectionHeaderStyle()
+
+                // MARK: - Formats Accordion
                 Section {
-                    
+
                     DisclosureGroup(isExpanded: $formatsExpanded) {
 
                         // STANDARD sub-heading
@@ -147,7 +192,7 @@ struct CameraSettingsSheet: View {
                 }
                 .settingsSectionHeaderStyle()
                 .tint(Theme.white)
-                
+
             }
             .tint(Theme.white)
             .scrollContentBackground(.hidden)
@@ -174,7 +219,9 @@ struct CameraSettingsSheet: View {
 
     /// Human-readable app version/build string shown in settings.
     private var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let version =
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
     }
@@ -185,15 +232,31 @@ struct CameraSettingsSheet: View {
         return "\(DeviceModel.marketingName) · \(os.systemName) \(os.systemVersion)"
     }
 
+    private var policySnapshot: PermissionPolicySnapshot {
+        PermissionPolicySnapshot(
+            camera: cameraStatus,
+            microphone: micStatus,
+            photoLibrary: photoStatus,
+            location: locationStatus,
+            speechToText: speechStatus
+        )
+    }
+
+    private var permissionSupportSummary: String {
+        PermissionAnalyticsService.supportSummaryText(from: policySnapshot)
+    }
+
     /// Reusable format row — renders from a validated RecordingFormat pair.
     private func formatRow(_ format: RecordingFormat, icon: String = "video.fill") -> some View {
         HStack(spacing: Theme.space8) {
             Image(systemName: icon)
                 .foregroundStyle(Theme.purple)
                 .frame(width: 20)
-            Text("\(format.resolution.rawValue) \(format.resolution.dimensionLabel) \(format.frameRate.rawValue)p")
-                .font(Theme.font16Regular)
-                .foregroundStyle(Theme.white)
+            Text(
+                "\(format.resolution.rawValue) \(format.resolution.dimensionLabel) \(format.frameRate.rawValue)p"
+            )
+            .font(Theme.font16Regular)
+            .foregroundStyle(Theme.white)
         }
     }
 
@@ -202,18 +265,31 @@ struct CameraSettingsSheet: View {
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         locationStatus = CLLocationManager().authorizationStatus
+        speechStatus = SFSpeechRecognizer.authorizationStatus()
+
+        let snapshot = policySnapshot
+        PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
+            status: speechStatus,
+            sourceScreen: "settings"
+        )
+        PermissionAnalyticsService.trackSupportDiagnosticSummary(
+            snapshot: snapshot,
+            sourceScreen: "settings"
+        )
     }
 
     // MARK: - Slack Deep Link
 
-    private static let slackTeamID    = "E7T3R16EM"
+    private static let slackTeamID = "E7T3R16EM"
     private static let slackChannelID = "C08KEGNF00N"
 
     /// Opens the support Slack channel.
     /// Tries the native Slack app first; falls back to the web client.
     private func openSlackChannel() {
-        let appURL = URL(string: "slack://channel?team=\(Self.slackTeamID)&id=\(Self.slackChannelID)")!
-        let webURL = URL(string: "https://app.slack.com/client/\(Self.slackTeamID)/\(Self.slackChannelID)")!
+        let appURL = URL(
+            string: "slack://channel?team=\(Self.slackTeamID)&id=\(Self.slackChannelID)")!
+        let webURL = URL(
+            string: "https://app.slack.com/client/\(Self.slackTeamID)/\(Self.slackChannelID)")!
 
         if UIApplication.shared.canOpenURL(appURL) {
             UIApplication.shared.open(appURL)

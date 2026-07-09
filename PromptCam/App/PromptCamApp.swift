@@ -12,27 +12,47 @@ struct PromptCamApp: App {
     /// Stable ViewModel instance — survives body re-evaluation.
     @State private var viewModel = CameraViewModel()
 
+    /// Cached required-permission state used by app-entry routing.
+    @State private var hasRequiredPermissions: Bool
+
+    @Environment(\.scenePhase) private var scenePhase
+
+    private let permissionService = PermissionService()
+
     /// UI-test bypass: launch with `-uitest-skip-onboarding` to land directly on the camera.
     private var skipOnboardingForUITest: Bool {
         ProcessInfo.processInfo.arguments.contains("-uitest-skip-onboarding")
     }
 
     init() {
+        _hasRequiredPermissions = State(
+            initialValue: !PermissionService().policySnapshot.shouldBlockAppEntry
+        )
+
         // One-time launch snapshot for HDMI debugging. Scene enumeration
         // (openSessions) works even before the first scene connects — it lists
         // sessions the OS has restored from a previous launch. External screen
         // presence is reported via ExternalSceneDelegate when a scene attaches.
         let sceneCount = UIApplication.shared.connectedScenes.count
         let sessionCount = UIApplication.shared.openSessions.count
-        Log.hdmi.info("PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)")
+        Log.hdmi.info(
+            "PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)"
+        )
 
         configureUIAppearance()
     }
 
     var body: some Scene {
         WindowGroup {
+            let route = AppEntryRouter.route(
+                hasCompletedOnboarding: hasCompletedOnboarding,
+                showCamera: showCamera,
+                skipOnboardingForUITest: skipOnboardingForUITest,
+                hasRequiredPermissions: hasRequiredPermissions
+            )
+
             Group {
-                if hasCompletedOnboarding || showCamera || skipOnboardingForUITest {
+                if route == .camera {
                     CameraView(viewModel: viewModel)
                 } else {
                     PermissionsOnboardingView {
@@ -42,15 +62,33 @@ struct PromptCamApp: App {
                 }
             }
             .preferredColorScheme(.dark)
+            .onAppear {
+                refreshRequiredPermissionState()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    refreshRequiredPermissionState()
+                }
+            }
+        }
+    }
+
+    private func refreshRequiredPermissionState() {
+        let snapshot = permissionService.policySnapshot
+        PermissionAnalyticsService.trackSettingsReturnedIfNeeded(currentSnapshot: snapshot)
+
+        let next = !snapshot.shouldBlockAppEntry
+        if hasRequiredPermissions != next {
+            hasRequiredPermissions = next
         }
     }
 
     private func configureUIAppearance() {
         // Set slider thumb appearance globally — runs once on app launch
         let thumbImage = UIImage(
-                            systemName: "circle.fill")?
-                                .withTintColor(UIColor(Theme.white))
-        
+            systemName: "circle.fill")?
+            .withTintColor(UIColor(Theme.white))
+
         UISlider.appearance()
             .setThumbImage(thumbImage, for: .normal)
 

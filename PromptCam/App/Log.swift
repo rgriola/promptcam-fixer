@@ -12,4 +12,5 @@ enum Log {
     static let recordings = Logger(subsystem: subsystem, category: "Recordings")
     static let hdmi = Logger(subsystem: subsystem, category: "HDMI")
     static let network = Logger(subsystem: subsystem, category: "Network")
+    static let analytics = Logger(subsystem: subsystem, category: "Analytics")
 }

@@ -16,6 +16,7 @@
 import AVFoundation
 import Photos
 import SwiftUI
+import UIKit
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
@@ -41,6 +42,16 @@ struct CameraView: View {
     // MARK: - Aperture Panel State
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
+
+    private let permissionService = PermissionService()
+
+    private var runtimeRecoveryMessage: PermissionRecoveryMessage? {
+        guard let error = viewModel.cameraError else { return nil }
+        return PermissionRecoveryMapper.runtimeRecovery(
+            for: error,
+            snapshot: permissionService.policySnapshot
+        )
+    }
 
     // MARK: - Body
 
@@ -318,7 +329,7 @@ struct CameraView: View {
         }
         // MARK: - 15: - Alerts & Pickers
         .alert(
-            "Error",
+            runtimeRecoveryMessage?.title ?? "Error",
             isPresented: Binding(
                 get: {
                     viewModel.cameraError != nil
@@ -327,11 +338,19 @@ struct CameraView: View {
                     viewModel.cameraError = nil
                 })
         ) {
+            if runtimeRecoveryMessage?.action == .openSettings {
+                Button("Open Settings") {
+                    openAppSettings()
+                    viewModel.cameraError = nil
+                }
+            }
             Button("OK", role: .cancel) {
                 viewModel.cameraError = nil
             }
         } message: {
-            Text(viewModel.cameraError?.localizedDescription ?? "Unknown error")
+            Text(
+                runtimeRecoveryMessage?.message ?? viewModel.cameraError?.localizedDescription
+                    ?? "Unknown error")
         }
         .sheet(item: $viewModel.activeSheet) { route in
             sheetContent(for: route)
@@ -449,6 +468,28 @@ struct CameraView: View {
                 }
             }
         }
+    }
+
+    private func openAppSettings() {
+        PermissionAnalyticsService.trackOpenSettingsTapped(
+            permission: runtimePermissionType,
+            sourceSurface: .runtimeAlert,
+            snapshot: permissionService.policySnapshot
+        )
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private var runtimePermissionType: PermissionAnalyticsPermission {
+        let snapshot = permissionService.policySnapshot
+        if snapshot.camera == .denied || snapshot.camera == .restricted { return .camera }
+        if snapshot.microphone == .denied || snapshot.microphone == .restricted {
+            return .microphone
+        }
+        if snapshot.photoLibrary == .denied || snapshot.photoLibrary == .restricted {
+            return .photoLibrary
+        }
+        return .unknown
     }
 
     // MARK: Top Row Build
