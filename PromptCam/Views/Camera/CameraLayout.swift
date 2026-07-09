@@ -44,13 +44,13 @@ enum CameraLayout {
 
     /// Vertical offset of the record button center from the preview's bottom edge.
     /// Record button center sits at `previewHeight - recordButtonCenterOffsetFromPreviewBottom`.
-    static let recordButtonCenterOffsetFromPreviewBottom: CGFloat = 125
+    static let recordButtonCenterOffsetFromPreviewBottom: CGFloat = 115
 
     /// Diameter of the record button hit target. Used to derive its bottom edge.
     static let recordButtonDiameter: CGFloat = 72
 
     /// Vertical offset of the recording timer center from the preview's bottom edge.
-    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 270
+    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 260
 
     // MARK: - Footer Chrome
 
@@ -78,10 +78,10 @@ enum CameraLayout {
     static let teleprompterCenterTopOffset: CGFloat = 75
 
     /// This move the horiz pos of both text and button
-    static let teleprompterResetEdgeInset: CGFloat = 25
+    static let teleprompterResetEdgeInset: CGFloat = 35
 
     /// button Size. 
-    static let teleprompterResetButtonSize: CGFloat = 36
+    static let teleprompterResetButtonSize: CGFloat = 40
 
     // MARK: - VU Meter
 
