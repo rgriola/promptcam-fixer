@@ -4,6 +4,24 @@ Last updated: July 9, 2026
 Owner: iOS + Product + Support
 Status: Started (planning)
 
+## Gate Status Snapshot
+
+Date: July 9, 2026
+
+1. Gate 1 (Phase 6 device QA complete with evidence): Blocked
+Reason: `docs/PHASE6_QA_MATRIX.md` scenarios P6-01 through P6-15 are still marked Not Run.
+
+2. Gate 2 (Phase 7 required analytics implemented and verified): Blocked
+Reason: Remaining checklist items in Phase 7 are still open (settings-return delta, recovery success, blocked loop, support diagnostics, speech optional events).
+
+3. Gate 3 (Full unit test suite green on release candidate build): Ready
+Evidence: `xcodebuild -project PromptCam.xcodeproj -scheme PromptCam -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:PromptCamTests test` completed with 129 tests, 0 failures.
+
+4. Gate 4 (Critical permission-recovery bugs at severity high are zero): Blocked
+Reason: No explicit zero-critical defect sign-off is documented in rollout artifacts yet.
+
+Overall rollout gate result: Blocked (1/4 gates ready).
+
 ## Rollout Gates
 
 1. Phase 6 device QA scenarios complete with evidence in `docs/PHASE6_QA_MATRIX.md`.
