@@ -33,6 +33,10 @@ struct RecordingCarouselView: View {
     @State private var baseOffset: CGFloat = 0
     /// Live drag translation added on top of baseOffset.
     @State private var dragOffset: CGFloat = 0
+    /// Direction-lock flag — true once the current drag is confirmed horizontal
+    /// so vertical / diagonal swipes fall through to the parent player pager.
+    /// Reset in `.onEnded` so the next gesture re-evaluates.
+    @State private var isHorizontalDrag = false
 
     var body: some View {
         GeometryReader { geo in
@@ -75,12 +79,29 @@ struct RecordingCarouselView: View {
             .offset(x: totalOffset)
             .contentShape(Rectangle())
             // Drag scrolls the strip; velocity-aware snap on lift.
+            // Direction-locked so vertical / diagonal swipes fall through
+            // to the player pager underneath — fixes users' swipes getting
+            // stolen by the carousel's 100pt hit strip.
             .gesture(
-                DragGesture(minimumDistance: 5)
+                DragGesture(minimumDistance: 8)
                     .onChanged { value in
+                        if !isHorizontalDrag {
+                            guard
+                                CarouselDragMath.shouldEngageHorizontal(
+                                    dx: value.translation.width,
+                                    dy: value.translation.height
+                                )
+                            else { return }
+                            isHorizontalDrag = true
+                        }
                         dragOffset = value.translation.width
                     }
                     .onEnded { value in
+                        defer { isHorizontalDrag = false }
+                        // If the gesture never engaged horizontally, snap back
+                        // without committing selection.
+                        guard dragOffset != 0 else { return }
+
                         let target = CarouselDragMath.targetIndex(
                             baseOffset: baseOffset,
                             dragOffset: dragOffset,
@@ -135,7 +156,7 @@ struct RecordingCarouselView: View {
                 }
             }
         }
-        .frame(height: cellHeight + Theme.space16)
+        .frame(height: cellHeight)  // gesture surface matches visible cell row exactly
         .clipped()  // hide overflow cells that extend beyond the visible strip
         .background(
             LinearGradient(
