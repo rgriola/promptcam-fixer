@@ -151,6 +151,15 @@ struct CameraView: View {
                     y: layout.previewSize.height
                         - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
 
+                // MARK: - 7: Promopter Script Reset
+                TeleprompterCenterResetButton(
+                    isDisabled: viewModel.isRecording,
+                    action: {
+                        viewModel.resetTeleprompterPosition()
+                    }
+                )
+                .position(layout.teleprompterResetCenter)
+
                 // MARK: - 5: Record Timer
                 RecordingTimerPanel(
                     duration: viewModel.recordingDuration,
@@ -182,15 +191,6 @@ struct CameraView: View {
                     x: layout.teleprompterCenter.x,
                     y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
                 )
-
-                // MARK: - 7: Promopter Script Reset
-                TeleprompterCenterResetButton(
-                    isDisabled: viewModel.isRecording,
-                    action: {
-                        viewModel.resetTeleprompterPosition()
-                    }
-                )
-                .position(layout.teleprompterResetCenter)
 
                 // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {

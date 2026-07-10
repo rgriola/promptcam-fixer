@@ -27,7 +27,8 @@ struct RecordingsService: Sendable {
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
-            Log.recordings.info("Photo library not authorized (\(status.rawValue, privacy: .public))")
+            Log.recordings.info(
+                "Photo library not authorized (\(status.rawValue, privacy: .public))")
             return []
         }
 
@@ -89,7 +90,6 @@ struct RecordingsService: Sendable {
         }
     }
 
-
     /// Resolves a recording id back to its underlying `PHAsset`.
     private func asset(for id: String) -> PHAsset? {
         PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
@@ -123,7 +123,7 @@ struct RecordingsService: Sendable {
         return await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
             options.deliveryMode = deliveryMode
-            options.isNetworkAccessAllowed = true    // pull from iCloud in the background if needed
+            options.isNetworkAccessAllowed = true  // pull from iCloud in the background if needed
             options.version = .current
 
             // Guard against .opportunistic firing the callback twice.
@@ -215,7 +215,8 @@ struct RecordingsService: Sendable {
         // from requestAVAsset's return value.
         nonisolated(unsafe) var capturedRequestID: PHImageRequestID?
 
-        let url = await withCheckedContinuation { (continuation: CheckedContinuation<URL?, Never>) in
+        let url = await withCheckedContinuation {
+            (continuation: CheckedContinuation<URL?, Never>) in
             var resumed = false
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
@@ -239,18 +240,21 @@ struct RecordingsService: Sendable {
                 // jumping from 0% straight to 100%.
                 let lastReported = ThrottledDouble()
                 options.progressHandler = { fraction, _, _, _ in
-                    guard lastReported.shouldReport(
-                        fraction,
-                        minDelta: 0.005,
-                        milestones: [0.25, 0.5, 0.75]
-                    ) else { return }
+                    guard
+                        lastReported.shouldReport(
+                            fraction,
+                            minDelta: 0.005,
+                            milestones: [0.25, 0.5, 0.75]
+                        )
+                    else { return }
                     // PhotoKit fires this on an arbitrary queue. Hop to main.
                     Task { @MainActor in
                         onProgress(fraction)
                     }
                 }
             }
-            let id = PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            let id = PHImageManager.default().requestAVAsset(forVideo: asset, options: options) {
+                avAsset, _, _ in
                 guard !resumed else { return }
                 resumed = true
                 continuation.resume(returning: (avAsset as? AVURLAsset)?.url)
@@ -289,8 +293,10 @@ struct RecordingsService: Sendable {
     func exportForSharing(_ recording: Recording) async -> URL? {
         guard let asset = asset(for: recording.id) else { return nil }
         let resources = PHAssetResource.assetResources(for: asset)
-        guard let resource = resources.first(where: { $0.type == .video })
-                ?? resources.first else { return nil }
+        guard
+            let resource = resources.first(where: { $0.type == .video })
+                ?? resources.first
+        else { return nil }
 
         let ext: String = {
             let raw = (resource.originalFilename as NSString).pathExtension
@@ -312,7 +318,8 @@ struct RecordingsService: Sendable {
                 for: resource, toFile: url, options: opts
             ) { error in
                 if let error {
-                    Log.recordings.error("export failed: \(error.localizedDescription, privacy: .public)")
+                    Log.recordings.error(
+                        "export failed: \(error.localizedDescription, privacy: .public)")
                     continuation.resume(returning: nil)
                 } else {
                     continuation.resume(returning: url)
@@ -329,7 +336,8 @@ struct RecordingsService: Sendable {
                 PHAssetChangeRequest.deleteAssets([asset] as NSArray)
             } completionHandler: { success, error in
                 if let error {
-                    Log.recordings.error("delete failed: \(error.localizedDescription, privacy: .public)")
+                    Log.recordings.error(
+                        "delete failed: \(error.localizedDescription, privacy: .public)")
                 }
                 continuation.resume(returning: success)
             }
@@ -370,7 +378,8 @@ private final class ThrottledDouble: @unchecked Sendable {
         }
         // First crossing of a milestone always fires so quick downloads have
         // at least a few visible updates even below the delta threshold.
-        for milestone in milestones where value >= milestone && !reportedMilestones.contains(milestone) {
+        for milestone in milestones
+        where value >= milestone && !reportedMilestones.contains(milestone) {
             reportedMilestones.insert(milestone)
             last = value
             return true

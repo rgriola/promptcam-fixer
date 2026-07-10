@@ -52,7 +52,8 @@ struct RecordingsLibrarySheet: View {
         // Step 2 (fast path only): URL resolves after player is open
         .onChange(of: selectedRecording) { _, newRecording in
             guard newRecording != nil, videoURL == nil,
-                  let identifier = selectedItems.first?.itemIdentifier else { return }
+                let identifier = selectedItems.first?.itemIdentifier
+            else { return }
             let result = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
             guard let asset = result.firstObject else { return }
             Task { videoURL = await resolveVideoURL(phAsset: asset) }
@@ -70,9 +71,9 @@ struct RecordingsLibrarySheet: View {
 
         // ── Fast path: PHAsset ──────────────────────────────────────────────
         if let identifier = item.itemIdentifier,
-           let asset = PHAsset.fetchAssets(
-               withLocalIdentifiers: [identifier], options: nil
-           ).firstObject
+            let asset = PHAsset.fetchAssets(
+                withLocalIdentifiers: [identifier], options: nil
+            ).firstObject
         {
             // Present the player immediately; URL loads via onChange(of: selectedRecording)
             selectedRecording = Recording(asset: asset)
@@ -104,10 +105,11 @@ struct RecordingsLibrarySheet: View {
         await withCheckedContinuation { continuation in
             var resumed = false
             let options = PHVideoRequestOptions()
-            options.isNetworkAccessAllowed = true   // stream from iCloud if needed
+            options.isNetworkAccessAllowed = true  // stream from iCloud if needed
             options.version = .current
             options.deliveryMode = .highQualityFormat
-            PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) { avAsset, _, _ in
+            PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) {
+                avAsset, _, _ in
                 guard !resumed else { return }
                 resumed = true
                 continuation.resume(returning: (avAsset as? AVURLAsset)?.url)

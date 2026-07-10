@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"name": "promptcam-fixer",
+			"path": "."
+		},
+		{
+			"name": "Direct-Video-Uploader",
+			"path": "../Direct-Video-Uploader"
+		},
+		{
+			"name": "fotolokashen-ios",
+			"path": "../fotolokashen-ios"
+		},
+		{
+			"name": "Agent-Guides",
+			"path": "../Agent-Guides"
+		},
+		{
+			"path": "../../HaishinKit.swift"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "promptcam-fixer"
+	}
+}
