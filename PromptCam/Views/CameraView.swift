@@ -79,7 +79,7 @@ struct CameraView: View {
                 }
                 .frame(
                     maxWidth: .infinity,
-                    maxHeight: layout.previewSize.height + CameraLayout.controlChromeMaxHeightExtra,
+                    maxHeight: layout.preview.size.height + CameraLayout.Chrome.controlHeightExtra,
                     alignment: .bottom)
 
                 // MARK: - 2: Camera Preview View
@@ -90,18 +90,18 @@ struct CameraView: View {
                         handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
                     }
                 )
-                .frame(width: layout.previewSize.width, height: layout.previewSize.height)
+                .frame(width: layout.preview.size.width, height: layout.preview.size.height)
                 .position(
-                    x: layout.previewCenterX, y: layout.previewTopY + layout.previewSize.height / 2
+                    x: layout.preview.centerX,
+                    y: layout.preview.topY + layout.preview.size.height / 2
                 )
                 .ignoresSafeArea(.container, edges: .top)
                 .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing camera preview
 
-                // MARK: - 3: Audio VU meter
+                // MARK: - 3: VU meters
                 // Hides when any modal sheet is open.
 
                 if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
-                    let meterHeight = layout.previewSize.height * 0.28
                     VUMeterView(
                         level: viewModel.audioLevel,
                         peak: viewModel.audioPeak,
@@ -112,18 +112,11 @@ struct CameraView: View {
                         sourceNameHint: viewModel.audioSourceHint
                     )
                     .frame(
-                        width: CameraLayout.vuMeterWidth,
-                        height: meterHeight
+                        width: layout.vuMeter.size.width,
+                        height: layout.vuMeter.size.height
                     )
                     .roundedBackground()
-                    .position(
-                        x: CameraLayout.vuMeterHorizontalInset
-                            + CameraLayout.vuMeterHorizontalNudge,
-                        // Align meter bottom with record-button bottom.
-                        y: layout.previewSize.height
-                            - CameraLayout.vuMeterBottomOffsetFromPreviewBottom
-                            - meterHeight / 2
-                    )
+                    .position(layout.vuMeter.center)
                     .transition(.opacity)
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
@@ -135,31 +128,28 @@ struct CameraView: View {
                     isRecording: viewModel.isRecording,
                     isScrolling: viewModel.isScrolling,
                     isRecordEnabled: viewModel.isCameraReady,
-                    textAlignment: viewModel.config.textAlignment,
+                    recordingDuration: viewModel.recordingDuration,
                     onRecordTap: {
                         viewModel.toggleRecording()
                     },
                     onScrollTap: {
                         viewModel.toggleScrolling()
-                    },
-                    onAlignmentTap: {
-                        viewModel.cycleTextAlignment()
                     }
                 )
-                .position(
-                    x: proxy.size.width / 2,
-                    y: layout.previewSize.height
-                        - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
+                .position(layout.recordCluster.recordButtonCenter)
 
-                // MARK: - 5: Record Timer
-                RecordingTimerPanel(
-                    duration: viewModel.recordingDuration,
-                    isRecording: viewModel.isRecording
+                  // MARK: - 7: Prompter Utility Stack (Align + Reset)
+                TeleprompterUtilityStackView(
+                    textAlignment: viewModel.config.textAlignment,
+                    isRecording: viewModel.isRecording,
+                    onAlignmentTap: {
+                        viewModel.cycleTextAlignment()
+                    },
+                    onResetTap: {
+                        viewModel.resetTeleprompterPosition()
+                    }
                 )
-                .position(
-                    x: proxy.size.width / 2,
-                    y: layout.previewSize.height
-                        - CameraLayout.recordingTimerCenterOffsetFromPreviewBottom)
+                .position(layout.teleprompter.resetCenter)
 
                 // MARK: - 6: Bottom-anchored teleprompter viewport.
                 TeleprompterOverlayView(
@@ -176,21 +166,11 @@ struct CameraView: View {
                         }
                     }
                 )
-                .frame(width: layout.previewSize.width, height: layout.teleprompterViewportHeight)
+                .frame(width: layout.preview.size.width, height: layout.teleprompter.viewportHeight)
                 .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing teleprompter viewport
-                .position(
-                    x: layout.teleprompterCenter.x,
-                    y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
-                )
+                .position(layout.teleprompter.center)
 
-                // MARK: - 7: Promopter Script Reset
-                TeleprompterCenterResetButton(
-                    isDisabled: viewModel.isRecording,
-                    action: {
-                        viewModel.resetTeleprompterPosition()
-                    }
-                )
-                .position(layout.teleprompterResetCenter)
+              
 
                 // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {

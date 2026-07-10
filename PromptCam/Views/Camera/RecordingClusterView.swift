@@ -1,14 +1,13 @@
-// PromptCam — Recording Cluster (Record + Scroll Controls)
+// PromptCam — Recording Cluster (Record + Scroll + Timer)
 // Extracted from CameraView.swift (refactor June 1, 2026)
-// July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add AlignmentToggleButton
-// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - AlignmentToggleButton styling matches TeleprompterCenterResetButton
+// July 10, 2026 - GitHub Copilot (GPT-5.3-Codex) - Move Align to teleprompter utility stack and colocate timer in cluster
 import SwiftUI
 
 // MARK: - Center Record Cluster
 
-/// Native-like stacked record + scroll control cluster positioned
+/// Native-like stacked record + scroll + timer cluster positioned
 /// between the header and footer chrome. The record button is centered
-/// with the scroll toggle offset to the right and alignment toggle to the left.
+/// with secondary controls offset above it.
 struct RecordingClusterView: View {
     /// Whether capture is currently recording.
     let isRecording: Bool
@@ -16,36 +15,32 @@ struct RecordingClusterView: View {
     let isScrolling: Bool
     /// Enables/disables record interaction based on camera readiness.
     let isRecordEnabled: Bool
-    /// Current text alignment state.
-    let textAlignment: TeleprompterTextAlignment
+    /// Elapsed recording time in seconds.
+    let recordingDuration: TimeInterval
     /// Action to start/stop recording.
     let onRecordTap: () -> Void
     /// Action to pause/play teleprompter scrolling.
     let onScrollTap: () -> Void
-    /// Action to cycle through text alignment options.
-    let onAlignmentTap: () -> Void
-
-    /// Native-like stacked record + scroll control cluster.
+    /// Native-like stacked record + scroll + timer cluster.
     var body: some View {
-        ZStack {
-            RecordButton(
-                isRecording: isRecording,
-                isEnabled: isRecordEnabled,
-                action: onRecordTap)
+            VStack {
+            
+            RecordingTimerPanel(
+                duration: recordingDuration,
+                isRecording: isRecording
+            )
 
             ScrollToggleButton(
                 isScrolling: isScrolling,
                 isEnabled: true,
                 action: onScrollTap
             )
-            .offset(y: -80)
 
-            AlignmentToggleButton(
-                alignment: textAlignment,
-                isEnabled: !isRecording,
-                action: onAlignmentTap
+            RecordButton(
+                isRecording: isRecording,
+                isEnabled: isRecordEnabled,
+                action: onRecordTap
             )
-            .offset(x: 165, y: -40)
         }
     }
 }
@@ -123,43 +118,6 @@ struct ScrollToggleButton: View {
     }
 }
 
-// MARK: - Alignment Toggle Button
-/// Tertiary control to cycle through text alignment options.
-/// White circle with alignment icon (center/left/right).
-struct AlignmentToggleButton: View {
-    /// Current text alignment state.
-    let alignment: TeleprompterTextAlignment
-    /// Whether the button should accept taps.
-    let isEnabled: Bool
-    /// Callback to advance to next alignment.
-    let action: () -> Void
-
-    /// Tertiary control to cycle through text alignment options.
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 3) {
-                Image(systemName: alignment.iconName)
-                    .font(Theme.icon16)
-                    .foregroundStyle(Theme.white)
-                Text("Align")
-                    .font(Theme.font10Regular)
-                    .foregroundStyle(Theme.primaryText)
-            }
-            .frame(
-                width: CameraLayout.teleprompterUtilityButtonWidth,
-                height: CameraLayout.teleprompterUtilityButtonHeight
-            )
-            .roundedBackground()
-            .contentShape(
-                RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.3)
-        .accessibilityLabel("Text alignment: \(alignment.rawValue)")
-        .accessibilityHint("Cycles between center, left, and right alignment")
-    }
-}
-
 // MARK: - Component Previews
 #Preview("RecordButton - Idle") {
     ZStack {
@@ -191,28 +149,16 @@ struct AlignmentToggleButton: View {
     }
 }
 
-#Preview("AlignmentToggleButton - Center") {
+#Preview("RecordingClusterView") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
-        AlignmentToggleButton(alignment: .center, isEnabled: true) {}
-
+        RecordingClusterView(
+            isRecording: false,
+            isScrolling: false,
+            isRecordEnabled: true,
+            recordingDuration: 42,
+            onRecordTap: {},
+            onScrollTap: {}
+        )
     }
 }
-
-#Preview("AlignmentToggleButton - Left") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        AlignmentToggleButton(alignment: .left, isEnabled: true) {}
-
-    }
-}
-
-// Note to Agent: This preview is turned off purposely, do not remove as dead code - Rod Griola
-/*
-#Preview("AlignmentToggleButton - Right") {
-    ZStack {
-        Theme.cameraBg.ignoresSafeArea()
-        AlignmentToggleButton(alignment: .right, isEnabled: true) {}
-    }
-}
-*/

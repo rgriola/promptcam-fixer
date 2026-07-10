@@ -1,189 +1,251 @@
-// PromptCam — Unified Camera Screen Layout Constants
-// Merged from CameraLayout + CameraChromeLayout (refactor June 1, 2026)
+// PromptCam — Unified Camera Screen Layout
+// July 10, 2026 - GitHub Copilot (GPT-5.3-Codex) - Grouped design tokens by
+// feature; runtime-size-dependent values (VU meter frame) live in the
+// resolver. Consumers read semantic anchors instead of recomputing geometry.
 import SwiftUI
 
-/// All camera screen geometry constants in one place.
+// MARK: - CameraLayout (design tokens)
+
+/// Camera screen design tokens grouped by feature.
 ///
-/// - **Preview Geometry**: Aspect ratio and EV drag sensitivity for the
-///   focus/exposure reticle (originally `CameraLayout`).
-/// - **Header / Footer / Teleprompter Chrome**: Spacing, sizes, and offsets
-///   for the overlaid control panels (originally `CameraChromeLayout`).
+/// Rules:
+/// 1. Only pure constants live here. Anything that needs the container size
+///    (safe area, preview height, etc.) is resolved in `CameraScreenLayout`.
+/// 2. Consumers read grouped tokens (`CameraLayout.Teleprompter.viewportHeight`)
+///    rather than a flat namespace so tuning one feature can't affect another.
 enum CameraLayout {
 
-    // MARK: - Preview Geometry
+    // MARK: Preview
 
-    /// Standard 9:16 aspect ratio used to compute preview height from width.
-    ///
-    static let previewAspect: CGFloat = 9.0 / 16.0  // 0.5625 aspect ratio
+    enum Preview {
+        /// 9:16 aspect ratio used to compute preview height from width.
+        static let aspect: CGFloat = 9.0 / 16.0
 
-    /// Points of vertical drag to traverse the full ±exposure range (10 EV total).
-    /// Used by `FocusIndicatorView` EV drag calculations.
-    static let evFullRangePoints: CGFloat = 120
+        /// Vertical drag points to traverse the full ±exposure range (10 EV).
+        /// Used by `FocusIndicatorView`.
+        static let evDragRangePoints: CGFloat = 120
+    }
 
-    /// Top-anchored preview frame. Aspect is preserved; remaining vertical space
-    /// becomes the bottom chrome region reserved for future controls.
+    // MARK: Chrome (header + footer + control envelope)
+
+    enum Chrome {
+        /// Horizontal inset for the top controls row (video mode, EV, lock, format).
+        static let headerHorizontalPadding: CGFloat = 16
+
+        /// Downward shift applied to the footer controls to match design.
+        static let footerVerticalOffset: CGFloat = 22
+
+        /// Shared circular icon button diameter for footer controls.
+        static let footerIconSize: CGFloat = 44
+
+        /// Extra vertical room allotted to the controls/footer VStack beyond
+        /// the preview height so chrome can extend slightly below the preview.
+        static let controlHeightExtra: CGFloat = 100
+    }
+
+    // MARK: Record Cluster
+
+    enum RecordCluster {
+        /// Diameter of the record button hit target.
+        static let buttonDiameter: CGFloat = 72
+
+        /// Distance from the preview's bottom edge to the record button center.
+        /// Smaller value pushes the cluster lower.
+        static let buttonCenterBottomOffset: CGFloat = 182
+
+        /// Distance from the preview's bottom edge to the recording timer center.
+        static let timerCenterBottomOffset: CGFloat = 260
+    }
+
+    // MARK: Teleprompter
+
+    enum Teleprompter {
+        /// Viewport length (clamped to the preview height at runtime).
+        static let viewportHeight: CGFloat = 500
+
+        /// Requested viewport center distance from the preview top.
+        /// Clamped at runtime so the viewport stays inside the preview.
+        static let centerFromPreviewTop: CGFloat = 0
+
+        /// Upward nudge applied to the resolved viewport center so the
+        /// teleprompter clears the top chrome.
+        static let centerTopNudge: CGFloat = 75
+
+        /// Horizontal inset from the preview's right edge for the reset /
+        /// utility stack.
+        static let resetEdgeInset: CGFloat = 35
+
+        /// Single round-variant reset button size (legacy anchor). Utility
+        /// stack buttons use `utilityButton*` sizes instead.
+        static let resetButtonSize: CGFloat = 40
+
+        /// Shared teleprompter utility button dimensions (Align + Reset).
+        static let utilityButtonWidth: CGFloat = 56
+        static let utilityButtonHeight: CGFloat = 56
+        static let utilityButtonCornerRadius: CGFloat = 8
+
+        /// Vertical spacing between stacked utility buttons.
+        static let utilityStackSpacing: CGFloat = 10
+    }
+
+    // MARK: VU Meter
+
+    enum VUMeter {
+        /// Width of the vertical meter bar.
+        static let width: CGFloat = 25
+
+        /// Meter height as a fraction of the preview height.
+        static let heightRatio: CGFloat = 0.28
+
+        /// Horizontal inset from the preview's left edge.
+        static let horizontalInset: CGFloat = 20
+
+        /// Fine horizontal nudge so the meter clears the preview edge padding.
+        static let horizontalNudge: CGFloat = 5
+    }
+
+    // MARK: Derived Preview Frame
+
+    /// Top-anchored preview frame. Aspect is preserved; the remaining vertical
+    /// space becomes the bottom chrome region.
     /// - Parameter containerSize: Full container dimensions from `GeometryReader`.
     /// - Returns: Preview height (top-pinned) and bottom chrome height.
     static func previewFrame(containerSize: CGSize) -> (
         previewHeight: CGFloat,
         bottomChromeHeight: CGFloat
     ) {
-        let rawHeight = containerSize.width / previewAspect
+        let rawHeight = containerSize.width / Preview.aspect
         let previewHeight = min(rawHeight, containerSize.height)
         let bottomChromeHeight = max(containerSize.height - previewHeight, 0)
         return (previewHeight, bottomChromeHeight)
     }
-
-    // MARK: - Controls Row Chrome
-    /// Horizontal inset for controls row (video mode, format pill, EV, lock).
-    static let headerHorizontalPadding: CGFloat = 16
-
-    // MARK: - Recording Cluster
-    /// Bottom spacing between record cluster and footer bar.
-    static let recordingBottomPadding: CGFloat = 18
-
-    /// Vertical offset of the record button center from the preview's bottom edge.
-    /// Record button center sits at `previewHeight - recordButtonCenterOffsetFromPreviewBottom`.
-    static let recordButtonCenterOffsetFromPreviewBottom: CGFloat = 115
-
-    /// Diameter of the record button hit target. Used to derive its bottom edge.
-    static let recordButtonDiameter: CGFloat = 72
-
-    /// Vertical offset of the recording timer center from the preview's bottom edge.
-    static let recordingTimerCenterOffsetFromPreviewBottom: CGFloat = 260
-
-    // MARK: - Footer Chrome
-
-    /// Moves footer controls lower to align with approved design.
-    static let footerVerticalOffset: CGFloat = 22
-
-    /// Shared circular icon button diameter for footer controls.
-    static let footerIconSize: CGFloat = 44
-
-    /// Extra vertical room allotted to the controls/footer VStack beyond the
-    /// preview height. Lets the chrome extend slightly below the preview frame.
-    static let controlChromeMaxHeightExtra: CGFloat = 100
-
-    // MARK: - Teleprompter
-    /// Sets teleprompter viewport height (length knob).
-    static let teleprompterViewportHeight: CGFloat = 500
-
-    /// SINGLE position knob — distance from preview top to viewport center.
-    /// Increase to move the teleprompter down; decrease to move it up.
-    /// Value is clamped at runtime so the viewport stays fully inside the preview.
-    static let teleprompterCenterFromPreviewTop: CGFloat = 0
-
-    /// Vertical nudge applied to the teleprompter viewport center, raising it
-    /// above the resolved layout center so it clears top chrome.
-    static let teleprompterCenterTopOffset: CGFloat = 75
-
-    /// This move the horiz pos of both text and button
-    static let teleprompterResetEdgeInset: CGFloat = 35
-
-    /// button Size.
-    static let teleprompterResetButtonSize: CGFloat = 40
-
-    /// Shared size for teleprompter utility controls (Justify + Reset).
-    static let teleprompterUtilityButtonWidth: CGFloat = 30
-    static let teleprompterUtilityButtonHeight: CGFloat = 30
-
-    // MARK: - VU Meter
-
-    /// Width of the vertical VU meter bar.
-    static let vuMeterWidth: CGFloat = 25
-
-    /// Horizontal inset from the left edge of the preview.
-    static let vuMeterHorizontalInset: CGFloat = 20
-
-    /// Small additional rightward nudge applied to the VU meter horizontal
-    /// position so its visual center clears the preview edge padding.
-    static let vuMeterHorizontalNudge: CGFloat = 5
-
-    /// Top and bottom padding inside the preview for the meter.
-    static let vuMeterVerticalPadding: CGFloat = 200
-
-    /// Vertical offset of the VU meter's bottom edge from the preview's bottom edge.
-    /// Derived so the meter bottom aligns with the record button's bottom edge:
-    /// recordButtonCenterOffsetFromPreviewBottom - (recordButtonDiameter / 2).
-    static var vuMeterBottomOffsetFromPreviewBottom: CGFloat {
-        recordButtonCenterOffsetFromPreviewBottom - (recordButtonDiameter / 2)
-    }
 }
 
-// MARK: - Resolved Layout
+// MARK: - CameraScreenLayout (resolved anchors)
 
-/// Resolved camera-screen geometry for a given container size + safe-area insets.
+/// Runtime-resolved screen geometry for a given container size + safe-area.
 ///
-/// Centralizes all derived values (preview frame, teleprompter viewport, reset
-/// button anchor) so `CameraView` reads ready-to-use coordinates instead of
-/// recomputing math in its `GeometryReader`. Edit constants in `CameraLayout`;
-/// add new derived values here.
+/// Consumers read semantic anchors grouped by feature. `CameraView` should
+/// not compute offsets inline — add new derived anchors here instead.
 struct CameraScreenLayout {
 
-    // Preview frame (top-anchored)
-    let previewSize: CGSize
-    let previewTopY: CGFloat
-    let previewBottomY: CGFloat
-    let previewCenterX: CGFloat
-    let bottomChromeHeight: CGFloat
+    // MARK: Feature Sub-anchors
 
-    // Teleprompter viewport
-    let teleprompterViewportHeight: CGFloat
-    let teleprompterCenter: CGPoint
-    let teleprompterBottomY: CGFloat
+    struct PreviewAnchors {
+        let size: CGSize
+        let topY: CGFloat
+        let bottomY: CGFloat
+        let centerX: CGFloat
+        let bottomChromeHeight: CGFloat
+    }
 
-    // Reset button
-    let teleprompterResetButtonSize: CGFloat
-    let teleprompterResetCenter: CGPoint
+    struct TeleprompterAnchors {
+        let viewportHeight: CGFloat
+        /// Final viewport center (top nudge already applied).
+        let center: CGPoint
+        /// Final viewport bottom Y (top nudge already applied).
+        let bottomY: CGFloat
+        /// Reset / utility stack anchor (unaffected by the top nudge).
+        let resetCenter: CGPoint
+        let resetButtonSize: CGFloat
+    }
 
-    // Safe-area passthrough for chrome padding.
-    let safeTopInset: CGFloat
-    let safeBottomInset: CGFloat
+    struct RecordClusterAnchors {
+        let recordButtonCenter: CGPoint
+        let recordingTimerCenter: CGPoint
+    }
 
-    init(
-        containerSize: CGSize,
-        safeAreaInsets: EdgeInsets
-    ) {
+    struct VUMeterAnchors {
+        let size: CGSize
+        let center: CGPoint
+    }
+
+    struct SafeAreaAnchors {
+        let topInset: CGFloat
+        let bottomInset: CGFloat
+    }
+
+    // MARK: Outputs
+
+    let preview: PreviewAnchors
+    let teleprompter: TeleprompterAnchors
+    let recordCluster: RecordClusterAnchors
+    let vuMeter: VUMeterAnchors
+    let safeArea: SafeAreaAnchors
+
+    // MARK: Init
+
+    init(containerSize: CGSize, safeAreaInsets: EdgeInsets) {
+        // Preview
         let frame = CameraLayout.previewFrame(containerSize: containerSize)
-
         let topY: CGFloat = 0
         let bottomY = topY + frame.previewHeight
         let centerX = containerSize.width / 2
-
-        self.previewSize = CGSize(
+        let previewSize = CGSize(
             width: containerSize.width,
             height: frame.previewHeight
         )
 
-        self.previewTopY = topY
-        self.previewBottomY = bottomY
-        self.previewCenterX = centerX
-        self.bottomChromeHeight = frame.bottomChromeHeight
+        self.preview = PreviewAnchors(
+            size: previewSize,
+            topY: topY,
+            bottomY: bottomY,
+            centerX: centerX,
+            bottomChromeHeight: frame.bottomChromeHeight
+        )
 
-        // Clamp viewport to stay fully inside the preview frame.
-        let rawViewportH = CameraLayout.teleprompterViewportHeight
-
+        // Teleprompter viewport (clamped to preview bounds)
+        let rawViewportH = CameraLayout.Teleprompter.viewportHeight
         let viewportH = min(max(rawViewportH, 0), frame.previewHeight)
+        let minCenterY = topY + viewportH / 2
+        let maxCenterY = bottomY - viewportH / 2
+        let requestedCenterY = topY + CameraLayout.Teleprompter.centerFromPreviewTop
+        let rawCenterY = min(max(requestedCenterY, minCenterY), maxCenterY)
+        // Apply the top nudge so consumers get a final center.
+        let nudgedCenterY = rawCenterY - CameraLayout.Teleprompter.centerTopNudge
 
-        let minCenterY = topY + viewportH / 2  // clamp
-        let maxCenterY = bottomY - viewportH / 2  // clamp
+        let resetX = containerSize.width - CameraLayout.Teleprompter.resetEdgeInset
+        // Reset anchor uses the pre-nudge geometry (matches prior behavior).
+        let resetY = rawCenterY + viewportH / 2
 
-        let requestedCenterY = topY + CameraLayout.teleprompterCenterFromPreviewTop
+        self.teleprompter = TeleprompterAnchors(
+            viewportHeight: viewportH,
+            center: CGPoint(x: centerX, y: nudgedCenterY),
+            bottomY: nudgedCenterY + viewportH / 2,
+            resetCenter: CGPoint(x: resetX, y: resetY),
+            resetButtonSize: CameraLayout.Teleprompter.resetButtonSize
+        )
 
-        let centerY = min(max(requestedCenterY, minCenterY), maxCenterY)
+        // Record cluster
+        let recordCenterY = bottomY - CameraLayout.RecordCluster.buttonCenterBottomOffset
+        let timerCenterY = bottomY - CameraLayout.RecordCluster.timerCenterBottomOffset
 
-        self.teleprompterViewportHeight = viewportH
+        self.recordCluster = RecordClusterAnchors(
+            recordButtonCenter: CGPoint(x: centerX, y: recordCenterY),
+            recordingTimerCenter: CGPoint(x: centerX, y: timerCenterY)
+        )
 
-        self.teleprompterCenter = CGPoint(x: centerX, y: centerY)
+        // VU meter — bottom aligns with the record-button bottom edge.
+        let meterHeight = previewSize.height * CameraLayout.VUMeter.heightRatio
+        let meterWidth = CameraLayout.VUMeter.width
+        let meterCenterX = CameraLayout.VUMeter.horizontalInset
+            + CameraLayout.VUMeter.horizontalNudge
+        let meterBottomInsetFromPreviewBottom =
+            CameraLayout.RecordCluster.buttonCenterBottomOffset
+            - CameraLayout.RecordCluster.buttonDiameter / 2
+        let meterCenterY = bottomY
+            - meterBottomInsetFromPreviewBottom
+            - meterHeight / 2
 
-        self.teleprompterBottomY = centerY + viewportH / 2
+        self.vuMeter = VUMeterAnchors(
+            size: CGSize(width: meterWidth, height: meterHeight),
+            center: CGPoint(x: meterCenterX, y: meterCenterY)
+        )
 
-        // Reset button hugs the right edge at the viewport bottom.
-        let resetX = containerSize.width - CameraLayout.teleprompterResetEdgeInset
-        self.teleprompterResetButtonSize = CameraLayout.teleprompterResetButtonSize
-        self.teleprompterResetCenter = CGPoint(x: resetX, y: centerY + viewportH / 2)
-
-        self.safeTopInset = safeAreaInsets.top
-        self.safeBottomInset = safeAreaInsets.bottom
+        // Safe area passthrough
+        self.safeArea = SafeAreaAnchors(
+            topInset: safeAreaInsets.top,
+            bottomInset: safeAreaInsets.bottom
+        )
     }
 }
