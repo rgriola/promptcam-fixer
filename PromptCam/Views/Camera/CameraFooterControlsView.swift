@@ -37,7 +37,7 @@ struct CameraFooterControlsView: View {
             // HStack(alignment: .top) aligns its top edge with the icon tops
             // of the labeled buttons.
             LibraryThumbnailButton(
-                size: CameraLayout.footerIconSize,
+                size: CameraLayout.Chrome.footerIconSize,
                 refreshTrigger: latestRecordingID,
                 action: onTapPhotoLibrary
             )
@@ -87,8 +87,8 @@ struct CameraFooterControlsView: View {
                     .font(Theme.icon24)
                     .foregroundStyle(Theme.white)
                     .frame(
-                        width: CameraLayout.footerIconSize, 
-                        height: CameraLayout.footerIconSize)
+                        width: CameraLayout.Chrome.footerIconSize, 
+                        height: CameraLayout.Chrome.footerIconSize)
                 Text(label)
                     .font(Theme.font10Regular)
                     .foregroundStyle(Theme.primaryText)
@@ -107,7 +107,7 @@ struct CameraFooterControlsView: View {
 ///   the photo library permission hasn't been granted yet.
 /// - Refreshes every time the view appears via `.task`.
 struct LibraryThumbnailButton: View {
-    /// Diameter of the circular button — should match `CameraLayout.footerIconSize`.
+    /// Diameter of the circular button — should match `CameraLayout.Chrome.footerIconSize`.
     let size: CGFloat
     /// Identifier used as the `.task(id:)` key. Change this whenever the
     /// underlying "latest recording" changes (delete, new save, iCloud sync)
