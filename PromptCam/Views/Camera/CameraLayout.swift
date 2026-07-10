@@ -152,7 +152,7 @@ struct CameraScreenLayout {
 
     struct RecordClusterAnchors {
         let recordButtonCenter: CGPoint
-        let recordingTimerCenter: CGPoint
+        //let recordingTimerCenter: CGPoint
     }
 
     struct VUMeterAnchors {
@@ -218,11 +218,12 @@ struct CameraScreenLayout {
 
         // Record cluster
         let recordCenterY = bottomY - CameraLayout.RecordCluster.buttonCenterBottomOffset
-        let timerCenterY = bottomY - CameraLayout.RecordCluster.timerCenterBottomOffset
+       // let timerCenterY = bottomY - CameraLayout.RecordCluster.timerCenterBottomOffset
 
         self.recordCluster = RecordClusterAnchors(
-            recordButtonCenter: CGPoint(x: centerX, y: recordCenterY),
-            recordingTimerCenter: CGPoint(x: centerX, y: timerCenterY)
+            recordButtonCenter: CGPoint(x: centerX, y: recordCenterY)
+            //,
+          //  recordingTimerCenter: CGPoint(x: centerX, y: timerCenterY)
         )
 
         // VU meter — bottom aligns with the record-button bottom edge.
@@ -249,3 +250,26 @@ struct CameraScreenLayout {
         )
     }
 }
+
+/*
+Notes for future
+There needs to be specific layout markers all Main View elements use:
+This app uses the Front Facing - Selfie Camera only. 
+
+Device Screen Width, Devide Screen Height; Uniform defined one time for entire app global values
+CameraPreview Width = Device Screen Width reguardless of Camera Format ie; 4k, HD etc. 
+CameraPreview Height = 9 x 16 ratio (this is not correct Camera shoots HD, UHD and 4k)
+ 
+Camera Preview View Alignment:
+Camera is vertical presenting. Camera Preview Top is aligned with Device Screen Top - vetically aligned. 
+CameraPreview Bottom ends based on the 9x16 ratio, 1920 for HD or tranlated for Device Screen Pixels.  
+
+Camera Preview bottom is the start of the Top-Line and Footer buttons.
+Teleprompter Top aligns with Screen Device Top, overlays Camera Preview.
+
+Teleprompter Bottom:
+VU Meter, Record Cluster, Utility Controls Frame is between Prompter Bottom and Preview Bottom
+Camera Controls; [VU][Record Cluster][Utility]
+
+
+*/
