@@ -403,3 +403,16 @@ Modify tap-hold-drag gesture in teleprompter view area to control the text movem
 - Tap-hold-drag feature only valid in teleprompter view area, gesture should not interfere with other active buttons ie; Record, Scroll Play/Pause and Reset Text buttons - all others are gated. Review this gesture and create a plan to implement this change.
 
 **_ Context _** Current state the text jumps up and down the screen regaurdless of the place the tap occurs in the Teleprompter View area.
+
+.....
+
+Non-plan issues worth flagging (not blocking)
+UI test failure: PromptCamUITests.testMainScreenHasRecordingControl expects a “Focus and exposure lock” badge that isn’t present at launch on the simulator — this is why xcodebuild ... test returns exit 65 even though unit tests are all green. Not plan-related, but you’ll want a decision: gate the assertion behind a launch argument, remove the assertion, or ensure the badge is present at cold start.
+
+Non-plan issues:
+Focus and Exposure Lock Badge lets
+
+
+Foundation/UIKit mixing in openAppSettings is fine; but permissionService is instantiated as a let in both CameraView and PermissionsOnboardingView. Harmless since PermissionService is a struct, but you could inject a single instance via @Environment later if you want.
+
+PhotoLibrarySaver still requests .readWrite, which is stricter than needed for save-only. If you ever adopt add-only, you should update PermissionPolicySnapshot.requiredPermissionsGranted to accept the add-only case. Not required now.

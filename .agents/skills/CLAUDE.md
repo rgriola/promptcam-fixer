@@ -8,7 +8,22 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 ## 0. iOS Coding
 
-We are coding for iOS 18+ using Swift 6+, (Current stable version is 6.3).
+context for this project:
+- Coding for iOS 18+ using Swift 6+, Current stable version is 6.3
+- MVVM with @Observable macro (not ObservableObject)
+- Uses Swift Concurrency everywhere (async/await, no Combine)
+- Dependency injection via a DependencyContainer singleton
+- SwiftData for local persistence, custom API layer for networking
+- No third-party UI libraries — everything is native SwiftUI
+
+- refactoring. 
+- ViewModel uses @Observable (not ObservableObject)
+- All network calls move to the ViewModel using async/await
+- View only contains UI code — no business logic
+- Keep the existing error handling behavior exactly as-is
+- Do NOT change the public interface — other parts of the codebase
+  depend on the completion handlers currently exposed
+
 
 ## 0.1 Suggestions
 

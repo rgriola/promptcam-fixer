@@ -232,29 +232,6 @@ Phase 7 preparation notes:
 4. Added support diagnostics summary surface in Settings to speed internal triage during QA/device validation.
 5. Expanded analytics payload builder tests; unit suite now verifies these payloads in `PermissionAnalyticsPayloadBuilderTests`.
 
-## Phase 8: Rollout
-
-Objective: Ship safely and monitor user outcomes.
-
-Checklist:
-- [x] Create Phase 8 rollout execution checklist and launch gates.
-- [ ] Internal beta for permission denial/recovery scenarios.
-- [ ] TestFlight phased rollout.
-- [ ] Monitor blocked-to-recovered conversion rate.
-- [ ] Monitor save failures tied to Photo Library denial.
-- [ ] Monitor Speech-to-Text opt-in and usage rates.
-- [ ] Patch copy or CTA hierarchy if recovery rates are low.
-- [ ] Run full unit test suite before each rollout increment.
-
-Deliverable:
-- Rollout report with follow-up action list.
-
-Phase 8 implementation notes:
-1. Rollout execution checklist and launch gates are defined in `docs/PHASE8_ROLLOUT_CHECKLIST.md`.
-2. Phase 8 is now started for rollout planning and launch readiness tracking.
-3. Production rollout execution is currently gated on Phase 6 device QA evidence and zero-critical severity sign-off.
-4. Updated gate check recorded on July 9, 2026: Gates 2 and 3 Ready; Gates 1 and 4 remain Blocked pending device QA evidence and severity sign-off.
-
 ## Acceptance Criteria
 
 1. Users can recover denied required permissions without reinstalling.

@@ -151,6 +151,15 @@ struct CameraView: View {
                     y: layout.previewSize.height
                         - CameraLayout.recordButtonCenterOffsetFromPreviewBottom)
 
+                // MARK: - 7: Promopter Script Reset
+                TeleprompterCenterResetButton(
+                    isDisabled: viewModel.isRecording,
+                    action: {
+                        viewModel.resetTeleprompterPosition()
+                    }
+                )
+                .position(layout.teleprompterResetCenter)
+
                 // MARK: - 5: Record Timer
                 RecordingTimerPanel(
                     duration: viewModel.recordingDuration,
@@ -182,15 +191,6 @@ struct CameraView: View {
                     x: layout.teleprompterCenter.x,
                     y: layout.teleprompterCenter.y - CameraLayout.teleprompterCenterTopOffset
                 )
-
-                // MARK: - 7: Promopter Script Reset
-                TeleprompterCenterResetButton(
-                    isDisabled: viewModel.isRecording,
-                    action: {
-                        viewModel.resetTeleprompterPosition()
-                    }
-                )
-                .position(layout.teleprompterResetCenter)
 
                 // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {
@@ -362,7 +362,11 @@ struct CameraView: View {
                 RecordingPlayerView(
                     recording: recording,
                     videoURL: viewModel.latestVideoURL,
-                    onDelete: {
+                    onDelete: { recordingToDelete in
+                        // The player passes the CURRENTLY active recording so
+                        // this deletes the video the user sees, not the one
+                        // the player was originally opened with.
+                        //
                         // Delegate to the nonisolated RecordingsService instead
                         // of inlining PHPhotoLibrary.performChanges here. The
                         // Task { } below inherits @MainActor from the enclosing
@@ -372,7 +376,6 @@ struct CameraView: View {
                         // Swift 6's executor mismatch check and crashes.
                         // The service method is a nonisolated struct func, so
                         // its internal closures run without MainActor taint.
-                        let recordingToDelete = recording
                         Task {
                             _ = await RecordingsService().deleteRecording(recordingToDelete)
                             // Keep player open — user can manually close or select another video
