@@ -116,7 +116,10 @@ struct CameraView: View {
                         height: layout.vuMeter.size.height
                     )
                     .roundedBackground()
-                    .position(layout.vuMeter.center)
+                    .position(
+                        x: layout.vuMeter.center.x,
+                        y: layout.vuMeter.center.y + 70
+                    )
                     .transition(.opacity)
                     .onTapGesture {
                         viewModel.openAudioSourcePicker()
