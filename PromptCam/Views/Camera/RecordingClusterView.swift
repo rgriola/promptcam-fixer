@@ -70,7 +70,7 @@ struct RecordButton: View {
                             .fill(Theme.red)
                     )
                     .overlay(
-                        Circle().strokeBorder(Theme.white.opacity(0.4), lineWidth: 2)
+                        Circle().strokeBorder(Theme.white.opacity(0.7), lineWidth: 2)
                     )
 
             }
@@ -108,7 +108,7 @@ struct ScrollToggleButton: View {
                     )
                     .overlay(
                         Circle().strokeBorder(
-                            Theme.white.opacity(0.4), lineWidth: 2)
+                            Theme.white.opacity(0.7), lineWidth: 2)
                     )
             }
         }

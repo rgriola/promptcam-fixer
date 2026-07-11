@@ -78,7 +78,9 @@ enum Theme {
     static let accent = Color(hex: "#FFD700")
     // FFD700/ Goldish for Oscar 
 
-    static let blue = Color(hex: "#0012CC")
+    static let blue = Color(hex: "#1E7AF0")
+
+
     static let green = Color(hex: "#30D158")
     static let red = Color(hex: "#cc0000")
     static let redTwo = Color(hex: "#a80000")
