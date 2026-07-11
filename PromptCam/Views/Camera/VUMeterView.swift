@@ -72,18 +72,18 @@ struct VUMeterView: View {
                     // Channel labels "1" and "2" replace the mic icon in stereo mode.
                     Text("1")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.purple)
+                        .foregroundStyle(Theme.white)
                         .position(x: ch1CenterX, y: micIconSize / 2)
                     Text("2")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.purple)
+                        .foregroundStyle(Theme.white)
                         .position(x: ch2CenterX, y: micIconSize / 2)
                 } else {
                     Image(systemName: isExternalMic
                           ? "mic.fill"
                           : "iphone.gen3.radiowaves.left.and.right")
                         .font(.system(size: micIconSize, weight: .semibold))
-                        .foregroundStyle(isExternalMic ? Theme.purple : Theme.secondaryText)
+                        .foregroundStyle(isExternalMic ? Theme.white : Theme.white)
                         .position(x: ch1CenterX, y: micIconSize / 2)
                 }
 
@@ -116,13 +116,13 @@ struct VUMeterView: View {
                     let markY = topPad + barHeight - (mark.position * barHeight)
 
                     Rectangle()
-                        .fill(Theme.white.opacity(0.6))
+                        .fill(Theme.white.opacity(0.8))
                         .frame(width: barColumnWidth, height: 1)
                         .position(x: barColumnWidth / 2, y: markY)
 
                     Text(mark.label)
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Theme.white.opacity(0.75))
+                        .foregroundStyle(Theme.white.opacity(0.8))
                         .frame(width: labelWidth + 10, alignment: .leading)
                         .position(x: (labelX + labelWidth / 2) + 5, y: markY)
                 }
@@ -181,12 +181,12 @@ private struct VUBarView: View {
 
     private static let levelGradient = LinearGradient(
         stops: [
-            .init(color: Theme.white,  location: 0.0),
-            .init(color: Theme.white,  location: 0.6),
-            .init(color: Theme.white, location: 0.6),
-            .init(color: Theme.white, location: 0.8),
-            .init(color: Theme.white,    location: 0.8),
-            .init(color: Theme.white,    location: 1.0),
+            .init(color: VUColor.floor,  location: 0.0),
+            .init(color: VUColor.stepOne,  location: 0.6),
+            .init(color: VUColor.stepTwo, location: 0.7),
+            .init(color: VUColor.stepThree, location: 0.8),
+            .init(color: VUColor.stepFour,    location: 0.9),
+            .init(color: VUColor.peak,   location: 1.0),
         ],
         startPoint: .bottom,
         endPoint: .top

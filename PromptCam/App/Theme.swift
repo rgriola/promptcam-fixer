@@ -24,6 +24,15 @@ enum FontFamily {
     }
 }
 
+enum VUColor {
+    static let peak = Color(hex: "#00FA47") // top color
+    static let stepFour = Color(hex: "#00CC3A")       
+    static let stepThree = Color(hex: "#FAC400")
+    static let stepTwo = Color(hex: "#CCA000")
+    static let stepOne = Color(hex: "#F5F5F5")
+    static let floor = Color(hex: "#FFFFFF")
+}
+
 enum Theme {
     static let fontFamily: FontFamily = .system
 
@@ -79,11 +88,15 @@ enum Theme {
     // FFD700/ Goldish for Oscar 
 
     static let blue = Color(hex: "#0012CC")
-    static let green = Color(hex: "#30D158")
+    static let green = Color(hex: "#00CC3A")
     static let red = Color(hex: "#cc0000")
     static let redTwo = Color(hex: "#a80000")
    
     static let yellow = Color(hex: "#FFD60A")
+    static let yellowTwo = Color(hex: "#CCA000")
+
+
+
     static let gray = Color(hex: "#8E8E93")
 
     static let cameraBg = Color(hex: "#0B0B0B")
@@ -137,10 +150,9 @@ enum Theme {
 
     static let bgGrad = LinearGradient(
                             colors: [Theme.black, Theme.redTwo],
-                            startPoint: .topLeading,
+                            startPoint: .leading,
                             endPoint: .bottomTrailing
                             )
-    
 }
 
 // MARK: - View Extensions

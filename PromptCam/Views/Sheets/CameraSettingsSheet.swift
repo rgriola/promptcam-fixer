@@ -141,15 +141,6 @@ struct CameraSettingsSheet: View {
                 .listRowBackground(Theme.black.opacity(0.1))
                 .foregroundStyle(Theme.white)
 
-                Section("Support Diagnostics") {
-                    Text(permissionSupportSummary)
-                        .font(Theme.font12Regular)
-                        .foregroundStyle(Theme.primaryText)
-                        .textSelection(.enabled)
-                        .padding(.vertical, Theme.space4)
-                }
-                .settingsSectionHeaderStyle()
-
                 // MARK: - Formats Accordion
                 Section {
 

@@ -64,7 +64,7 @@ struct AudioSourcePickerView: View {
             HStack(spacing: Theme.space12) {
                 Image(systemName: iconName(for: port.portType))
                     .font(.system(size: 20))
-                    .foregroundStyle(isActive ? Theme.accent : Theme.secondaryText)
+                    .foregroundStyle(isActive ? Theme.accent : Theme.primaryText)
                     .frame(width: 28)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -95,7 +95,11 @@ struct AudioSourcePickerView: View {
                             .strokeBorder(Theme.white.opacity(0.3), lineWidth: 1)
                     }
             }
-            .contentShape(RoundedRectangle(cornerRadius: Theme.radiusLg, style: .continuous))
+            .contentShape(
+                RoundedRectangle(
+                    cornerRadius: Theme.radiusLg, style: .continuous
+                    )
+                )
         }
         .buttonStyle(.plain)
     }
