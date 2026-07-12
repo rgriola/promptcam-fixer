@@ -153,8 +153,26 @@ struct PermissionService {
     /// Requests "when in use" location access for video geo-tagging.
     /// CoreLocation has no async authorization API — the system dialog is shown
     /// and the status is refreshed when the scene becomes active again.
+    ///
+    /// Prefer `requestLocationAccessAsync()` in flows that chain multiple
+    /// system prompts; the async variant waits for the user to dismiss the
+    /// dialog so subsequent prompts do not overlap.
     func requestLocationAccess() {
         CLLocationManager().requestWhenInUseAuthorization()
+    }
+
+    /// Awaitable version of `requestLocationAccess()`.
+    ///
+    /// `CLLocationManager` does not expose an async authorization API, so this
+    /// wraps the delegate callback in a `CheckedContinuation`. The call
+    /// returns as soon as the user grants or denies access (or immediately
+    /// if the status is already determined). This prevents the location
+    /// dialog from stacking on top of other permission prompts in the
+    /// onboarding flow.
+    @discardableResult
+    func requestLocationAccessAsync() async -> CLAuthorizationStatus {
+        let requester = LocationAuthorizationRequester()
+        return await requester.request()
     }
 
     // MARK: - Aggregate Request (legacy convenience)
@@ -184,5 +202,48 @@ extension EnvironmentValues {
     var permissionService: PermissionService {
         get { self[PermissionServiceKey.self] }
         set { self[PermissionServiceKey.self] = newValue }
+    }
+}
+
+// MARK: - Location Authorization Requester
+
+/// Bridges `CLLocationManager`'s delegate-based authorization prompt into an
+/// awaitable async call. Kept private to `PermissionService` — callers should
+/// use `PermissionService.requestLocationAccessAsync()` instead.
+///
+/// The class must outlive the system dialog, so it holds a strong reference
+/// to its `CLLocationManager` and to the continuation until the delegate
+/// callback fires with a determined status. `CLLocationManager` invokes its
+/// delegate on the main thread by default, which is where we consume the
+/// result, so `@unchecked Sendable` is safe here.
+private final class LocationAuthorizationRequester: NSObject, CLLocationManagerDelegate,
+    @unchecked Sendable
+{
+    private let manager = CLLocationManager()
+    private var continuation: CheckedContinuation<CLAuthorizationStatus, Never>?
+
+    /// Presents the location authorization dialog (if needed) and resumes
+    /// once the user responds. Returns immediately with the current status
+    /// when authorization is already determined.
+    func request() async -> CLAuthorizationStatus {
+        let current = manager.authorizationStatus
+        guard current == .notDetermined else { return current }
+
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            manager.delegate = self
+            manager.requestWhenInUseAuthorization()
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        // The delegate fires once immediately after assignment with the
+        // current (still `.notDetermined`) status. Ignore that pass and wait
+        // for the user's response.
+        guard status != .notDetermined else { return }
+        let pending = continuation
+        continuation = nil
+        pending?.resume(returning: status)
     }
 }

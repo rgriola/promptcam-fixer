@@ -1,8 +1,9 @@
 {
   "images": [
     {
-      "filename": "launch-image.png",
-      "idiom": "universal"
+      "filename": "launch-image@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
     }
   ],
   "info": {

@@ -206,6 +206,12 @@ struct PermissionsOnboardingView: View {
     private func requestAllPermissions() {
         isRequesting = true
         Task {
+            // Prompts are chained sequentially so iOS never presents two
+            // system dialogs at once. Order matters: required permissions
+            // first (Camera, Mic, Photo), then optional (Speech, Location).
+            // Location is intentionally last because CoreLocation's dialog
+            // defers to the next runloop and used to race the Speech prompt
+            // when both were kicked off without awaiting.
             if cameraStatus == .notDetermined {
                 _ = await permissionService.requestCameraAccess()
             }
@@ -215,13 +221,13 @@ struct PermissionsOnboardingView: View {
             if photoStatus == .notDetermined {
                 _ = await permissionService.requestPhotoLibraryAccess()
             }
-            if locationStatus == .notDetermined {
-                // CoreLocation has no async API — fires the dialog and returns.
-                // Status is refreshed when the scene becomes active again.
-                permissionService.requestLocationAccess()
-            }
             if speechStatus == .notDetermined {
                 _ = await permissionService.requestSpeechToTextAccess()
+            }
+            if locationStatus == .notDetermined {
+                // Awaits the CLLocationManager delegate callback so the
+                // dialog fully dismisses before the flow finishes.
+                _ = await permissionService.requestLocationAccessAsync()
             }
             refreshStatuses()
             isRequesting = false
