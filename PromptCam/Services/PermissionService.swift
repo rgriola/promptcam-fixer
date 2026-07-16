@@ -154,11 +154,18 @@ struct PermissionService {
     /// CoreLocation has no async authorization API — the system dialog is shown
     /// and the status is refreshed when the scene becomes active again.
     ///
+    /// This is a fire-and-forget convenience. It delegates to
+    /// `requestLocationAccessAsync()` so the underlying `CLLocationManager` is
+    /// retained for the lifetime of the system dialog. Requesting authorization
+    /// on a `CLLocationManager` that is deallocated immediately (as happens with
+    /// a bare `CLLocationManager().requestWhenInUseAuthorization()`) can cause
+    /// the prompt to be silently dropped.
+    ///
     /// Prefer `requestLocationAccessAsync()` in flows that chain multiple
     /// system prompts; the async variant waits for the user to dismiss the
     /// dialog so subsequent prompts do not overlap.
     func requestLocationAccess() {
-        CLLocationManager().requestWhenInUseAuthorization()
+        Task { await requestLocationAccessAsync() }
     }
 
     /// Awaitable version of `requestLocationAccess()`.
