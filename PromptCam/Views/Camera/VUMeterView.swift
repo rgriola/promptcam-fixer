@@ -41,93 +41,57 @@ struct VUMeterView: View {
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { geo in
-            let width  = geo.size.width
-            let height = geo.size.height
+        let isStereo = level2 != nil
 
-            // Top padding reserves space for the source icon / channel labels.
-            let topPad: CGFloat = micIconSize + Theme.space4
+        VStack(spacing: 2) {
+            // ── Icon Row ── fixed intrinsic height
+            iconRow(isStereo: isStereo)
+                .frame(height: micIconSize)
+                .padding(.bottom, 8)
+            // ── Meter Area ── fills remaining space
+            GeometryReader { geo in
+                let barColumnFraction: CGFloat = 0.50
+                let barColumnWidth = floor(geo.size.width * barColumnFraction)
+                let barHeight = geo.size.height
 
-            // The bar column occupies ~55% of width; right side holds dB labels.
-            let barColumnWidth = floor(width * 0.55)
-            let labelGap: CGFloat = 4
-            let labelX = barColumnWidth + labelGap
-            let labelWidth = max(width - labelX, 0)
-            let barHeight = height - topPad
+                let singleBarWidth: CGFloat = isStereo
+                    ? floor((barColumnWidth - channelGap) / 2)
+                    : barColumnWidth
 
-            let isStereo = level2 != nil
+                HStack(spacing: 0) {
+                    // Left: bar column (Ch1, optional Ch2, hash marks)
+                    ZStack(alignment: .bottom) {
+                        // Ch1 bar
+                        VUBarView(
+                            level: level,
+                            peak: peak,
+                            isRecording: isRecording
+                        )
+                        .frame(width: singleBarWidth)
 
-            // In stereo mode the two bars share the barColumnWidth with a gap.
-            let singleBarWidth: CGFloat = isStereo
-                ? floor((barColumnWidth - channelGap) / 2)
-                : barColumnWidth
+                        // Ch2 bar (stereo only)
+                        if let l2 = level2, let p2 = peak2 {
+                            VUBarView(
+                                level: l2,
+                                peak: p2,
+                                isRecording: isRecording
+                            )
+                            .frame(width: singleBarWidth)
+                            .offset(x: singleBarWidth + channelGap)
+                        }
+                    }
+                    .frame(width: barColumnWidth, height: barHeight, alignment: .leading)
+                    .overlay {
+                        // Hash mark lines span the bar column
+                        hashMarkOverlay(barHeight: barHeight, barColumnWidth: barColumnWidth)
+                    }
 
-            // X centers for Ch1 and (optional) Ch2
-            let ch1CenterX: CGFloat = singleBarWidth / 2
-            let ch2CenterX: CGFloat = isStereo ? singleBarWidth + channelGap + singleBarWidth / 2 : 0
-
-            ZStack {
-                // MARK: Source icon / channel labels
-                if isStereo {
-                    // Channel labels "1" and "2" replace the mic icon in stereo mode.
-                    Text("1")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.white)
-                        .position(x: ch1CenterX, y: micIconSize / 2)
-                    Text("2")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.white)
-                        .position(x: ch2CenterX, y: micIconSize / 2)
-                } else {
-                    Image(systemName: isExternalMic
-                          ? "mic.fill"
-                          : "iphone.gen3.radiowaves.left.and.right")
-                        .font(.system(size: micIconSize, weight: .semibold))
-                        .foregroundStyle(isExternalMic ? Theme.white : Theme.white)
-                        .position(x: ch1CenterX, y: micIconSize / 2)
+                    // Right: dB labels
+                    labelColumn(barHeight: barHeight)
                 }
-
-                // MARK: Ch1 bar
-                VUBarView(
-                    level: level,
-                    peak: peak,
-                    barWidth: singleBarWidth,
-                    barHeight: barHeight,
-                    topPad: topPad,
-                    centerX: ch1CenterX,
-                    isRecording: isRecording
-                )
-
-                // MARK: Ch2 bar (stereo only)
-                if let l2 = level2, let p2 = peak2 {
-                    VUBarView(
-                        level: l2,
-                        peak: p2,
-                        barWidth: singleBarWidth,
-                        barHeight: barHeight,
-                        topPad: topPad,
-                        centerX: ch2CenterX,
-                        isRecording: isRecording
-                    )
-                }
-
-                // MARK: dB hash marks + labels (span the full bar column)
-                ForEach(Array(Self.hashMarks.enumerated()), id: \.offset) { _, mark in
-                    let markY = topPad + barHeight - (mark.position * barHeight)
-
-                    Rectangle()
-                        .fill(Theme.white.opacity(0.8))
-                        .frame(width: barColumnWidth, height: 1)
-                        .position(x: barColumnWidth / 2, y: markY)
-
-                    Text(mark.label)
-                        .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Theme.white.opacity(0.8))
-                        .frame(width: labelWidth + 10, alignment: .leading)
-                        .position(x: (labelX + labelWidth / 2) + 5, y: markY)
-                }
-
-                // MARK: Inline source-name hint
+            }
+            .overlay {
+                // Source-name hint — floats over the meter area
                 if let name = sourceNameHint {
                     Text(name)
                         .font(.system(size: 9, weight: .semibold))
@@ -137,33 +101,83 @@ struct VUMeterView: View {
                         .padding(.vertical, 3)
                         .background(Theme.black.opacity(0.7), in: Capsule())
                         .fixedSize()
-                        .position(x: ch1CenterX + 50, y: topPad + barHeight / 2)
+                        .offset(x: 40)
                         .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
-            .frame(width: width, height: height)
         }
+        .clipped()
         .animation(.linear(duration: 0.05),    value: level)
         .animation(.linear(duration: 0.05),    value: level2)
         .animation(.easeInOut(duration: 0.3),  value: isRecording)
         .animation(.easeInOut(duration: 0.3),  value: isExternalMic)
         .animation(.easeInOut(duration: 0.25), value: sourceNameHint)
-        .animation(.easeInOut(duration: 0.4),  value: level2 != nil) // bar split/merge
+        .animation(.easeInOut(duration: 0.4),  value: level2 != nil)
+    }
+
+    // MARK: - Extracted Sub-views
+
+    /// Top icon row: mic icon (mono) or channel labels "1"/"2" (stereo).
+    @ViewBuilder
+    private func iconRow(isStereo: Bool) -> some View {
+        if isStereo {
+            HStack(spacing: channelGap) {
+                Text("1")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.white)
+                    .frame(maxWidth: .infinity)
+                Text("2")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.white)
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            Image(systemName: isExternalMic
+                  ? "mic.fill"
+                  : "iphone.gen3.radiowaves.left.and.right")
+                .font(.system(size: micIconSize, weight: .semibold))
+                .foregroundStyle(Theme.white)
+        }
+    }
+
+    /// Hash mark lines + dB labels overlay for the bar column.
+    private func hashMarkOverlay(barHeight: CGFloat, barColumnWidth: CGFloat) -> some View {
+        ZStack {
+            ForEach(Array(Self.hashMarks.enumerated()), id: \.offset) { _, mark in
+                let offsetY = barHeight / 2 - (mark.position * barHeight)
+
+                Rectangle()
+                    .fill(Theme.white.opacity(0.8))
+                    .frame(width: barColumnWidth, height: 1)
+                    .offset(y: offsetY)
+            }
+        }
+    }
+
+    /// dB label column on the right side of the meter.
+    private func labelColumn(barHeight: CGFloat) -> some View {
+        ZStack {
+            ForEach(Array(Self.hashMarks.enumerated()), id: \.offset) { _, mark in
+                let offsetY = barHeight / 2 - (mark.position * barHeight)
+
+                Text(mark.label)
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.white.opacity(0.8))
+                    .offset(y: offsetY)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
 // MARK: - VUBarView
 
-/// A single vertical bar of the VU meter — gradient fill, peak hold line,
-/// CLIP latch indicator, and no-signal dim. Used by `VUMeterView` for both
-/// the mono bar and each channel bar in stereo mode.
+/// A single vertical bar — gradient fill, peak hold line, CLIP latch,
+/// and no-signal dim. Fills the frame given by its parent; no absolute
+/// positioning needed.
 private struct VUBarView: View {
     let level: Float
     let peak: Float
-    let barWidth: CGFloat
-    let barHeight: CGFloat
-    let topPad: CGFloat
-    let centerX: CGFloat
     let isRecording: Bool
 
     private let peakLineHeight: CGFloat = 2
@@ -175,8 +189,6 @@ private struct VUBarView: View {
     @State private var clipLatched: Bool = false
     @State private var clipClearTask: Task<Void, Never>?
     @State private var lastSignalTime: Date = Date()
-    /// Driven by .task(id: lastSignalTime) so SwiftUI re-renders correctly
-    /// when the grace period elapses — Date() in body is not reactive.
     @State private var isNoSignal: Bool = false
 
     private static let levelGradient = LinearGradient(
@@ -193,50 +205,47 @@ private struct VUBarView: View {
     )
 
     var body: some View {
-        let clampedLevel = CGFloat(min(max(level, 0), 1))
-        let clampedPeak  = CGFloat(min(max(peak,  0), 1))
-        let fillHeight   = clampedLevel * barHeight
-        let peakY        = topPad + barHeight - (clampedPeak * barHeight)
+        GeometryReader { geo in
+            let barHeight = geo.size.height
+            let clampedLevel = CGFloat(min(max(level, 0), 1))
+            let clampedPeak  = CGFloat(min(max(peak,  0), 1))
+            let fillHeight   = clampedLevel * barHeight
+            let peakOffset   = clampedPeak * barHeight
 
-        let meterOpacity: Double = isNoSignal ? 0.4 : 1.0
+            let meterOpacity: Double = isNoSignal ? 0.4 : 1.0
 
-        ZStack {
-            // Background track
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Theme.panelBg.opacity(0.4))
-                .frame(width: barWidth, height: barHeight)
-                .position(x: centerX, y: topPad + barHeight / 2)
+            ZStack(alignment: .bottom) {
+                // Background track
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Theme.panelBg.opacity(0.4))
 
-            // Level fill — gradient rises from bottom
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
+                // Level fill — gradient rises from bottom
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Self.levelGradient)
-                    .frame(width: barWidth, height: fillHeight)
+                    .frame(height: fillHeight)
+
+                // Peak hold line
+                Rectangle()
+                    .fill(Theme.accent.opacity(0.9))
+                    .frame(height: peakLineHeight)
+                    .offset(y: -peakOffset)
+                    .animation(.linear(duration: 0.05), value: peak)
             }
-            .frame(width: barWidth, height: barHeight)
-            .position(x: centerX, y: topPad + barHeight / 2)
-
-            // Peak hold line
-            Rectangle()
-                .fill(Theme.accent.opacity(0.9))
-                .frame(width: barWidth + 2, height: peakLineHeight)
-                .position(x: centerX, y: peakY)
-                .animation(.linear(duration: 0.05), value: peak)
-
-            // CLIP latch
-            if clipLatched {
-                Text("CLIP")
-                    .font(.system(size: 7, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(Theme.white)
-                    .padding(.horizontal, 3)
-                    .padding(.vertical, 1)
-                    .background(Theme.red, in: RoundedRectangle(cornerRadius: 2))
-                    .position(x: centerX, y: topPad - 6)
-                    .transition(.opacity)
+            .opacity(meterOpacity)
+            .overlay(alignment: .top) {
+                // CLIP badge at top of bar
+                if clipLatched {
+                    Text("CLIP")
+                        .font(.system(size: 7, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(Theme.white)
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(Theme.red, in: RoundedRectangle(cornerRadius: 2))
+                        .offset(y: -12)
+                        .transition(.opacity)
+                }
             }
         }
-        .opacity(meterOpacity)
         .onChange(of: peak) { _, newPeak in
             guard newPeak >= clipThreshold else { return }
             clipLatched = true
@@ -254,11 +263,8 @@ private struct VUBarView: View {
             }
         }
         .onChange(of: isRecording) { _, recording in
-            // Clear no-signal state immediately when recording starts.
             if recording { isNoSignal = false }
         }
-        // Restarts whenever lastSignalTime updates (i.e. on any real signal).
-        // After the grace period with no new signal, marks the meter as no-signal.
         .task(id: lastSignalTime) {
             try? await Task.sleep(for: .seconds(noSignalGracePeriod))
             if !isRecording {
