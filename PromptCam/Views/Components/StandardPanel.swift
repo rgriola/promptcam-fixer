@@ -152,6 +152,7 @@ struct StandardPanelOverlay<Content: View>: View {
             }
 
         content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.scale(scale: 0.95).combined(with: .opacity))
     }
 }
