@@ -390,7 +390,7 @@ final class CameraViewModel {
     func cycleTextAlignment() {
         config.textAlignment = config.textAlignment.next
         saveStylePreferences()
-        print("Text alignment cycled to: \(config.textAlignment.rawValue)")
+        Log.viewmodel.debug("Text alignment cycled to: \(self.config.textAlignment.rawValue, privacy: .public)")
     }
 
     // MARK: - Style Persistence
