@@ -11,6 +11,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege: CI only needs to read repository contents.
+permissions:
+  contents: read
+
 env:
   # Xcode major version required by the project (Swift 6.0 / iOS 18 SDK).
   XCODE_VERSION: "16"
