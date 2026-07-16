@@ -1,47 +1,47 @@
 {
-  "fill" : {
-    "linear-gradient" : [
+  "fill": {
+    "linear-gradient": [
       "display-p3:0.00000,0.00000,0.00000,1.00000",
       "display-p3:0.96460,0.22012,0.23248,1.00000"
     ],
-    "orientation" : {
-      "start" : {
-        "x" : 0.5,
-        "y" : 0
+    "orientation": {
+      "start": {
+        "x": 0.5,
+        "y": 0
       },
-      "stop" : {
-        "x" : 0.5,
-        "y" : 0.7
+      "stop": {
+        "x": 0.5,
+        "y": 0.7
       }
     }
   },
-  "groups" : [
+  "groups": [
     {
-      "layers" : [
+      "layers": [
         {
-          "image-name" : "Cue View.png",
-          "name" : "Cue View",
-          "position" : {
-            "scale" : 1.23,
-            "translation-in-points" : [
+          "image-name": "Cue View.png",
+          "name": "Cue View",
+          "position": {
+            "scale": 1.23,
+            "translation-in-points": [
               -336.5,
               3
             ]
           }
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
       },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.5
+      "translucency": {
+        "enabled": true,
+        "value": 0.5
       }
     }
   ],
-  "supported-platforms" : {
-    "squares" : [
+  "supported-platforms": {
+    "squares": [
       "iOS"
     ]
   }

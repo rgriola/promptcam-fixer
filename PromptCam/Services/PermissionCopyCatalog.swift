@@ -16,13 +16,13 @@ enum PermissionCopyCatalog {
      static let onboardingTitle = "Cue Vue"
 
      static let onboardingRequiredSummary =
-          "PromptCam needs Camera, Microphone, and Photo Library to record and save videos."
+          "Cue Vue needs access to Camera, Microphone & Photo Library."
 
      static let onboardingOptionalSummary =
-          "Location and Speech-to-Text are optional and can be enabled later in Settings."
+          "GPS & Speech-to-Text are optional."
 
      static let onboardingBlockedRequiredMessage =
-          "One or more required permissions are off. Tap Settings on the row to enable access."
+          "A required permission are not active. Tap Settings to enable access."
 
      static func description(for key: PermissionCopyKey) -> String {
           switch key {
@@ -41,6 +41,7 @@ enum PermissionCopyCatalog {
 
      static func requiredPermissionRecoveryTitle(for key: PermissionCopyKey) -> String {
           switch key {
+               
           case .camera:
                return "Camera Access Required"
           case .microphone:
@@ -58,15 +59,17 @@ enum PermissionCopyCatalog {
           switch key {
           case .camera:
                return
-                    "PromptCam cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
+                    "Cue Vuecannot record video without Camera access. Open Settings, enable Camera, then return to continue."
           case .microphone:
                return
-                    "PromptCam cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
+                    "Cue Vue cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
           case .photoLibrary:
                return
-                    "PromptCam cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
+                    "Cue Vue cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
+
           case .location:
                return "Location access is optional and only used for GPS metadata."
+
           case .speechToText:
                return optionalSpeechRecoveryMessage
           }
