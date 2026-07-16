@@ -1,0 +1,15 @@
+// Local, per-developer code-signing overrides for PromptCam.
+//
+// Copy this file to `Signing.local.xcconfig` (which is git-ignored) and fill in
+// your own Apple Developer Team ID. `Signing.xcconfig` includes it automatically
+// via `#include?`, and these values override the committed defaults.
+//
+//   cp Signing.local.xcconfig.example Signing.local.xcconfig
+//
+// Then set your 10-character Apple Developer Team ID (Apple Developer portal →
+// Membership details):
+
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// Optional: override the bundle identifier if you provision under your own team.
+// PRODUCT_BUNDLE_IDENTIFIER = com.example.promptcam

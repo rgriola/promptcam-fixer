@@ -20,6 +20,9 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: PromptCam
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -39,11 +42,10 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_ImageName: launchscreen
         INFOPLIST_KEY_UILaunchScreen_ImageRespectsSafeAreaInsets: NO
 
-        PRODUCT_BUNDLE_IDENTIFIER: com.rgriola.promptcam
+        # Code-signing settings (PRODUCT_BUNDLE_IDENTIFIER, DEVELOPMENT_TEAM,
+        # CODE_SIGN_IDENTITY, CODE_SIGN_STYLE) are externalized to Signing.xcconfig
+        # so the generated project stays portable across contributors and CI.
         TARGETED_DEVICE_FAMILY: "1"
-        CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: LW5P4PVL96
 
     dependencies: []
 

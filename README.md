@@ -36,7 +36,16 @@ PromptCam is a SwiftUI iOS camera app with a teleprompter overlay for recording 
    ```bash
    xcodegen generate
    ```
-3. Open `PromptCam.xcodeproj` and run on a device. The camera, microphone, and photo library permissions are required.
+3. Configure code signing (required to run on a device). Signing settings are
+   externalized to `Signing.xcconfig` so the repo stays portable — no personal
+   Team ID is committed. Copy the template and set your Apple Developer Team ID:
+   ```bash
+   cp Signing.local.xcconfig.example Signing.local.xcconfig
+   # edit Signing.local.xcconfig and set DEVELOPMENT_TEAM = <your team id>
+   ```
+   `Signing.local.xcconfig` is git-ignored and overrides the committed defaults.
+   Alternatively, set the team directly in Xcode's *Signing & Capabilities* tab.
+4. Open `PromptCam.xcodeproj` and run on a device. The camera, microphone, and photo library permissions are required.
 
 Re-run `xcodegen generate` whenever you add or delete a Swift file — the `PromptCam` and `PromptCamTests` targets use glob paths from `project.yml`.
 

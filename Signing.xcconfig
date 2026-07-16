@@ -1,0 +1,28 @@
+// Code-signing configuration for the PromptCam app target.
+//
+// This file holds *portable* defaults that are safe to commit. It intentionally
+// does NOT hard-code a personal Apple Developer Team ID, so the generated
+// `PromptCam.xcodeproj` is portable across contributors and CI.
+//
+// To sign the app locally, create `Signing.local.xcconfig` (git-ignored) and
+// set your own values there — see `Signing.local.xcconfig.example`. Values in
+// the local file override the defaults below because it is included last.
+
+// Managed automatically by Xcode from the developer's account.
+CODE_SIGN_STYLE = Automatic
+
+// Generic development identity; resolved against the selected team at build time.
+CODE_SIGN_IDENTITY = Apple Development
+
+// Default bundle identifier. Override locally if you need to provision the app
+// under a different team / identifier.
+PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam
+
+// No team by default so the repo stays neutral. Set this in
+// `Signing.local.xcconfig` (or via CI) to enable local signing.
+DEVELOPMENT_TEAM =
+
+// Optional per-developer overrides. The `?` makes the include optional, so the
+// build still succeeds when the local file is absent (e.g. on CI, which builds
+// with signing disabled).
+#include? "Signing.local.xcconfig"
