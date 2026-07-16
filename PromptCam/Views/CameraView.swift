@@ -444,7 +444,7 @@ struct CameraView: View {
                     width: CameraLayout.VUMeter.width,
                     height: CameraLayout.VUMeter.height
                 )
-                .padding(6)
+                .padding(Theme.space6)
                 .roundedBackground()
                 .padding(.leading, Theme.space8)
                 .onTapGesture {

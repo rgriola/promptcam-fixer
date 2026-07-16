@@ -32,7 +32,6 @@ struct CameraFooterControlsView: View {
     var body: some View {
         HStack(alignment: .top) {
             Spacer()
-
             // Camera-roll button: circular thumbnail of last recorded video.
             // HStack(alignment: .top) aligns its top edge with the icon tops
             // of the labeled buttons.
@@ -70,10 +69,8 @@ struct CameraFooterControlsView: View {
 
             Spacer()
         }
-        .padding(.horizontal, Theme.space12)
-        .padding(.top, Theme.space4)
-        .padding(.bottom, Theme.space8)
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 5)
         .disabled(isRecording)
         .opacity(isRecording ? 0.3 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isRecording)
@@ -121,25 +118,37 @@ struct LibraryThumbnailButton: View {
 
     var body: some View {
         Button(action: action) {
-            if let thumb = thumbnail {
-                // Filled thumbnail circle with white border ring.
-                Image(uiImage: thumb)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Theme.white, lineWidth: 2))
-            } else {
-                // Placeholder circle while loading or when library is empty/denied.
-                Circle()
-                    .fill(Theme.white.opacity(0.12))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Image(systemName: "photo.on.rectangle")
-                            .font(Theme.icon24)
-                            .foregroundStyle(Theme.white)
-                    )
-                    .overlay(Circle().stroke(Theme.white.opacity(0.4), lineWidth: 1.5))
+            VStack(spacing: 3) {
+                if let thumb = thumbnail {
+                    // Filled thumbnail circle with white border ring.
+                    Image(uiImage: thumb)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5)
+                        )
+                } else {
+                    // Placeholder circle while loading or when library is empty/denied.
+                    Circle()
+                        .fill(Theme.white.opacity(0.12))
+                        .frame(width: size, height: size)
+                        .overlay(
+                            Image(systemName: "photo.on.rectangle")
+                                .font(Theme.icon24)
+                                .foregroundStyle(Theme.white)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5)
+                        )
+                }
+
+                Text("Videos")
+                    .font(Theme.font10Regular)
+                    .foregroundStyle(Theme.primaryText)
             }
         }
         .task(id: refreshTrigger) {
