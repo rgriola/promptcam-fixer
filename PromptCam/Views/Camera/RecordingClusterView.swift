@@ -24,23 +24,23 @@ struct RecordingClusterView: View {
     /// Native-like stacked record + scroll + timer cluster.
     var body: some View {
             VStack {
-            
-            RecordingTimerPanel(
-                duration: recordingDuration,
-                isRecording: isRecording
-            )
+                ScrollToggleButton(
+                    isScrolling: isScrolling,
+                    isEnabled: true,
+                    action: onScrollTap
+                )
+                
+                RecordingTimerPanel(
+                    duration: recordingDuration,
+                    isRecording: isRecording
+                )
 
-            ScrollToggleButton(
-                isScrolling: isScrolling,
-                isEnabled: true,
-                action: onScrollTap
-            )
 
-            RecordButton(
-                isRecording: isRecording,
-                isEnabled: isRecordEnabled,
-                action: onRecordTap
-            )
+                RecordButton(
+                    isRecording: isRecording,
+                    isEnabled: isRecordEnabled,
+                    action: onRecordTap
+                )
         }
     }
 }

@@ -58,10 +58,10 @@ enum CameraLayout {
 
     enum VUMeter {
         /// Width of the vertical meter bar.
-        static let width: CGFloat = 44
+        static let width: CGFloat = 36
 
         /// Height — matched to RecordingClusterView intrinsic height.
-        static let height: CGFloat = 156
+        static let height: CGFloat = 200
     }
 
     // MARK: Derived Preview Frame

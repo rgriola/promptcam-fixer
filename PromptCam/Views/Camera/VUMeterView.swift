@@ -24,7 +24,7 @@ struct VUMeterView: View {
 
     // MARK: - Constants
 
-    private let micIconSize: CGFloat = 14
+    private let micIconSize: CGFloat = 20
     private let channelGap: CGFloat  = 3   // gap between Ch1 and Ch2 bars in stereo mode
 
     /// dB hash mark positions: (normalized 0–1 position, label string).
