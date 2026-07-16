@@ -403,3 +403,29 @@ Modify tap-hold-drag gesture in teleprompter view area to control the text movem
 - Tap-hold-drag feature only valid in teleprompter view area, gesture should not interfere with other active buttons ie; Record, Scroll Play/Pause and Reset Text buttons - all others are gated. Review this gesture and create a plan to implement this change.
 
 **_ Context _** Current state the text jumps up and down the screen regaurdless of the place the tap occurs in the Teleprompter View area.
+
+** Task **
+Review how a refactor of CameraView would work with a general reoginization of the ZStack. CameraPreviewView and TeleprompterView still stack on top of each other, other UI items should preform as before. SHow me a plan we can work on. The goal is to correct layout issues, remove duplicate padding,framing and un needed positioning. No Coding.
+
+(New) VStack 1
+    CameraPreviewView()
+    cameraControlsRow()
+    cameraFooter()
+
+(New) VStack 2 
+    TeleprompterView 
+
+>> Below each componet should be combined into a single HStack within VStack 2, Each Component here are realted to each other in the stack. 
+  - HStack
+    VUmeter
+    RecordingClusterView
+    TeleprompterUtilityStackView
+
+
+- Reuseable components 
+- Componets that are self contained units with no overflow ie; padding is part of the componet.
+
+
+
+
+

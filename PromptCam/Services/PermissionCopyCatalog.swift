@@ -13,7 +13,7 @@ enum PermissionCopyKey: CaseIterable {
 }
 
 enum PermissionCopyCatalog {
-     static let onboardingTitle = "PromptCam"
+     static let onboardingTitle = "Cue Vue"
 
      static let onboardingRequiredSummary =
           "PromptCam needs Camera, Microphone, and Photo Library to record and save videos."
