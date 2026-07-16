@@ -176,7 +176,6 @@ extension View {
             self.background {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(fill)
-                    .padding(-10)
             }
     }
 

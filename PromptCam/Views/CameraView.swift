@@ -64,116 +64,42 @@ struct CameraView: View {
                 containerSize: proxy.size,
                 safeAreaInsets: proxy.safeAreaInsets  // pad for notch
             )
+            let teleprompterHeight = min(
+                CameraLayout.Teleprompter.viewportHeight,
+                layout.preview.size.height
+            )
 
-            ZStack {
-
-                // MARK: - 1: Chrome Controls
-                // Foundation below Camera Preview View
-                VStack(spacing: Theme.space12) {
-                    cameraControlsRow()
-                        .padding(.top, 10)
-                        .padding(.bottom, 4)
-                        .background(Theme.black.opacity(0.1))
-                    cameraFooter()
-                    //  .padding(.bottom)
-                }
-                .frame(
-                    maxWidth: .infinity,
-                    maxHeight: layout.preview.size.height + CameraLayout.Chrome.controlHeightExtra,
-                    alignment: .bottom)
-
-                // MARK: - 2: Camera Preview View
-                // Top-anchored, ignores top safe area extends under DI.
-                CameraPreviewView(
-                    session: viewModel.session,
-                    onTap: { devicePoint, viewPoint in
-                        handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
-                    }
-                )
-                .frame(width: layout.preview.size.width, height: layout.preview.size.height)
-                .position(
-                    x: layout.preview.centerX,
-                    y: layout.preview.topY + layout.preview.size.height / 2
-                )
-                .ignoresSafeArea(.container, edges: .top)
-                .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing camera preview
-
-                // MARK: - 3: VU meters
-                // Hides when any modal sheet is open.
-
-                if viewModel.activeSheet == nil && !viewModel.showComposeSheet {
-                    VUMeterView(
-                        level: viewModel.audioLevel,
-                        peak: viewModel.audioPeak,
-                        isExternalMic: viewModel.isExternalMic,
-                        isRecording: viewModel.isRecording,
-                        level2: viewModel.isStereoInput ? viewModel.audioLevel2 : nil,
-                        peak2: viewModel.isStereoInput ? viewModel.audioPeak2 : nil,
-                        sourceNameHint: viewModel.audioSourceHint
-                    )
-                    .frame(
-                        width: layout.vuMeter.size.width,
-                        height: layout.vuMeter.size.height
-                    )
-                    .roundedBackground()
-                    .position(
-                        x: layout.vuMeter.center.x,
-                        y: layout.vuMeter.center.y + 70
-                    )
-                    .transition(.opacity)
-                    .onTapGesture {
-                        viewModel.openAudioSourcePicker()
-                    }
-                }
-
-                // MARK: - 4: Record cluster bewlow Camera Preview + Teleprompter
-                RecordingClusterView(
-                    isRecording: viewModel.isRecording,
-                    isScrolling: viewModel.isScrolling,
-                    isRecordEnabled: viewModel.isCameraReady,
-                    recordingDuration: viewModel.recordingDuration,
-                    onRecordTap: {
-                        viewModel.toggleRecording()
-                    },
-                    onScrollTap: {
-                        viewModel.toggleScrolling()
-                    }
-                )
-                .position(layout.recordCluster.recordButtonCenter)
-
-                  // MARK: - 7: Prompter Utility Stack (Align + Reset)
-                TeleprompterUtilityStackView(
-                    textAlignment: viewModel.config.textAlignment,
-                    isRecording: viewModel.isRecording,
-                    onAlignmentTap: {
-                        viewModel.cycleTextAlignment()
-                    },
-                    onResetTap: {
-                        viewModel.resetTeleprompterPosition()
-                    }
-                )
-                .position(layout.teleprompter.resetCenter)
-
-                // MARK: - 6: Bottom-anchored teleprompter viewport.
-                TeleprompterOverlayView(
-                    config: viewModel.config,
-                    isScrolling: viewModel.isScrolling,
-                    resetToken: viewModel.teleprompterResetToken,
-                    onTextHeightChanged: { measuredHeight in
-                        let currentText = viewModel.config.text
-                        if lastCenteredScriptText != currentText,
-                            measuredHeight > 0
-                        {
-                            viewModel.resetTeleprompterPosition()
-                            lastCenteredScriptText = currentText
+            ZStack(alignment: .top) {
+                // ── Layer 1: Camera + Chrome ──
+                // VStack owns vertical ordering; no .position() needed.
+                VStack(spacing: 0) {
+                    // MARK: - 1: Camera Preview View
+                    // Top-anchored, ignores top safe area, extends under DI.
+                    CameraPreviewView(
+                        session: viewModel.session,
+                        onTap: { devicePoint, viewPoint in
+                            handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
                         }
-                    }
-                )
-                .frame(width: layout.preview.size.width, height: layout.teleprompter.viewportHeight)
-                .ignoresSafeArea(.keyboard)  // Prevent keyboard from resizing teleprompter viewport
-                .position(layout.teleprompter.center)
+                    )
+                    .aspectRatio(CameraLayout.Preview.aspect, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
 
-              
+                    // MARK: - 2: Controls Row (padding + background are intrinsic)
+                    cameraControlsRow()
+
+                    // MARK: - 3: Footer
+                    cameraFooter()
+                }
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(.container, edges: .top)
+
+                // ── Layer 2: Teleprompter + Controls Band ──
+                teleprompterLayer(teleprompterHeight: teleprompterHeight)
+                    .frame(maxWidth: .infinity, maxHeight: layout.preview.size.height, alignment: .top)
+                    .ignoresSafeArea(.container, edges: .top)
+
+                // ── Layer 3: Modal Panels & Warning Banners ──
 
                 // MARK: - 8: Prompter Control Panel
                 if showAdjustmentPanel {
@@ -475,6 +401,87 @@ struct CameraView: View {
             return .photoLibrary
         }
         return .unknown
+    }
+
+    // MARK: Teleprompter Layer Build
+    // VStack 2: Teleprompter viewport + Controls Band (VU · Record · Utility)
+    private func teleprompterLayer(teleprompterHeight: CGFloat) -> some View {
+        let vpHeight: CGFloat = teleprompterHeight
+        return VStack(spacing: 0) {
+            // MARK: - 4: Teleprompter viewport
+            TeleprompterOverlayView(
+                config: viewModel.config,
+                isScrolling: viewModel.isScrolling,
+                resetToken: viewModel.teleprompterResetToken,
+                onTextHeightChanged: { measuredHeight in
+                    let currentText = viewModel.config.text
+                    if lastCenteredScriptText != currentText,
+                        measuredHeight > 0
+                    {
+                        viewModel.resetTeleprompterPosition()
+                        lastCenteredScriptText = currentText
+                    }
+                }
+            )
+            .frame(height: vpHeight)
+            .frame(maxWidth: .infinity)
+            .ignoresSafeArea(.keyboard)
+
+            // MARK: - 5: Controls Band (VU · Record · Utility)
+            HStack(alignment: .top) {
+
+                VUMeterView(
+                    level: viewModel.audioLevel,
+                    peak: viewModel.audioPeak,
+                    isExternalMic: viewModel.isExternalMic,
+                    isRecording: viewModel.isRecording,
+                    level2: viewModel.isStereoInput ? viewModel.audioLevel2 : nil,
+                    peak2: viewModel.isStereoInput ? viewModel.audioPeak2 : nil,
+                    sourceNameHint: viewModel.audioSourceHint
+                )
+                //.padding(.leading, Theme.space8)
+                .frame(
+                    width: CameraLayout.VUMeter.width,
+                    height: CameraLayout.VUMeter.height
+                )
+                .padding(6)
+                .roundedBackground()
+                .padding(.leading, Theme.space8)
+                .onTapGesture {
+                    viewModel.openAudioSourcePicker()
+                }
+
+                Spacer()
+
+                RecordingClusterView(
+                    isRecording: viewModel.isRecording,
+                    isScrolling: viewModel.isScrolling,
+                    isRecordEnabled: viewModel.isCameraReady,
+                    recordingDuration: viewModel.recordingDuration,
+                    onRecordTap: {
+                        viewModel.toggleRecording()
+                    },
+                    onScrollTap: {
+                        viewModel.toggleScrolling()
+                    }
+                )
+
+                Spacer()
+
+                TeleprompterUtilityStackView(
+                    textAlignment: viewModel.config.textAlignment,
+                    isRecording: viewModel.isRecording,
+                    onAlignmentTap: {
+                        viewModel.cycleTextAlignment()
+                    },
+                    onResetTap: {
+                        viewModel.resetTeleprompterPosition()
+                    }
+                )
+            
+            }
+          //  .padding(.horizontal, Theme.space12)
+        }
     }
 
     // MARK: Top Row Build

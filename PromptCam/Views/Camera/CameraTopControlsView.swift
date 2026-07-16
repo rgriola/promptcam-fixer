@@ -39,7 +39,6 @@ struct CameraControlsRowView: View {
     var body: some View {
         HStack {
             Spacer()
-
             // Video Mode Badge — sizes to content, vertically centered.
             VideoModeBadgeView(
                 mode: videoMode,
@@ -90,9 +89,11 @@ struct CameraControlsRowView: View {
             )
             Spacer()
         }
-        .padding(.horizontal, Theme.space12)
+        //.padding(.horizontal, Theme.space12)
         //.padding(.bottom, Theme.space8)
+        .padding(EdgeInsets(top: 10, leading: Theme.space12, bottom: 4, trailing: Theme.space12))
         .frame(maxWidth: .infinity)
+        .background(Theme.black.opacity(0.5))
         .disabled(isRecording)
         .opacity(isRecording ? 0.3 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isRecording)
