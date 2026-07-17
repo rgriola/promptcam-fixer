@@ -266,11 +266,11 @@ struct CameraView: View {
         .sheet(item: $viewModel.modalQueue.activeSheet) { route in
             sheetContent(for: route)
         }
-        .fullScreenCover(isPresented: $viewModel.showDirectPlayer) {
-            if let recording = viewModel.latestRecording {
+        .fullScreenCover(isPresented: $viewModel.recordings.showDirectPlayer) {
+            if let recording = viewModel.recordings.latestRecording {
                 RecordingPlayerView(
                     recording: recording,
-                    videoURL: viewModel.latestVideoURL,
+                    videoURL: viewModel.recordings.latestVideoURL,
                     onDelete: {
                         // Delegate to the nonisolated RecordingsService instead
                         // of inlining PHPhotoLibrary.performChanges here. The
@@ -285,10 +285,10 @@ struct CameraView: View {
                         Task {
                             _ = await RecordingsService().deleteRecording(recordingToDelete)
                             // Keep player open — user can manually close or select another video
-                            viewModel.refreshLatestRecording()
+                            viewModel.recordings.refresh()
                         }
                     },
-                    recentRecordings: viewModel.recentRecordings,
+                    recentRecordings: viewModel.recordings.recentRecordings,
                     thumbnailLoader: { rec in
                         // Visible carousel cell — use .opportunistic so
                         // iCloud-offloaded thumbnails trigger a download and
@@ -328,9 +328,9 @@ struct CameraView: View {
                         return result.url
                     },
                     onSelectRecording: { selected, _ in
-                        // Do NOT overwrite viewModel.latestRecording here —
+                        // Do NOT overwrite viewModel.recordings.latestRecording here —
                         // that would make the player reopen on the last-viewed video instead of the most recently recorded one. The RecordingPlayerView tracks its own @State activeRecording for in-session swiping.
-                        viewModel.warmCarouselCache(around: selected)
+                        viewModel.recordings.warmCarousel(around: selected)
                     }
                 )
             }
@@ -560,10 +560,10 @@ struct CameraView: View {
             isRecording: viewModel.isRecording,
             // Drives the LibraryThumbnailButton's `.task(id:)` so its thumbnail
             // reloads whenever the latest recording changes (new save, delete,
-            // iCloud sync). `refreshLatestRecording()` in CameraViewModel is
-            // already wired to PhotoLibraryChangeMonitor, so this stays in
+            // iCloud sync). `RecordingsGallery.refresh()` (via `viewModel.recordings`)
+            // is already wired to PhotoLibraryChangeMonitor, so this stays in
             // sync automatically without adding another observer here.
-            latestRecordingID: viewModel.latestRecording?.id
+            latestRecordingID: viewModel.recordings.latestRecording?.id
         )
     }
 

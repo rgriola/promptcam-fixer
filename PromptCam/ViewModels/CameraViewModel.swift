@@ -2,7 +2,6 @@
 // June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - resetTeleprompterPosition no longer toggles isScrolling
 import AVFoundation
-import Photos
 import SwiftUI
 
 enum CameraSheetRoute: String, Identifiable, Sendable {
@@ -121,16 +120,9 @@ final class CameraViewModel {
 
     // MARK: - Direct Player State
 
-    /// The most recently recorded video, pre-fetched so the player opens immediately.
-    var latestRecording: Recording?
-    /// Resolved URL for `latestRecording` — ready before the player opens.
-    var latestVideoURL: URL?
-    /// First 8 recordings for the carousel, pre-warmed by PHCachingImageManager.
-    var recentRecordings: [Recording] = []
-    /// Controls direct player sheet presentation.
-    var showDirectPlayer = false
-
-    @ObservationIgnored private let recordingsService = RecordingsService()
+    /// Owns the recordings carousel and direct-player state. The view reads
+    /// through `viewModel.recordings`.
+    let recordings = RecordingsGallery()
 
     // MARK: - Style Persistence Keys
     private enum StyleKey {
@@ -178,12 +170,12 @@ final class CameraViewModel {
         // Observe photo-library changes so the carousel refreshes on external
         // deletes, iCloud sync, etc. Debounced to coalesce bursts.
         photoLibraryMonitor.start { [weak self] in
-            self?.refreshLatestRecording()
+            self?.recordings.refresh()
         }
         // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
         // Audio metering attaches in onSessionRunningStateChanged callback.
-        Task { await prefetchLatestRecording() }
+        Task { await recordings.prefetch() }
     }
 
     func onDisappear() {
@@ -222,61 +214,13 @@ final class CameraViewModel {
     /// If the latest recording isn't ready yet, falls back to the library sheet.
     func openDirectPlayer() {
         guard !isRecording else { return }
-        if latestRecording != nil {
-            showDirectPlayer = true
+        if recordings.latestRecording != nil {
+            recordings.showDirectPlayer = true
         } else {
             // Fallback: no recording exists yet
             modalQueue.present(.recordingsLibrary)
         }
     }
-
-    /// Fetches the latest recording and pre-resolves its URL so the player
-    /// opens without delay. Loads ALL recordings for the carousel — Recording
-    /// objects are lightweight PHAsset wrappers (~100 bytes each). Only the
-    /// first window of thumbnails is pre-warmed; the rest load on demand as
-    /// the user swipes.
-    func prefetchLatestRecording() async {
-        let latest = recordingsService.fetchLatestRecording()
-        latestRecording = latest
-
-        // Resolve URL in background so it's ready when player opens.
-        if let latest {
-            latestVideoURL = await recordingsService.resolveURL(for: latest)
-        }
-
-        // Fetch all recordings — no limit. PHAsset references are tiny.
-        let all = await recordingsService.fetchAllRecordings()
-        recentRecordings = all
-
-        // Pre-warm thumbnails for the first visible window only.
-        let warmIDs = all.prefix(8).map(\.id)
-        if !warmIDs.isEmpty {
-            let carouselSize = CGSize(width: 144, height: 144)
-            recordingsService.startCaching(ids: Array(warmIDs), targetSize: carouselSize)
-        }
-    }
-
-    /// Pre-warms carousel thumbnails in a sliding window around the given
-    /// recording. Call this when the user navigates to a new item so adjacent
-    /// thumbnails are ready before they scroll into view.
-    ///
-    /// Window default expanded from ±4 to ±6 (Phase 2) so a full flick to a
-    /// far-away cell doesn't outrun the pre-warm on older devices (A11/A12)
-    /// where thumbnail decode is 60–100ms per cell.
-    func warmCarouselCache(around recording: Recording, windowSize: Int = 6) {
-        guard let index = recentRecordings.firstIndex(where: { $0.id == recording.id }) else { return }
-        let lo = max(0, index - windowSize)
-        let hi = min(recentRecordings.count - 1, index + windowSize)
-        let ids = recentRecordings[lo...hi].map(\.id)
-        recordingsService.startCaching(ids: ids, targetSize: CGSize(width: 144, height: 144))
-    }
-
-    /// Call after a recording finishes saving to refresh the player state.
-    func refreshLatestRecording() {
-        Task { await prefetchLatestRecording() }
-    }
-
-    
 
     func openCompose() {
         guard !isRecording else { return }
@@ -447,14 +391,14 @@ final class CameraViewModel {
             // When recording stops the video is saved to the photo library.
             // Refresh the latest recording so the direct player is ready immediately.
             if !isRecording {
-                self.refreshLatestRecording()
+                self.recordings.refresh()
             }
         }
 
         // Fires the instant PhotoKit actually persists the new asset — closes
         // the race where onRecordingStateChanged fires before the save is done.
         cameraService.onRecordingSavedToLibrary = { [weak self] in
-            self?.refreshLatestRecording()
+            self?.recordings.refresh()
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
