@@ -195,10 +195,10 @@ struct CameraView: View {
                 // MARK: - 12: Warn Audio Changed
                 //(e.g. mic disconnectduring recording)
                 TemporaryWarningBanner(
-                    message: viewModel.audioRouteChangedMessage,
+                    message: viewModel.audioMeter.audioRouteChangedMessage,
                     systemImage: "mic.slash.fill",
                     autoDismissAfter: 4.0,
-                    isPresented: $viewModel.showAudioRouteChangedWarning
+                    isPresented: $viewModel.audioMeter.showAudioRouteChangedWarning
                 )
 
                 // MARK: - 13: Warn No Audio —
@@ -207,26 +207,26 @@ struct CameraView: View {
                     message: "No audio signal detected. Check microphone connection.",
                     systemImage: "waveform.badge.exclamationmark",
                     autoDismissAfter: 6.0,
-                    isPresented: $viewModel.showAudioSilenceWarning
+                    isPresented: $viewModel.audioMeter.showAudioSilenceWarning
                 )
 
                 // MARK: - 14: Audio Source Picker —
                 // Dims 10% givs input options.
-                if viewModel.showAudioSourcePicker {
+                if viewModel.audioMeter.showAudioSourcePicker {
                     StandardPanelOverlay(onDismiss: {
-                        viewModel.showAudioSourcePicker = false
+                        viewModel.audioMeter.showAudioSourcePicker = false
                     }) {
                         AudioSourcePickerView(
-                            inputs: viewModel.availableAudioInputs,
-                            activeInputName: viewModel.activeAudioInputName,
+                            inputs: viewModel.audioMeter.availableAudioInputs,
+                            activeInputName: viewModel.audioMeter.activeAudioInputName,
                             onSelect: { port in
                                 withAnimation(.easeOut(duration: 0.25)) {
-                                    viewModel.selectAudioInput(port)
+                                    viewModel.audioMeter.selectAudioInput(port)
                                 }
                             },
                             onDismiss: {
                                 withAnimation(.easeOut(duration: 0.25)) {
-                                    viewModel.showAudioSourcePicker = false
+                                    viewModel.audioMeter.showAudioSourcePicker = false
                                 }
                             }
                         )
@@ -431,13 +431,13 @@ struct CameraView: View {
             HStack(alignment: .top) {
 
                 VUMeterView(
-                    level: viewModel.audioLevel,
-                    peak: viewModel.audioPeak,
-                    isExternalMic: viewModel.isExternalMic,
+                    level: viewModel.audioMeter.audioLevel,
+                    peak: viewModel.audioMeter.audioPeak,
+                    isExternalMic: viewModel.audioMeter.isExternalMic,
                     isRecording: viewModel.isRecording,
-                    level2: viewModel.isStereoInput ? viewModel.audioLevel2 : nil,
-                    peak2: viewModel.isStereoInput ? viewModel.audioPeak2 : nil,
-                    sourceNameHint: viewModel.audioSourceHint
+                    level2: viewModel.audioMeter.isStereoInput ? viewModel.audioMeter.audioLevel2 : nil,
+                    peak2: viewModel.audioMeter.isStereoInput ? viewModel.audioMeter.audioPeak2 : nil,
+                    sourceNameHint: viewModel.audioMeter.audioSourceHint
                 )
                 //.padding(.leading, Theme.space8)
                 .frame(
@@ -448,7 +448,7 @@ struct CameraView: View {
                 .roundedBackground()
                 .padding(.leading, Theme.space8)
                 .onTapGesture {
-                    viewModel.openAudioSourcePicker()
+                    viewModel.audioMeter.openAudioSourcePicker()
                 }
 
                 Spacer()

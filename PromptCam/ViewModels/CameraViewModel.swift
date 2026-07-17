@@ -115,43 +115,9 @@ final class CameraViewModel {
 
     // MARK: - Audio Metering
 
-    /// Current average audio input level Ch1 (0.0–1.0).
-    var audioLevel: Float = 0
-    /// Current peak-hold audio level Ch1 (0.0–1.0).
-    var audioPeak: Float = 0
-    /// Current average audio level Ch2 (0.0–1.0). Non-zero only when a stereo input is active.
-    var audioLevel2: Float = 0
-    /// Current peak-hold audio level Ch2 (0.0–1.0). Non-zero only when a stereo input is active.
-    var audioPeak2: Float = 0
-    /// True when the active audio input is a stereo device (e.g. dual-channel wireless receiver).
-    var isStereoInput: Bool = false
-    /// Whether an external microphone is connected.
-    var isExternalMic: Bool = false
-    /// Marketing name of the external mic, if available.
-    var externalMicName: String?
-    /// Whether hardware gain control is available on this device.
-    var isGainAvailable: Bool = false
-    /// Current audio input gain (0.0–1.0). Only functional when `isGainAvailable`.
-    var audioGain: Float = 0.5
-    /// Available audio input sources (built-in mic, USB, BT, etc.).
-    var availableAudioInputs: [AVAudioSessionPortDescription] = []
-    /// Name of the currently active audio input.
-    var activeAudioInputName: String?
-    /// When true, present the audio source picker to the user.
-    var showAudioSourcePicker: Bool = false
-    /// Warning banner shown when the audio route changes during recording
-    /// (e.g. external mic disconnects mid-take). Auto-dismisses.
-    var showAudioRouteChangedWarning: Bool = false
-    /// Body text of the audio-route warning banner. Updated alongside
-    /// `showAudioRouteChangedWarning`.
-    var audioRouteChangedMessage: String = ""
-    /// Warning banner shown when the silence watchdog detects sustained
-    /// dead audio from an external mic (flaky cable, hardware mute, etc.).
-    var showAudioSilenceWarning: Bool = false
-    /// Source-name pill shown briefly beside the VU meter when the route
-    /// changes. Cleared after a short delay.
-    var audioSourceHint: String? = nil
-    @ObservationIgnored private var audioSourceHintTask: Task<Void, Never>?
+    /// Owns all audio-metering state and the `AudioMeterService` lifecycle.
+    /// The view reads levels/warnings through `viewModel.audioMeter`.
+    let audioMeter: AudioMeterViewModel
 
     // MARK: - Timer State
     
@@ -189,7 +155,6 @@ final class CameraViewModel {
 
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
-    @ObservationIgnored private var audioMeterService: AudioMeterService?
     /// Refreshes the carousel whenever the Photo Library changes (own saves,
     /// Photos.app deletes, iCloud sync). Started in onAppear, stopped in
     /// onDisappear. Complements onRecordingSavedToLibrary from CameraService.
@@ -204,8 +169,12 @@ final class CameraViewModel {
         self.cameraService = cameraService
         self.permissionService = permissionService
         self.recordingFormat = RecordingFormat.loadSaved()
+        self.audioMeter = AudioMeterViewModel(cameraService: cameraService)
         loadStylePreferences()
         bindCallbacks()
+        // `self` is fully initialized here, so the audio meter can safely read
+        // the live recording flag through this closure.
+        audioMeter.isRecording = { [weak self] in self?.isRecording ?? false }
     }
 
     var session: AVCaptureSession { cameraService.previewSession }
@@ -230,8 +199,7 @@ final class CameraViewModel {
 
     func onDisappear() {
         stopTimer()
-        audioMeterService?.stopMetering()
-        audioMeterService?.stopMonitoringRoute()
+        audioMeter.stop()
         cameraService.stopSession()
         photoLibraryMonitor.stop()
         isCameraReady = false
@@ -550,9 +518,9 @@ final class CameraViewModel {
             self.isCameraReady = isRunning
             // Attach audio metering once the session is fully configured
             // and running. Attaching earlier fails because the session
-            // hasn't added its audio input yet.
-            if isRunning && self.audioMeterService == nil {
-                self.setupAudioMeter()
+            // hasn't added its audio input yet. `setup()` is idempotent.
+            if isRunning {
+                self.audioMeter.setup()
             }
         }
 
@@ -596,156 +564,6 @@ final class CameraViewModel {
 
         cameraService.onError = { [weak self] error in
             self?.cameraError = error
-        }
-    }
-
-    // MARK: - Audio Meter
-
-    private func setupAudioMeter() {
-        let meter = AudioMeterService()
-
-        meter.onLevelsUpdated = { [weak self] ch1Level, ch1Peak, ch2Level, ch2Peak in
-            self?.audioLevel = ch1Level
-            self?.audioPeak = ch1Peak
-            self?.audioLevel2 = ch2Level ?? 0
-            self?.audioPeak2 = ch2Peak ?? 0
-            self?.isStereoInput = ch2Level != nil
-        }
-
-        meter.onRouteChanged = { [weak self] isExternal, name in
-            guard let self else { return }
-
-            // Snapshot old state BEFORE updating — `isExternalMic` is set
-            // only in this callback so it's a reliable "previous" value.
-            let wasExternalBefore = self.isExternalMic
-            let previousName = self.activeAudioInputName
-            let micChanged = name != previousName
-
-            // Update state.
-            self.isExternalMic = isExternal
-            self.externalMicName = name
-            self.activeAudioInputName = name
-
-            // When the active mic changes (plug/unplug), surface UI feedback.
-            // Skip on initial setup (previousName was nil).
-            guard micChanged && self.audioMeterService != nil else { return }
-
-            // Detect direction using the boolean flag, which is immune to
-            // the onInputsAvailable race condition.
-            let disconnected = wasExternalBefore && !isExternal   // external → built-in
-
-            // Always show an inline source-name hint beside the VU meter.
-            self.showSourceHint(name)
-
-            if self.isRecording {
-                // Mid-recording route change: do NOT swap the capture session
-                // (would corrupt the .mov). Warn the user instead.
-                if disconnected {
-                    self.audioRouteChangedMessage = "⚠ External mic disconnected. Recording continues on iPhone mic."
-                } else {
-                    self.audioRouteChangedMessage = "Audio source changed during recording. Stop to apply new mic."
-                }
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.showAudioRouteChangedWarning = true
-                }
-            } else {
-                // Not recording — auto-switch the capture session immediately.
-                // This mirrors what happens when the user taps an input in the
-                // picker; no picker confirmation step needed.
-                self.cameraService.reconfigureAudioInput()
-
-                if disconnected {
-                    // Mic was unplugged: show a brief warning so the user
-                    // knows recording would now use the built-in mic.
-                    self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.showAudioRouteChangedWarning = true
-                    }
-                }
-                // Source hint already shown above via showSourceHint(name).
-                // Picker remains accessible by tapping the VU meter.
-            }
-        }
-
-        meter.onInputsAvailable = { [weak self] inputs in
-            guard let self else { return }
-            self.availableAudioInputs = inputs
-            // Note: activeAudioInputName is updated exclusively in
-            // onRouteChanged to avoid a race condition where this
-            // callback overwrites it before the route callback can
-            // detect the change.
-        }
-
-        meter.onSilenceWatchdog = { [weak self] isSilent in
-            guard let self else { return }
-            if isSilent {
-                // Only warn when an external mic is active — a quiet room
-                // with the built-in mic is normal, not a hardware fault.
-                guard self.isExternalMic else { return }
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.showAudioSilenceWarning = true
-                }
-                Log.camera.warning("AudioMeterService: silence watchdog fired — external mic may be disconnected or muted")
-            } else {
-                // Audio recovered — dismiss the warning.
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.showAudioSilenceWarning = false
-                }
-                Log.camera.debug("AudioMeterService: silence watchdog cleared — audio recovered")
-            }
-        }
-
-        // Start audio engine tap on the microphone for real-time levels.
-        // Runs independently of AVCaptureSession — no conflicts.
-        meter.startMetering()
-        meter.startMonitoringRoute()
-
-        self.isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
-        self.activeAudioInputName = meter.activeInput?.portName
-        self.audioMeterService = meter
-    }
-
-    /// Opens the audio source picker, refreshing the available inputs list
-    /// from `AVAudioSession` first.
-    ///
-    /// iOS can lag updating `availableInputs` after a route change
-    /// notification. Re-reading here guarantees the list is current when
-    /// the user actually sees the picker.
-    func openAudioSourcePicker() {
-        guard !isRecording else { return }
-        availableAudioInputs = AVAudioSession.sharedInstance().availableInputs ?? []
-        activeAudioInputName = audioMeterService?.activeInput?.portName
-            ?? AVAudioSession.sharedInstance().currentRoute.inputs.first?.portName
-        withAnimation(.easeOut(duration: 0.25)) {
-            showAudioSourcePicker = true
-        }
-    }
-
-    /// User-selected audio input from the source picker.
-    func selectAudioInput(_ port: AVAudioSessionPortDescription?) {
-        audioMeterService?.selectInput(port)
-        activeAudioInputName = port?.portName ?? audioMeterService?.activeInput?.portName
-        showAudioSourcePicker = false
-        // Sync the capture session's audio input to match.
-        cameraService.reconfigureAudioInput()
-    }
-
-    /// Adjusts the hardware microphone gain.
-    func setAudioGain(_ value: Float) {
-        audioGain = value
-        audioMeterService?.setGain(value, on: cameraService.audioDevice)
-    }
-
-    /// Shows the inline source-name pill beside the VU meter and auto-clears
-    /// it after a short delay. Successive calls reset the timer.
-    private func showSourceHint(_ name: String?) {
-        audioSourceHintTask?.cancel()
-        audioSourceHint = name
-        guard name != nil else { return }
-        audioSourceHintTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(2.5))
-            guard !Task.isCancelled else { return }
-            self?.audioSourceHint = nil
         }
     }
 }
