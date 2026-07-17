@@ -2,7 +2,6 @@
 // June 13, 2026 - GitHub Copilot (Claude Sonnet 4.5) - Added recording timer with Combine
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - resetTeleprompterPosition no longer toggles isScrolling
 import AVFoundation
-import Combine
 import Photos
 import SwiftUI
 
@@ -84,8 +83,8 @@ final class CameraViewModel {
     var config = TeleprompterConfig.default
     var isRecording = false
     var isScrolling = false
-    /// Recording duration in seconds, updated every 0.1s while recording.
-    var recordingDuration: TimeInterval = 0
+    /// Drives the recording duration display. Read via `viewModel.recordingTimer.duration`.
+    let recordingTimer = RecordingTimer()
 
     var cameraError: CameraError?
     var lockStatus: CameraLockStatus = .auto
@@ -119,11 +118,6 @@ final class CameraViewModel {
     /// The view reads levels/warnings through `viewModel.audioMeter`.
     let audioMeter: AudioMeterViewModel
 
-    // MARK: - Timer State
-    
-    @ObservationIgnored private var timerCancellable: AnyCancellable?
-    @ObservationIgnored private var recordingStartDate: Date?
-    
     // MARK: - Modal Queue State
     // See class-level doc for explanation of the queue pattern.
 
@@ -198,7 +192,7 @@ final class CameraViewModel {
     }
 
     func onDisappear() {
-        stopTimer()
+        recordingTimer.stop()
         audioMeter.stop()
         cameraService.stopSession()
         photoLibraryMonitor.stop()
@@ -209,11 +203,11 @@ final class CameraViewModel {
         guard isCameraReady else { return }
 
         if isRecording {
-            stopTimer()
+            recordingTimer.stop()
             cameraService.stopRecording()
             Log.viewmodel.info("toggleRecording -> stopped")
         } else {
-            startTimer()
+            recordingTimer.start()
             cameraService.startRecording()
             Log.viewmodel.info("toggleRecording -> started")
         }
@@ -460,31 +454,6 @@ final class CameraViewModel {
     /// Sets exposure bias to an absolute value. Use for reset — avoids delta drift.
     func setExposure(to value: Float) {
         cameraService.setExposure(to: value)
-    }
-    
-    // MARK: - Recording Timer
-    
-    /// Starts the recording timer using Combine. Computes duration from a start
-    /// date rather than accumulating increments, avoiding floating-point drift.
-    private func startTimer() {
-        recordingDuration = 0
-        recordingStartDate = Date()
-        timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self, let start = self.recordingStartDate else { return }
-                self.recordingDuration = Date().timeIntervalSince(start)
-            }
-        Log.viewmodel.debug("Recording timer started")
-    }
-    
-    /// Stops and resets the recording timer.
-    private func stopTimer() {
-        timerCancellable?.cancel()
-        timerCancellable = nil
-        recordingStartDate = nil
-        recordingDuration = 0
-        Log.viewmodel.debug("Recording timer stopped")
     }
 
     // MARK: - Recording Format

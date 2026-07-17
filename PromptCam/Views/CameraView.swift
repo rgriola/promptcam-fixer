@@ -457,7 +457,7 @@ struct CameraView: View {
                     isRecording: viewModel.isRecording,
                     isScrolling: viewModel.isScrolling,
                     isRecordEnabled: viewModel.isCameraReady,
-                    recordingDuration: viewModel.recordingDuration,
+                    recordingDuration: viewModel.recordingTimer.duration,
                     onRecordTap: {
                         viewModel.toggleRecording()
                     },
