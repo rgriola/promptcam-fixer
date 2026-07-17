@@ -220,35 +220,36 @@ final class CameraViewModelTests: XCTestCase {
     // MARK: - Script Persistence
 
     func testUpdateScriptText_persistsToUserDefaults() {
-        let scriptKey = "tp.scriptText"
-        UserDefaults.standard.removeObject(forKey: scriptKey)
-        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+        let prefsKey = PreferencesStore.storageKey
+        UserDefaults.standard.removeObject(forKey: prefsKey)
+        defer { UserDefaults.standard.removeObject(forKey: prefsKey) }
 
         sut.updateScriptText("My reporter script.")
 
-        let saved = UserDefaults.standard.string(forKey: scriptKey)
-        XCTAssertEqual(saved, "My reporter script.",
-                       "updateScriptText must persist the script to UserDefaults")
+        // Verify via PreferencesStore round-trip
+        let prefs = PreferencesStore().load()
+        XCTAssertEqual(prefs.scriptText, "My reporter script.",
+                       "updateScriptText must persist the script via PreferencesStore")
     }
 
     func testUpdateScriptText_doesNotSaveDefaultPlaceholder() {
-        let scriptKey = "tp.scriptText"
-        UserDefaults.standard.removeObject(forKey: scriptKey)
-        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+        let prefsKey = PreferencesStore.storageKey
+        UserDefaults.standard.removeObject(forKey: prefsKey)
+        defer { UserDefaults.standard.removeObject(forKey: prefsKey) }
 
         // Saving the default hint text should NOT persist it — ensures a
         // fresh install still shows the hint on next launch.
         sut.updateScriptText(TeleprompterConfig.default.text)
 
-        let saved = UserDefaults.standard.string(forKey: scriptKey)
-        XCTAssertNil(saved,
+        let prefs = PreferencesStore().load()
+        XCTAssertNil(prefs.scriptText,
                      "Default placeholder text must not be written to UserDefaults")
     }
 
     func testNewViewModel_restoresSavedScript() {
-        let scriptKey = "tp.scriptText"
-        UserDefaults.standard.removeObject(forKey: scriptKey)
-        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+        let prefsKey = PreferencesStore.storageKey
+        UserDefaults.standard.removeObject(forKey: prefsKey)
+        defer { UserDefaults.standard.removeObject(forKey: prefsKey) }
 
         // Simulate saving a script in one session.
         sut.updateScriptText("Breaking news script.")
@@ -261,9 +262,9 @@ final class CameraViewModelTests: XCTestCase {
     }
 
     func testNewViewModel_showsDefaultTextWhenNoScriptSaved() {
-        let scriptKey = "tp.scriptText"
-        UserDefaults.standard.removeObject(forKey: scriptKey)
-        defer { UserDefaults.standard.removeObject(forKey: scriptKey) }
+        let prefsKey = PreferencesStore.storageKey
+        UserDefaults.standard.removeObject(forKey: prefsKey)
+        defer { UserDefaults.standard.removeObject(forKey: prefsKey) }
 
         let freshVM = CameraViewModel(cameraService: MockCameraService())
 

@@ -51,24 +51,4 @@ struct RecordingFormat: Equatable, Hashable, Codable, Sendable {
     var mode: VideoMode
 
     static let `default` = RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)
-
-    // MARK: - UserDefaults Persistence
-
-    private static let storageKey = "com.promptcam.recordingFormat"
-
-    /// Loads from UserDefaults, falling back to `.default` if nothing is saved or decoding fails.
-    static func loadSaved() -> RecordingFormat {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let format = try? JSONDecoder().decode(RecordingFormat.self, from: data) else {
-            return .default
-        }
-        return format
-    }
-
-    /// Persists the current format to UserDefaults.
-    func save() {
-        if let data = try? JSONEncoder().encode(self) {
-            UserDefaults.standard.set(data, forKey: Self.storageKey)
-        }
-    }
 }

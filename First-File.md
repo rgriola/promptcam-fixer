@@ -408,24 +408,38 @@ Modify tap-hold-drag gesture in teleprompter view area to control the text movem
 Review how a refactor of CameraView would work with a general reoginization of the ZStack. CameraPreviewView and TeleprompterView still stack on top of each other, other UI items should preform as before. SHow me a plan we can work on. The goal is to correct layout issues, remove duplicate padding,framing and un needed positioning. No Coding.
 
 (New) VStack 1
-    CameraPreviewView()
-    cameraControlsRow()
-    cameraFooter()
+CameraPreviewView()
+cameraControlsRow()
+cameraFooter()
 
-(New) VStack 2 
-    TeleprompterView 
+(New) VStack 2
+TeleprompterView
 
->> Below each componet should be combined into a single HStack within VStack 2, Each Component here are realted to each other in the stack. 
-  - HStack
-    VUmeter
-    RecordingClusterView
-    TeleprompterUtilityStackView
+> > Below each componet should be combined into a single HStack within VStack 2, Each Component here are realted to each other in the stack.
 
+- HStack
+  VUmeter
+  RecordingClusterView
+  TeleprompterUtilityStackView
 
-- Reuseable components 
+- Reuseable components
 - Componets that are self contained units with no overflow ie; padding is part of the componet.
+  ...
+  Jul 16 Refactors
 
+2. CameraViewModel is a god object (766 lines). It manages recording state, teleprompter config, audio metering, camera locking, player state, a modal queue, carousel caching, and style persistence. Decomposing into focused collaborators (e.g. audio state, teleprompter state, modal queue, style persistence) would improve testability and reduce merge friction. RecordingPlayerView.swift (804 lines) and CameraView.swift (635 lines) similarly warrant extraction into sub-views/@ViewBuilder helpers.
 
+3. Persistence hardening. UserDefaults style prefs are spread across ~7 keys and decoded with silent try? fallbacks (ScriptArchive, RecordingFormat, CameraViewModel). Consolidate into a single Codable struct and log decode/encode failures (currently corruption is invisible). ScriptArchive is @MainActor doing synchronous UserDefaults I/O — fine for small data, but move to a background task if payloads grow.
 
+4. Magic numbers and hardcoded strings. Timing/threshold/layout constants are duplicated across views (velocity 600, clip 0.98, cell sizes, 1/60 refresh, script length 10_000, audio thresholds duplicated in VUMeterView). Centralize into a constants/Theme namespace. User-facing strings ("Stop recording to change format", section headers, etc.) are not localized — a String Catalog would help if localization is a goal.
 
+Lower-impact suggestions
 
+7. Accessibility. Add labels/values for the VU meter source hint, recording timer (announce duration), and support Dynamic Type on the 9pt source-name label. Consider extending auto-dismiss banner durations under accessibility settings.
+
+8. Duplication cleanup. PermissionsOnboardingView repeats five near-identical rows (drive from an array); the EV / aperture / teleprompter adjustment panels share structure that could fold into a generic panel; the format-rollback sequence in CameraService+Format.swift is duplicated and could be a helper.
+
+Suggested priority order
+
+Decompose CameraViewModel / RecordingPlayerView / CameraView.
+Centralize constants; localize strings; accessibility passes.

@@ -89,7 +89,7 @@ final class CameraViewModel {
     var isCameraReady = false
     /// Serializes sheet presentation. The active sheet is bound via
     /// `viewModel.modalQueue.activeSheet`.
-    let modalQueue = ModalQueue()
+    var modalQueue = ModalQueue()
     /// Compose sheet is presented as a fullScreenCover to prevent
     /// iOS sheet presentation from rescaling the camera preview.
     var showComposeSheet = false
@@ -116,13 +116,13 @@ final class CameraViewModel {
 
     /// Owns all audio-metering state and the `AudioMeterService` lifecycle.
     /// The view reads levels/warnings through `viewModel.audioMeter`.
-    let audioMeter: AudioMeterViewModel
+    var audioMeter: AudioMeterViewModel
 
     // MARK: - Direct Player State
 
     /// Owns the recordings carousel and direct-player state. The view reads
     /// through `viewModel.recordings`.
-    let recordings = RecordingsGallery()
+    var recordings = RecordingsGallery()
 
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
@@ -130,8 +130,10 @@ final class CameraViewModel {
     /// Photos.app deletes, iCloud sync). Started in onAppear, stopped in
     /// onDisappear. Complements onRecordingSavedToLibrary from CameraService.
     @ObservationIgnored private let photoLibraryMonitor = PhotoLibraryChangeMonitor()
-    /// Persists teleprompter style settings to UserDefaults.
+    /// Persists teleprompter style settings and recording format via PreferencesStore.
     @ObservationIgnored private let styleStore = TeleprompterStyleStore()
+    /// Centralized preferences persistence (teleprompter style + recording format).
+    @ObservationIgnored private let preferencesStore = PreferencesStore()
 
 
 
@@ -141,7 +143,7 @@ final class CameraViewModel {
     ) {
         self.cameraService = cameraService
         self.permissionService = permissionService
-        self.recordingFormat = RecordingFormat.loadSaved()
+        self.recordingFormat = preferencesStore.load().recordingFormat
         self.audioMeter = AudioMeterViewModel(cameraService: cameraService)
         config = styleStore.applyingSaved(to: config)
         bindCallbacks()
@@ -364,7 +366,9 @@ final class CameraViewModel {
         cameraService.onFormatApplied = { [weak self] applied in
             guard let self else { return }
             self.recordingFormat = applied
-            applied.save()
+            var prefs = self.preferencesStore.load()
+            prefs.recordingFormat = applied
+            self.preferencesStore.save(prefs)
             Log.viewmodel.info("format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)")
         }
 
@@ -377,7 +381,9 @@ final class CameraViewModel {
             if !capabilities.isSupported(self.recordingFormat) {
                 let adjusted = capabilities.adjusted(self.recordingFormat)
                 self.recordingFormat = adjusted
-                adjusted.save()
+                var prefs = self.preferencesStore.load()
+                prefs.recordingFormat = adjusted
+                self.preferencesStore.save(prefs)
                 Log.viewmodel.notice("format auto-adjusted to res=\(adjusted.resolution.rawValue, privacy: .public) fps=\(adjusted.frameRate.rawValue, privacy: .public) mode=\(adjusted.mode.rawValue, privacy: .public)")
             }
         }

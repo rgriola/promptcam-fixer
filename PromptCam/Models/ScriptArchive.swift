@@ -30,22 +30,29 @@ struct ArchivedScript: Codable, Identifiable {
 /// Manages a rolling archive of recent scripts in UserDefaults.
 ///
 /// - Auto-prunes entries older than 7 days on access.
-/// - Caps storage at 20 entries.
+/// - Caps storage at 10 entries (most recent first).
 /// - Archives automatically on each Compose Save.
+/// - Encode/decode failures are logged via `Log.persistence`.
 @MainActor
 struct ScriptArchive {
     private static let storageKey = "scriptArchive"
-    private static let maxEntries = 20
+    private static let maxEntries = 10
     private static let retentionDays: TimeInterval = 7 * 24 * 60 * 60 // 7 days
 
     /// Loads all non-expired archived scripts, newest first.
     static func load() -> [ArchivedScript] {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let scripts = try? JSONDecoder().decode([ArchivedScript].self, from: data)
-        else { return [] }
+        guard let data = UserDefaults.standard.data(forKey: storageKey) else { return [] }
 
-        let cutoff = Date().addingTimeInterval(-retentionDays)
-        return scripts.filter { $0.savedAt > cutoff }
+        do {
+            let scripts = try JSONDecoder().decode([ArchivedScript].self, from: data)
+            let cutoff = Date().addingTimeInterval(-retentionDays)
+            return scripts.filter { $0.savedAt > cutoff }
+        } catch {
+            Log.persistence.error(
+                "Failed to decode ScriptArchive: \(error.localizedDescription, privacy: .public). Returning empty archive."
+            )
+            return []
+        }
     }
 
     /// Archives a script. Deduplicates if the text matches the most recent entry.
@@ -65,8 +72,13 @@ struct ScriptArchive {
             scripts = Array(scripts.prefix(maxEntries))
         }
 
-        if let data = try? JSONEncoder().encode(scripts) {
+        do {
+            let data = try JSONEncoder().encode(scripts)
             UserDefaults.standard.set(data, forKey: storageKey)
+        } catch {
+            Log.persistence.error(
+                "Failed to encode ScriptArchive: \(error.localizedDescription, privacy: .public). Archive not saved."
+            )
         }
     }
 
@@ -74,8 +86,14 @@ struct ScriptArchive {
     static func delete(id: UUID) {
         var scripts = load()
         scripts.removeAll { $0.id == id }
-        if let data = try? JSONEncoder().encode(scripts) {
+
+        do {
+            let data = try JSONEncoder().encode(scripts)
             UserDefaults.standard.set(data, forKey: storageKey)
+        } catch {
+            Log.persistence.error(
+                "Failed to encode ScriptArchive after delete: \(error.localizedDescription, privacy: .public). Archive not updated."
+            )
         }
     }
 
