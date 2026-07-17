@@ -124,22 +124,14 @@ final class CameraViewModel {
     /// through `viewModel.recordings`.
     let recordings = RecordingsGallery()
 
-    // MARK: - Style Persistence Keys
-    private enum StyleKey {
-        static let fontSize   = "tp.fontSize"
-        static let speed      = "tp.speed"
-        static let textColor  = "tp.textColor"
-        static let bgOpacity  = "tp.bgOpacity"
-        static let alignment  = "tp.alignment"
-        static let scriptText = "tp.scriptText"
-    }
-
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
     /// Refreshes the carousel whenever the Photo Library changes (own saves,
     /// Photos.app deletes, iCloud sync). Started in onAppear, stopped in
     /// onDisappear. Complements onRecordingSavedToLibrary from CameraService.
     @ObservationIgnored private let photoLibraryMonitor = PhotoLibraryChangeMonitor()
+    /// Persists teleprompter style settings to UserDefaults.
+    @ObservationIgnored private let styleStore = TeleprompterStyleStore()
 
 
 
@@ -151,7 +143,7 @@ final class CameraViewModel {
         self.permissionService = permissionService
         self.recordingFormat = RecordingFormat.loadSaved()
         self.audioMeter = AudioMeterViewModel(cameraService: cameraService)
-        loadStylePreferences()
+        config = styleStore.applyingSaved(to: config)
         bindCallbacks()
         // `self` is fully initialized here, so the audio meter can safely read
         // the live recording flag through this closure.
@@ -272,7 +264,7 @@ final class CameraViewModel {
     func updateScriptText(_ text: String) {
         Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
         config.text = text
-        saveStylePreferences()
+        styleStore.save(config)
     }
 
     /// Applies and clamps new style settings, then persists them.
@@ -281,7 +273,7 @@ final class CameraViewModel {
         var next = updated.clamped
         next.text = config.text
         config = next
-        saveStylePreferences()
+        styleStore.save(config)
         Log.viewmodel.debug("updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
     }
 
@@ -289,51 +281,8 @@ final class CameraViewModel {
     @MainActor
     func cycleTextAlignment() {
         config.textAlignment = config.textAlignment.next
-        saveStylePreferences()
+        styleStore.save(config)
         Log.viewmodel.debug("Text alignment cycled to: \(self.config.textAlignment.rawValue, privacy: .public)")
-    }
-
-    // MARK: - Style Persistence
-
-    private func saveStylePreferences() {
-        let ud = UserDefaults.standard
-        ud.set(config.fontSize,                   forKey: StyleKey.fontSize)
-        ud.set(config.speedPointsPerSecond,        forKey: StyleKey.speed)
-        ud.set(config.textColor.rawValue,          forKey: StyleKey.textColor)
-        ud.set(config.backgroundOpacity,           forKey: StyleKey.bgOpacity)
-        ud.set(config.textAlignment.rawValue,      forKey: StyleKey.alignment)
-        // Only persist the script when it differs from the default placeholder
-        // so a fresh install still shows the onboarding hint text.
-        if config.text != TeleprompterConfig.default.text {
-            ud.set(config.text, forKey: StyleKey.scriptText)
-        }
-    }
-
-    private func loadStylePreferences() {
-        let ud = UserDefaults.standard
-        // Only override defaults if a value has actually been saved previously.
-        if ud.object(forKey: StyleKey.fontSize) != nil {
-            config.fontSize            = ud.double(forKey: StyleKey.fontSize)
-            config.speedPointsPerSecond = ud.double(forKey: StyleKey.speed)
-            config.backgroundOpacity   = ud.double(forKey: StyleKey.bgOpacity)
-            if let raw = ud.string(forKey: StyleKey.textColor),
-               let color = TeleprompterTextColor(rawValue: raw) {
-                config.textColor = color
-            }
-            if let raw = ud.string(forKey: StyleKey.alignment),
-               let alignment = TeleprompterTextAlignment(rawValue: raw) {
-                config.textAlignment = alignment
-            }
-            config = config.clamped
-            // Restore the saved script. If no script has been saved yet (fresh
-            // install or user cleared it), fall back to the default hint text.
-            if let saved = ud.string(forKey: StyleKey.scriptText), !saved.isEmpty {
-                config.text = saved
-            } else {
-                config.text = TeleprompterConfig.default.text
-            }
-            Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public) scriptLen=\(self.config.text.count, privacy: .public)")
-        }
     }
 
     /// Resets the teleprompter to its centered starting position.
