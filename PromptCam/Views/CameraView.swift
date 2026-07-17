@@ -263,7 +263,7 @@ struct CameraView: View {
                 runtimeRecoveryMessage?.message ?? viewModel.cameraError?.localizedDescription
                     ?? "Unknown error")
         }
-        .sheet(item: $viewModel.activeSheet) { route in
+        .sheet(item: $viewModel.modalQueue.activeSheet) { route in
             sheetContent(for: route)
         }
         .fullScreenCover(isPresented: $viewModel.showDirectPlayer) {
@@ -357,7 +357,7 @@ struct CameraView: View {
             viewModel.unlockFocusExposure()
         }
         // MARK: - State Observers
-        .onChange(of: viewModel.activeSheet) { _, newValue in
+        .onChange(of: viewModel.modalQueue.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
         .onChange(of: viewModel.isRecording) { _, isRecording in

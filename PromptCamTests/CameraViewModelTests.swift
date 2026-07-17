@@ -148,7 +148,7 @@ final class CameraViewModelTests: XCTestCase {
     func testOpenPhotoLibrarySetsActiveSheet() {
         sut.openPhotoLibrary()
 
-        XCTAssertEqual(sut.activeSheet, .recordingsLibrary,
+        XCTAssertEqual(sut.modalQueue.activeSheet, .recordingsLibrary,
                        "activeSheet should be .recordingsLibrary after openPhotoLibrary")
     }
 
@@ -167,7 +167,7 @@ final class CameraViewModelTests: XCTestCase {
 
         sut.openFormatPanel()
 
-        XCTAssertNil(sut.activeSheet,
+        XCTAssertNil(sut.modalQueue.activeSheet,
                      "activeSheet should remain nil when recording blocks format panel")
         XCTAssertTrue(sut.showFormatLockedWarning,
                       "showFormatLockedWarning should be true when format panel is blocked")

@@ -70,9 +70,8 @@ enum CameraLockStatus: Equatable, Sendable {
 /// which runs them on its own serial queue.
 ///
 /// **Modal queue pattern**: SwiftUI allows only one `.sheet` presenter at a time.
-/// If the user triggers a second modal while one is active, the request is queued
-/// in `queuedSheet` (or `queuedPhotoPicker`). When the active modal dismisses,
-/// `presentQueuedModalIfNeeded()` dequeues the next one. This prevents the
+/// Sheet presentation is delegated to `ModalQueue`, which queues a second
+/// request while one is active and dequeues it on dismissal. This prevents the
 /// "sheet not presented" bug that occurs with rapid modal switching.
 ///
 /// **Callback binding**: `bindCallbacks()` connects `CameraService` closures to
@@ -89,7 +88,9 @@ final class CameraViewModel {
     var cameraError: CameraError?
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
-    var activeSheet: CameraSheetRoute?
+    /// Serializes sheet presentation. The active sheet is bound via
+    /// `viewModel.modalQueue.activeSheet`.
+    let modalQueue = ModalQueue()
     /// Compose sheet is presented as a fullScreenCover to prevent
     /// iOS sheet presentation from rescaling the camera preview.
     var showComposeSheet = false
@@ -117,12 +118,6 @@ final class CameraViewModel {
     /// Owns all audio-metering state and the `AudioMeterService` lifecycle.
     /// The view reads levels/warnings through `viewModel.audioMeter`.
     let audioMeter: AudioMeterViewModel
-
-    // MARK: - Modal Queue State
-    // See class-level doc for explanation of the queue pattern.
-
-    @ObservationIgnored private var queuedSheet: CameraSheetRoute?
-    @ObservationIgnored private var lastPresentedSheet: CameraSheetRoute?
 
     // MARK: - Direct Player State
 
@@ -231,7 +226,7 @@ final class CameraViewModel {
             showDirectPlayer = true
         } else {
             // Fallback: no recording exists yet
-            presentSheet(.recordingsLibrary)
+            modalQueue.present(.recordingsLibrary)
         }
     }
 
@@ -296,7 +291,7 @@ final class CameraViewModel {
 
     func openSettings() {
         guard !isRecording else { return }
-        presentSheet(.settings)
+        modalQueue.present(.settings)
     }
 
 
@@ -309,24 +304,23 @@ final class CameraViewModel {
             }
             return
         }// Sheet to change format
-        presentSheet(.formatPanel)
+        modalQueue.present(.formatPanel)
     }
 
 
 
     func dismissActiveSheet() {
-        activeSheet = nil
+        modalQueue.dismissActive()
     }
 
     func handleSheetStateChanged(_ newValue: CameraSheetRoute?) {
         guard newValue == nil else { return }
 
-        if lastPresentedSheet == .composeScript {
+        if modalQueue.lastPresentedSheet == .composeScript {
             cameraMode = .camera
         }
 
-        lastPresentedSheet = nil
-        presentQueuedModalIfNeeded()
+        modalQueue.finishDismissal()
     }
 
 
@@ -406,25 +400,6 @@ final class CameraViewModel {
     func resetTeleprompterPosition() {
         teleprompterResetToken += 1
         Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public) isScrolling=\(self.isScrolling, privacy: .public)")
-    }
-
-    private func presentSheet(_ route: CameraSheetRoute) {
-        guard activeSheet == nil else {
-            queuedSheet = route
-            return
-        }
-
-        // .composeScript is routed through showComposeSheet / fullScreenCover
-        // to prevent the camera preview from being rescaled.
-
-        lastPresentedSheet = route
-        activeSheet = route
-    }
-
-    private func presentQueuedModalIfNeeded() {
-        guard activeSheet == nil, let route = queuedSheet else { return }
-        queuedSheet = nil
-        presentSheet(route)
     }
 
     func focus(at devicePoint: CGPoint) {
