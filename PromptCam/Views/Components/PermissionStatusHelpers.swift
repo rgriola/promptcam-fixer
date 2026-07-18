@@ -39,9 +39,15 @@ enum PermissionStatusDisplay {
     // MARK: - Photos Library
 
     /// Human-readable label for photo library authorization status.
+    ///
+    /// Photo Library is the only iOS permission with a middle ("Limited")
+    /// state. The badge intentionally surfaces "Limited" separately from
+    /// "Granted" so users see at a glance whether the app has full or
+    /// partial access.
     static func label(for status: PHAuthorizationStatus) -> String {
         switch status {
-        case .authorized, .limited: return "Granted"
+        case .authorized: return "Granted"
+        case .limited: return "Limited"
         case .notDetermined: return "Not Set"
         case .denied: return "Denied"
         case .restricted: return "Restricted"
@@ -50,9 +56,14 @@ enum PermissionStatusDisplay {
     }
 
     /// Semantic color for photo library authorization status.
+    ///
+    /// Yellow is used for `.limited` to distinguish partial access from
+    /// full access (green) and no access (red). This matches iOS's own
+    /// convention in Settings > Privacy > Photos.
     static func color(for status: PHAuthorizationStatus) -> Color {
         switch status {
-        case .authorized, .limited: return .green
+        case .authorized: return .green
+        case .limited: return .yellow
         case .notDetermined: return .orange
         case .denied, .restricted: return .red
         @unknown default: return .gray
