@@ -225,17 +225,38 @@ struct RecordingPlayerView: View {
             if url == nil { loadFailed = true }
         }
         .onChange(of: recentRecordings) { _, newRecordings in
-            // If the active recording was deleted, auto-advance.
+            // Post-delete sync. The parent gallery has already computed the
+            // next-active recording atomically and mutated `latestRecording`
+            // + `recentRecordings` in a single main-actor transaction.
+            //
+            // Our job is to reflect that decision — never to re-decide.
+            // Racing the parent (via a parallel Task { selectRecording(...) })
+            // is what used to crash under Swift 6 concurrency when the
+            // AVPlayer teardown and the parent view re-render overlapped.
+            //
+            // Fast path — active still exists: nothing to do (a different
+            // recording was deleted, or the user swiped independently).
             let isActiveStillInList = newRecordings.contains { $0.id == activeRecording.id }
-            if !isActiveStillInList {
-                if !newRecordings.isEmpty {
-                    // Select the first available recording in the refreshed list
-                    Task { await selectRecording(newRecordings[0]) }
-                } else {
-                    // No recordings left, close the player
-                    dismiss()
-                }
+            guard !isActiveStillInList else { return }
+
+            // Empty library: parent will drop `latestRecording` to nil and
+            // flip `showDirectPlayer` to false. Dismiss here so the player
+            // tears down cleanly instead of lingering on a deleted asset.
+            guard !newRecordings.isEmpty else {
+                dismiss()
+                return
             }
+
+            // In-place sync — the parent's `latestRecording` is now the
+            // next-active pick. Cancel any in-flight resolve and swap the
+            // active recording identity; the `.task(id: activeRecording.id)`
+            // observer will start a fresh URL resolve without spawning a
+            // competing Task from here.
+            cancelInFlightResolve()
+            let next = newRecordings.first!
+            activeRecording = next
+            activeURL = nil        // triggers re-resolve via .task(id: activeURL)
+            loadFailed = false
         }
         .onDisappear {
             teardownPlayer()
@@ -692,18 +713,37 @@ struct RecordingPlayerView: View {
 
     /// Full teardown — only called on view disappear. Never called between
     /// item swaps, so the AVPlayerViewController is not recreated.
+    ///
+    /// Strict order (MainActor-isolated so no cross-actor teardown races):
+    ///   1. Cancel in-flight PhotoKit resolve — no late-arriving URL will
+    ///      fire a `.task` update on this view after tear-down starts.
+    ///   2. Invalidate the AVPlayerItem status KVO so its callback can't
+    ///      post a MainActor `Task` after the observer has been dropped.
+    ///   3. Remove the periodic time observer before nilling the player —
+    ///      calling `removeTimeObserver` after `player = nil` crashes with
+    ///      "-[AVPlayer removeTimeObserver:] token was not returned by ...".
+    ///   4. Pause + nil the player, so any queued CALayer transactions
+    ///      finish on a still-valid AVPlayer object.
+    ///   5. Cancel the controls-hide task last; it references view state
+    ///      but not the player, so ordering is not strict.
+    @MainActor
     private func teardownPlayer() {
-        // Cancel any in-flight iCloud download; keeps the PhotoKit request
-        // queue clean when the user dismisses the player mid-fetch.
         cancelInFlightResolve()
+
         statusObservation?.invalidate()
         statusObservation = nil
-        if let token = timeObserverToken {
-            player?.removeTimeObserver(token)
-            timeObserverToken = nil
+
+        if let token = timeObserverToken, let p = player {
+            p.removeTimeObserver(token)
         }
+        timeObserverToken = nil
+
         player?.pause()
         player = nil
+
+        hideControlsTask?.cancel()
+        hideControlsTask = nil
+
         isPlaying = false
         currentTime = 0
         duration = 1

@@ -272,20 +272,21 @@ struct CameraView: View {
                     recording: recording,
                     videoURL: viewModel.recordings.latestVideoURL,
                     onDelete: {
-                        // Delegate to the nonisolated RecordingsService instead
-                        // of inlining PHPhotoLibrary.performChanges here. The
-                        // Task { } below inherits @MainActor from the enclosing
-                        // View body; any closure captured inside it (including
-                        // the one PhotoKit passes to its serial changes queue)
-                        // gets tagged with MainActor isolation, which trips
-                        // Swift 6's executor mismatch check and crashes.
-                        // The service method is a nonisolated struct func, so
-                        // its internal closures run without MainActor taint.
+                        // Delete flow: atomic through RecordingsGallery.delete(_:).
+                        // The gallery decides the next active recording in a single
+                        // main-actor transaction BEFORE mutating @Observable state,
+                        // so `.fullScreenCover` and the player never see an
+                        // intermediate snapshot. Awaited (not fire-and-forget) so
+                        // the empty-library dismiss decision happens only after
+                        // state has settled — fixing the Swift 6 executor-mismatch
+                        // crash that used to occur when teardown raced the parent
+                        // view's re-render.
                         let recordingToDelete = recording
-                        Task {
-                            _ = await RecordingsService().deleteRecording(recordingToDelete)
-                            // Keep player open — user can manually close or select another video
-                            viewModel.recordings.refresh()
+                        Task { @MainActor in
+                            _ = await viewModel.recordings.delete(recordingToDelete)
+                            if viewModel.recordings.recentRecordings.isEmpty {
+                                viewModel.recordings.showDirectPlayer = false
+                            }
                         }
                     },
                     recentRecordings: viewModel.recordings.recentRecordings,

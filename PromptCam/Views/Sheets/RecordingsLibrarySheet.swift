@@ -125,7 +125,13 @@ struct RecordingsLibrarySheet: View {
         // the change closure with MainActor isolation and crashes under Swift
         // 6's executor check when PhotoKit dispatches it onto its own serial
         // queue. See CameraView.onDelete for the matching fix.
-        _ = await RecordingsService().deleteRecording(recording)
+        //
+        // Only clear presentation state on success. If the user cancelled the
+        // iOS system delete confirmation (Warning #2), the delete returns
+        // false and we leave the player mounted so they don't get dumped back
+        // to the picker with a still-present video.
+        let ok = await RecordingsService().deleteRecording(recording)
+        guard ok else { return }
         selectedRecording = nil
         selectedItems = []
         videoURL = nil
