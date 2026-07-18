@@ -40,8 +40,12 @@ struct RecordingsLibrarySheet: View {
             RecordingPlayerView(
                 recording: recording,
                 videoURL: videoURL,
-                onDelete: {
-                    Task { await deleteRecording(recording) }
+                onDelete: { activeRecording in
+                    // This sheet's player has no carousel, so activeRecording
+                    // is always the same as `recording`. Accepting it as a
+                    // parameter keeps the shared onDelete signature consistent
+                    // and future-proofs the sheet against later carousel work.
+                    Task { await deleteRecording(activeRecording) }
                 }
             )
         }
