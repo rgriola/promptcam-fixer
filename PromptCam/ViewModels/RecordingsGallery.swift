@@ -1,4 +1,7 @@
 // July 17, 2026 - GitHub Copilot - Extracted direct player / recordings carousel from CameraViewModel
+// July 18, 2026 - GitHub Copilot (Claude Opus 4.7) - async refresh + atomic delete(_:) so callers
+//     can await the post-delete state transition. Prevents SwiftUI View-identity race that
+//     crashed under Swift 6 concurrency when fullScreenCover reevaluated mid-teardown.
 import CoreGraphics
 import Foundation
 
@@ -66,7 +69,62 @@ final class RecordingsGallery {
     }
 
     /// Call after a recording finishes saving to refresh the player state.
-    func refresh() {
+    ///
+    /// Awaitable so callers can chain post-refresh work (e.g. presenting the
+    /// player) without racing the underlying `prefetch`. The fire-and-forget
+    /// variant lives in `refreshInBackground()` for save-completion paths
+    /// that don't need to sequence UI transitions.
+    func refresh() async {
+        await prefetch()
+    }
+
+    /// Non-awaited refresh for save-completion paths that should not block
+    /// the caller. Delete flows should use `refresh()` (awaitable) instead
+    /// so state transitions are deterministic.
+    func refreshInBackground() {
         Task { await prefetch() }
     }
+
+    /// Atomic delete: removes the recording from Photo Library, then updates
+    /// all @Observable properties in a single main-actor transaction so any
+    /// downstream `.onChange` / `.fullScreenCover` re-evaluation sees one
+    /// consistent snapshot.
+    ///
+    /// Returns `true` if the underlying PhotoKit delete succeeded. On success,
+    /// `latestRecording` is set to the recording that occupied the deleted
+    /// slot (or the closest neighbour), `latestVideoURL` is cleared for lazy
+    /// resolve, and `recentRecordings` is refreshed to the full library.
+    /// If the library becomes empty, `latestRecording` becomes nil — callers
+    /// (e.g. `CameraView`'s delete handler) should observe that and dismiss
+    /// the player.
+    @discardableResult
+    func delete(_ recording: Recording) async -> Bool {
+        let ok = await recordingsService.deleteRecording(recording)
+        guard ok else { return false }
+
+        // Compute the next active BEFORE mutating any @Observable state so
+        // downstream views see one atomic transition. The chosen next is the
+        // recording that took the deleted slot (index-preserving), or the
+        // previous item if we deleted the last one, or nil if empty.
+        let deletedID = recording.id
+        let deletedIndex = recentRecordings.firstIndex(where: { $0.id == deletedID })
+        let all = await recordingsService.fetchAllRecordings()
+
+        let nextActive: Recording? = {
+            guard !all.isEmpty else { return nil }
+            if let idx = deletedIndex {
+                if idx < all.count { return all[idx] }
+                if idx > 0, idx - 1 < all.count { return all[idx - 1] }
+            }
+            return all.first
+        }()
+
+        // Single main-actor transaction — @Observable coalesces these writes.
+        recentRecordings = all
+        latestRecording = nextActive
+        latestVideoURL = nil    // resolve lazily in the player for the new recording
+
+        return true
+    }
 }
+

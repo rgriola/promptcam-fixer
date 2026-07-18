@@ -89,7 +89,12 @@ final class CameraViewModel {
     var isCameraReady = false
     /// Serializes sheet presentation. The active sheet is bound via
     /// `viewModel.modalQueue.activeSheet`.
-    let modalQueue = ModalQueue()
+    ///
+    /// Declared `var` (not `let`) so SwiftUI `@Bindable` can build writable
+    /// key paths through it (e.g. `$viewModel.modalQueue.activeSheet`). The
+    /// class is never reassigned — this is a Swift 6 requirement for chained
+    /// bindings, not an API change.
+    var modalQueue = ModalQueue()
     /// Compose sheet is presented as a fullScreenCover to prevent
     /// iOS sheet presentation from rescaling the camera preview.
     var showComposeSheet = false
@@ -116,13 +121,21 @@ final class CameraViewModel {
 
     /// Owns all audio-metering state and the `AudioMeterService` lifecycle.
     /// The view reads levels/warnings through `viewModel.audioMeter`.
-    let audioMeter: AudioMeterViewModel
+    ///
+    /// Declared `var` (not `let`) so SwiftUI `@Bindable` can build writable
+    /// key paths through it (e.g. `$viewModel.audioMeter.showAudioSourcePicker`).
+    /// The class is never reassigned.
+    var audioMeter: AudioMeterViewModel
 
     // MARK: - Direct Player State
 
     /// Owns the recordings carousel and direct-player state. The view reads
     /// through `viewModel.recordings`.
-    let recordings = RecordingsGallery()
+    ///
+    /// Declared `var` (not `let`) so SwiftUI `@Bindable` can build writable
+    /// key paths through it (e.g. `$viewModel.recordings.showDirectPlayer`).
+    /// The class is never reassigned.
+    var recordings = RecordingsGallery()
 
     let cameraService: CameraServiceProtocol
     private let permissionService: PermissionService
@@ -162,7 +175,7 @@ final class CameraViewModel {
         // Observe photo-library changes so the carousel refreshes on external
         // deletes, iCloud sync, etc. Debounced to coalesce bursts.
         photoLibraryMonitor.start { [weak self] in
-            self?.recordings.refresh()
+            self?.recordings.refreshInBackground()
         }
         // Device capabilities are received via onDeviceCapabilitiesQueried callback
         // after configureSession completes on the session queue.
@@ -340,14 +353,14 @@ final class CameraViewModel {
             // When recording stops the video is saved to the photo library.
             // Refresh the latest recording so the direct player is ready immediately.
             if !isRecording {
-                self.recordings.refresh()
+                self.recordings.refreshInBackground()
             }
         }
 
         // Fires the instant PhotoKit actually persists the new asset — closes
         // the race where onRecordingStateChanged fires before the save is done.
         cameraService.onRecordingSavedToLibrary = { [weak self] in
-            self?.recordings.refresh()
+            self?.recordings.refreshInBackground()
         }
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
