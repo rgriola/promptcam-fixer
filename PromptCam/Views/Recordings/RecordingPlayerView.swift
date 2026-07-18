@@ -17,7 +17,14 @@ struct RecordingPlayerView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    let onDelete: () -> Void
+    /// Delete callback. Receives the **currently-active** recording (the one
+    /// visible in the player at the moment the user confirmed delete) — NOT
+    /// the recording the view was initially opened with. Passing it as a
+    /// parameter (rather than closing over the init recording) prevents the
+    /// data-loss bug where swiping the carousel to video B and then tapping
+    /// trash would delete video A because the outer closure captured the
+    /// initial recording at construction time.
+    let onDelete: (Recording) -> Void
 
     /// Carousel data — first 8 recent recordings passed from the ViewModel.
     /// Empty by default so the view is backward-compatible with existing callers.
@@ -120,7 +127,7 @@ struct RecordingPlayerView: View {
     init(
         recording: Recording,
         videoURL: URL?,
-        onDelete: @escaping () -> Void,
+        onDelete: @escaping (Recording) -> Void,
         recentRecordings: [Recording] = [],
         thumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil,
@@ -267,7 +274,7 @@ struct RecordingPlayerView: View {
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) { onDelete() }
+            Button("Delete", role: .destructive) { onDelete(activeRecording) }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Permanently deleting this video.")

@@ -271,7 +271,7 @@ struct CameraView: View {
                 RecordingPlayerView(
                     recording: recording,
                     videoURL: viewModel.recordings.latestVideoURL,
-                    onDelete: {
+                    onDelete: { activeRecording in
                         // Delete flow: atomic through RecordingsGallery.delete(_:).
                         // The gallery decides the next active recording in a single
                         // main-actor transaction BEFORE mutating @Observable state,
@@ -281,9 +281,16 @@ struct CameraView: View {
                         // state has settled — fixing the Swift 6 executor-mismatch
                         // crash that used to occur when teardown raced the parent
                         // view's re-render.
-                        let recordingToDelete = recording
+                        //
+                        // `activeRecording` is passed by the player so we delete
+                        // whatever clip is CURRENTLY on screen after any carousel
+                        // swipes — not the recording the player was opened with.
+                        // Closing over the outer `recording` here (a stale
+                        // snapshot of latestRecording at cover-mount time) was
+                        // the data-loss bug: video A would delete while the user
+                        // was viewing video B.
                         Task { @MainActor in
-                            _ = await viewModel.recordings.delete(recordingToDelete)
+                            _ = await viewModel.recordings.delete(activeRecording)
                             if viewModel.recordings.recentRecordings.isEmpty {
                                 viewModel.recordings.showDirectPlayer = false
                             }
