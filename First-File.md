@@ -408,24 +408,41 @@ Modify tap-hold-drag gesture in teleprompter view area to control the text movem
 Review how a refactor of CameraView would work with a general reoginization of the ZStack. CameraPreviewView and TeleprompterView still stack on top of each other, other UI items should preform as before. SHow me a plan we can work on. The goal is to correct layout issues, remove duplicate padding,framing and un needed positioning. No Coding.
 
 (New) VStack 1
-    CameraPreviewView()
-    cameraControlsRow()
-    cameraFooter()
+CameraPreviewView()
+cameraControlsRow()
+cameraFooter()
 
-(New) VStack 2 
-    TeleprompterView 
+(New) VStack 2
+TeleprompterView
 
->> Below each componet should be combined into a single HStack within VStack 2, Each Component here are realted to each other in the stack. 
-  - HStack
-    VUmeter
-    RecordingClusterView
-    TeleprompterUtilityStackView
+> > Below each componet should be combined into a single HStack within VStack 2, Each Component here are realted to each other in the stack.
 
+- HStack
+  VUmeter
+  RecordingClusterView
+  TeleprompterUtilityStackView
 
-- Reuseable components 
+- Reuseable components
 - Componets that are self contained units with no overflow ie; padding is part of the componet.
 
+**_ Issue _**
 
+- User has issue with permissions, when they select "Limited Access" for Photolibrary permission the UI allows them to select Photos where it should only allow videos.
 
+- There are other issues around the photolibrary but focus on tracing this issue.
 
+I switched back to main to work on a more urgent issue causing crashes.
+**_ Issue _**
+When a user "deletes" a video in the photopicker in app -the app crashes.
+**_ Task _**
+review the video-player/carousel implementation and see where improvements can be made.
+**_ Context _**
+The App Delete Flow shows 2 warnings, reguardless of the review remove the 2nd warning with the thumbnail. The delete flow should mark only the current video for deletion, show the user a warning "This video will be deleted", upon deleting the current video should be removed, the video video-player/carousel library should be refreshed.
+No Coding just review and plan.
 
+Jul 18, 2026
+
+**_ issue _**
+User moves to delete video. No matter which video is the current video the delete button moves to delete the first video (most recently recorded).  
+**_ Context _**
+Discovered issue on iPhone 17 Pro device. User in Full Photo Access. 2nd Delete message showed first video thumbnail though video-player was cued to a different video.

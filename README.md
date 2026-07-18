@@ -1,6 +1,6 @@
 # promptcam-fixer
 
-PromptCam is a SwiftUI iOS camera app with a teleprompter overlay for recording video while reading script text on screen. Includes a recordings library, real-time audio metering, cinematic mode (where supported), and AF/AE lock.
+Cue Vue is a SwiftUI iOS vertical camera teleprompter app. It includes a recordings library, real-time audio metering, cinematic mode (where supported), and AF/AE lock.
 
 ## Tech stack
 
