@@ -100,19 +100,22 @@ struct RecordingCarouselView: View {
                     }
             )
             // Scroll active item to center when selection changes from outside.
-            .onChange(of: activeRecordingID) { _, newID in
-                if let index = recordings.firstIndex(where: { $0.id == newID }) {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        baseOffset = -CGFloat(index) * slotWidth
-                        dragOffset = 0
-                    }
-                }
+            .onChange(of: activeRecordingID) { _, _ in
+                scrollActiveToCenter(animated: true)
+            }
+            // Also re-position when the recordings array itself changes shape
+            // (e.g. after a delete). Without this, if the parent's list is
+            // mutated but activeRecordingID happens to stay the same (or
+            // updates race the recordings change), the index of the active
+            // clip can move but the carousel would keep the stale offset —
+            // one of the visible symptoms was the carousel not tracking a
+            // swipe on the video-player after dismiss/re-open.
+            .onChange(of: recordings) { _, _ in
+                scrollActiveToCenter(animated: true)
             }
             .onAppear {
                 // No animation on initial positioning.
-                if let index = recordings.firstIndex(where: { $0.id == activeRecordingID }) {
-                    baseOffset = -CGFloat(index) * slotWidth
-                }
+                scrollActiveToCenter(animated: false)
             }
         }
         .frame(height: cellHeight + Theme.space16)
@@ -124,6 +127,31 @@ struct RecordingCarouselView: View {
                 endPoint: .bottom
             )
         )
+    }
+
+    /// Recomputes `baseOffset` so the cell for `activeRecordingID` sits at
+    /// screen center. Called from `.onAppear` (no animation), from
+    /// `.onChange(of: activeRecordingID)`, and from `.onChange(of: recordings)`
+    /// so the strip re-syncs whenever either input changes.
+    ///
+    /// Reads the current `recordings` and `activeRecordingID` from `self` at
+    /// call time — not from a stale closure capture — so it works even when
+    /// the parent's list mutates in the same tick as the ID change.
+    private func scrollActiveToCenter(animated: Bool) {
+        guard let index = recordings.firstIndex(where: { $0.id == activeRecordingID }) else {
+            return
+        }
+        let target = -CGFloat(index) * slotWidth
+        guard target != baseOffset else { return }
+        if animated {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                baseOffset = target
+                dragOffset = 0
+            }
+        } else {
+            baseOffset = target
+            dragOffset = 0
+        }
     }
 }
 

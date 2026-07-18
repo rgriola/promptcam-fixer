@@ -91,9 +91,16 @@ final class RecordingsGallery {
     /// consistent snapshot.
     ///
     /// Returns `true` if the underlying PhotoKit delete succeeded. On success,
-    /// `latestRecording` is set to the recording that occupied the deleted
-    /// slot (or the closest neighbour), `latestVideoURL` is cleared for lazy
-    /// resolve, and `recentRecordings` is refreshed to the full library.
+    /// `latestRecording` is set to the **first** remaining recording (the
+    /// most recent). `latestVideoURL` is cleared for lazy resolve, and
+    /// `recentRecordings` is refreshed to the full library.
+    ///
+    /// Reset-to-top (rather than index-preserving) is deliberate: users
+    /// expect the library to snap back to the front after a delete, and it
+    /// keeps the parent (`latestRecording`) in agreement with the player
+    /// (`activeRecording = newRecordings.first`) so the carousel and player
+    /// converge on the same active clip after the delete cascade.
+    ///
     /// If the library becomes empty, `latestRecording` becomes nil — callers
     /// (e.g. `CameraView`'s delete handler) should observe that and dismiss
     /// the player.
@@ -102,26 +109,11 @@ final class RecordingsGallery {
         let ok = await recordingsService.deleteRecording(recording)
         guard ok else { return false }
 
-        // Compute the next active BEFORE mutating any @Observable state so
-        // downstream views see one atomic transition. The chosen next is the
-        // recording that took the deleted slot (index-preserving), or the
-        // previous item if we deleted the last one, or nil if empty.
-        let deletedID = recording.id
-        let deletedIndex = recentRecordings.firstIndex(where: { $0.id == deletedID })
         let all = await recordingsService.fetchAllRecordings()
-
-        let nextActive: Recording? = {
-            guard !all.isEmpty else { return nil }
-            if let idx = deletedIndex {
-                if idx < all.count { return all[idx] }
-                if idx > 0, idx - 1 < all.count { return all[idx - 1] }
-            }
-            return all.first
-        }()
 
         // Single main-actor transaction — @Observable coalesces these writes.
         recentRecordings = all
-        latestRecording = nextActive
+        latestRecording = all.first
         latestVideoURL = nil    // resolve lazily in the player for the new recording
 
         return true

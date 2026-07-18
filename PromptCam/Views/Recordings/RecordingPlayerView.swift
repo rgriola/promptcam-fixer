@@ -259,7 +259,19 @@ struct RecordingPlayerView: View {
             // active recording identity; the `.task(id: activeRecording.id)`
             // observer will start a fresh URL resolve without spawning a
             // competing Task from here.
+            //
+            // Clear the AVPlayer's current item **before** the resolve
+            // begins so the user does not see the deleted video's last
+            // decoded frame during the resolve window. Without this, the
+            // AVPlayerLayer retains and renders the last frame of the just-
+            // deleted asset until `replaceCurrentItem` fires with the new
+            // URL — which on iCloud clips can be several seconds.
             cancelInFlightResolve()
+            player?.pause()
+            player?.replaceCurrentItem(with: nil)
+            isPlaying = false
+            currentTime = 0
+            duration = 1
             let next = newRecordings.first!
             activeRecording = next
             activeURL = nil        // triggers re-resolve via .task(id: activeURL)
