@@ -29,12 +29,12 @@ targets:
         INFOPLIST_FILE: PromptCam/Info.plist
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSCameraUsageDescription: PromptCam needs camera access to record videos.
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: PromptCam can record microphone audio with your videos.
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: PromptCam needs photo library access to save and review your recordings.
-        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: PromptCam uses speech recognition for optional transcript features.
+        INFOPLIST_KEY_NSCameraUsageDescription: Cue Vue needs camera access to record videos.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Cue Vue can record microphone audio with your videos.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Cue Vue needs photo library access to save and review your recordings.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Cue Vue uses speech recognition for optional transcript features.
 
-        INFOPLIST_KEY_CFBundleDisplayName: A1-Telepromter
+        INFOPLIST_KEY_CFBundleDisplayName: Cue Vue
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.video
 
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

@@ -289,7 +289,7 @@ struct RecordingsService: Sendable {
         // sanitize to keep filenames stable and unique across runs.
         let safeId = recording.id.replacingOccurrences(of: "/", with: "-")
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PromptCam-\(safeId).\(ext)")
+            .appendingPathComponent("CueVue-\(safeId).\(ext)")
 
         if FileManager.default.fileExists(atPath: url.path) { return url }
 

@@ -59,7 +59,7 @@ enum PermissionCopyCatalog {
           switch key {
           case .camera:
                return
-                    "Cue Vuecannot record video without Camera access. Open Settings, enable Camera, then return to continue."
+                    "Cue Vue cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
           case .microphone:
                return
                     "Cue Vue cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
