@@ -1,7 +1,8 @@
 # Recording Delete Crash — Fix Plan
 
-**Branch**: `fix/recording-delete-crash` (to be created off `main`)  
+**Branch**: `fix/recording-delete-crash` (merged into `main` on 2026-07-18)  
 **Priority**: Ship-blocking — crashes on user delete flow  
+**Status**: ✅ Landed. Verified on-device on iPhone 17 Pro and iPhone 15.  
 **Author**: GitHub Copilot  
 **Date**: 2026-07-18
 
@@ -174,3 +175,104 @@ Make the post-delete state transition **sequential, single-owner, and idempotent
 
 - **`feature/photo-library-permission-refactor`** — Option 4 refactor already scoped. Solves the Limited Access UX and eventually removes the need for Warning #2 by moving to app-owned storage.
 - **Recording carousel polish** — sync active-cell binding, fix any residual thumbnail flicker after delete.
+
+---
+
+## Actual Implementation — Deviations & Additions
+
+The original plan proposed 5 commits and a specific set of file edits. During implementation we discovered a pre-existing build break, chose a simpler player-sync pattern than the original plan proposed, and consolidated into a single commit for merge cleanliness. This section documents what actually shipped.
+
+### Merge commit
+
+- `99333ae` — `Merge fix/recording-delete-crash into main` (--no-ff, preserves branch history)
+- `2aafa0b` — `Fix recording-delete crash: atomic gallery.delete + hardened teardown`
+
+### Prerequisite work not in the original plan
+
+The delete-crash work exposed a **pre-existing build break** in `main` from the earlier ViewModel-extraction refactor commits (`b4fe383`, `f7541fb`, `909f391`). Two things had to be fixed before the crash fix could compile:
+
+1. **SwiftUI `@Bindable` writable key-path requirement**. `modalQueue`, `audioMeter`, and `recordings` in [PromptCam/ViewModels/CameraViewModel.swift](PromptCam/ViewModels/CameraViewModel.swift) had been declared `let`. Swift 6 + SwiftUI's `@Bindable` requires **writable key paths** through sub-objects for chained bindings like `$viewModel.recordings.showDirectPlayer` to compile. Changed all three from `let` to `var`. The classes are never reassigned — this is an API surface requirement, not a semantic change.
+
+2. **Xcode project regen via xcodegen**. Files added in the extraction refactors (`RecordingsGallery`, `ModalQueue`, `AudioMeterViewModel`, `TeleprompterStyleStore`, `RecordingTimer`) were not yet referenced by `PromptCam.xcodeproj/project.pbxproj`. Ran `xcodegen generate` to sync from [project.yml](project.yml).
+
+### Deviation: player `activeRecording` stayed `@State`
+
+The plan proposed two options for driving the player's `activeRecording`:
+- Option A: Pass it as `Binding<Recording?>` from the parent
+- Option B: Keep `@State`, add `.onChange(of: latestRecording)` that syncs and re-resolves URL
+
+**We chose a variant of Option B** — kept `activeRecording` as `@State`, but the sync happens in the existing `.onChange(of: recentRecordings)` handler rather than adding a new observer. When the active recording is no longer in the refreshed list, we perform an **in-place swap**:
+
+```swift
+.onChange(of: recentRecordings) { _, newRecordings in
+    let isActiveStillInList = newRecordings.contains { $0.id == activeRecording.id }
+    guard !isActiveStillInList else { return }
+    guard !newRecordings.isEmpty else { dismiss(); return }
+
+    // In-place sync — the parent's atomic snapshot already picked
+    // next-active. Cancel in-flight resolve and swap identity; the
+    // existing .task(id: activeURL) observer will re-resolve the URL.
+    cancelInFlightResolve()
+    activeRecording = newRecordings.first!
+    activeURL = nil
+    loadFailed = false
+}
+```
+
+Why: the original plan's "remove `.onChange` entirely" would have required a parent-driven Binding, which meant redesigning the player's initializer surface. In-place sync gave us the same race-free behaviour with a much smaller diff, and preserved backward-compat for the `RecordingsLibrarySheet` path which has no parent gallery to bind to.
+
+### Addition: `refreshInBackground()` alongside `refresh() async`
+
+The plan proposed converting `refresh()` to `async`. But three call sites in [PromptCam/ViewModels/CameraViewModel.swift](PromptCam/ViewModels/CameraViewModel.swift) are **non-delete** save-completion callbacks (photo-library monitor, `onRecordingStateChanged`, `onRecordingSavedToLibrary`) that should not block their caller. Making `refresh()` awaitable would have forced these sites to wrap in `Task { await ... }` — reintroducing the same fire-and-forget pattern with more ceremony.
+
+**Solution**: two methods, one type-safe intent per caller.
+
+```swift
+/// Awaitable — for callers that must sequence post-refresh work (e.g. delete).
+func refresh() async { await prefetch() }
+
+/// Fire-and-forget — for save-completion sites that shouldn't block.
+func refreshInBackground() { Task { await prefetch() } }
+```
+
+The delete path uses `refresh()` transitively via `delete(_:)`; the three background callers use `refreshInBackground()`.
+
+### Addition: `RecordingsLibrarySheet` UX bonus
+
+While updating the sheet's `deleteRecording(_:)` to match the await pattern, we added a small UX guard:
+
+```swift
+let ok = await RecordingsService().deleteRecording(recording)
+guard ok else { return }  // NEW — was `_ = await ...`
+selectedRecording = nil
+selectedItems = []
+videoURL = nil
+```
+
+Before this change, cancelling the iOS system delete alert (Warning #2) would still tear down the player and dump the user back to the picker even though nothing was deleted. Now the player stays mounted on cancel, matching Photos.app behaviour.
+
+### Deviation: single squashed commit
+
+The plan listed 5 commits. In practice, the changes were **tightly coupled by the async-refactor ripple**:
+- Making `RecordingsGallery.refresh()` async required updating three callers in `CameraViewModel` simultaneously
+- The delete-flow `guard let recording` in `CameraView` depended on the new `delete(_:)` method
+- The player's `.onChange` rewrite depended on the parent's atomic-snapshot behaviour
+
+A per-file split would have left multiple broken bisect points. We consolidated into one commit (`2aafa0b`) whose message documents the sub-components, and merged with `--no-ff` so the branch commit is preserved distinct from the merge commit for archaeology.
+
+### Files touched (final tally)
+
+| File | Purpose |
+|---|---|
+| `PromptCam.xcodeproj/project.pbxproj` | Regenerated via xcodegen — added extracted files |
+| `PromptCam/Assets.xcassets/AppIcon.appiconset/Contents.json` | Auto-touched by xcodegen (harmless whitespace) |
+| `PromptCam/ViewModels/CameraViewModel.swift` | `let → var` × 3; `refresh()` → `refreshInBackground()` × 3 |
+| `PromptCam/ViewModels/RecordingsGallery.swift` | `refresh()` now async; added `refreshInBackground()`; added atomic `delete(_:) async` |
+| `PromptCam/Views/CameraView.swift` | Delete callback awaits `gallery.delete(_:)`, dismisses on empty library |
+| `PromptCam/Views/Recordings/RecordingPlayerView.swift` | In-place `activeRecording` sync in `.onChange(of: recentRecordings)`; hardened `teardownPlayer` with strict MainActor order |
+| `PromptCam/Views/Sheets/RecordingsLibrarySheet.swift` | Only dismisses on delete success (cancel-alert UX bonus) |
+| `DELETE_CRASH_FIX_PLAN.md` | This file (added) |
+
+### On-device QA — Result
+
+Executed the full verification checklist on iPhone 17 Pro and iPhone 15 on 2026-07-18. All 7 scenarios pass, no crashes observed. Merged to `main`.
