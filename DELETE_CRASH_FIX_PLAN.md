@@ -198,6 +198,7 @@ The delete-crash work exposed a **pre-existing build break** in `main` from the 
 ### Deviation: player `activeRecording` stayed `@State`
 
 The plan proposed two options for driving the player's `activeRecording`:
+
 - Option A: Pass it as `Binding<Recording?>` from the parent
 - Option B: Keep `@State`, add `.onChange(of: latestRecording)` that syncs and re-resolves URL
 
@@ -254,6 +255,7 @@ Before this change, cancelling the iOS system delete alert (Warning #2) would st
 ### Deviation: single squashed commit
 
 The plan listed 5 commits. In practice, the changes were **tightly coupled by the async-refactor ripple**:
+
 - Making `RecordingsGallery.refresh()` async required updating three callers in `CameraViewModel` simultaneously
 - The delete-flow `guard let recording` in `CameraView` depended on the new `delete(_:)` method
 - The player's `.onChange` rewrite depended on the parent's atomic-snapshot behaviour
@@ -262,16 +264,16 @@ A per-file split would have left multiple broken bisect points. We consolidated 
 
 ### Files touched (final tally)
 
-| File | Purpose |
-|---|---|
-| `PromptCam.xcodeproj/project.pbxproj` | Regenerated via xcodegen — added extracted files |
-| `PromptCam/Assets.xcassets/AppIcon.appiconset/Contents.json` | Auto-touched by xcodegen (harmless whitespace) |
-| `PromptCam/ViewModels/CameraViewModel.swift` | `let → var` × 3; `refresh()` → `refreshInBackground()` × 3 |
-| `PromptCam/ViewModels/RecordingsGallery.swift` | `refresh()` now async; added `refreshInBackground()`; added atomic `delete(_:) async` |
-| `PromptCam/Views/CameraView.swift` | Delete callback awaits `gallery.delete(_:)`, dismisses on empty library |
-| `PromptCam/Views/Recordings/RecordingPlayerView.swift` | In-place `activeRecording` sync in `.onChange(of: recentRecordings)`; hardened `teardownPlayer` with strict MainActor order |
-| `PromptCam/Views/Sheets/RecordingsLibrarySheet.swift` | Only dismisses on delete success (cancel-alert UX bonus) |
-| `DELETE_CRASH_FIX_PLAN.md` | This file (added) |
+| File                                                         | Purpose                                                                                                                     |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `PromptCam.xcodeproj/project.pbxproj`                        | Regenerated via xcodegen — added extracted files                                                                            |
+| `PromptCam/Assets.xcassets/AppIcon.appiconset/Contents.json` | Auto-touched by xcodegen (harmless whitespace)                                                                              |
+| `PromptCam/ViewModels/CameraViewModel.swift`                 | `let → var` × 3; `refresh()` → `refreshInBackground()` × 3                                                                  |
+| `PromptCam/ViewModels/RecordingsGallery.swift`               | `refresh()` now async; added `refreshInBackground()`; added atomic `delete(_:) async`                                       |
+| `PromptCam/Views/CameraView.swift`                           | Delete callback awaits `gallery.delete(_:)`, dismisses on empty library                                                     |
+| `PromptCam/Views/Recordings/RecordingPlayerView.swift`       | In-place `activeRecording` sync in `.onChange(of: recentRecordings)`; hardened `teardownPlayer` with strict MainActor order |
+| `PromptCam/Views/Sheets/RecordingsLibrarySheet.swift`        | Only dismisses on delete success (cancel-alert UX bonus)                                                                    |
+| `DELETE_CRASH_FIX_PLAN.md`                                   | This file (added)                                                                                                           |
 
 ### On-device QA — Result
 
