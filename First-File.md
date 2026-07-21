@@ -446,3 +446,8 @@ Jul 18, 2026
 User moves to delete video. No matter which video is the current video the delete button moves to delete the first video (most recently recorded).  
 **_ Context _**
 Discovered issue on iPhone 17 Pro device. User in Full Photo Access. 2nd Delete message showed first video thumbnail though video-player was cued to a different video.
+
+4:38pm
+Question when the user selects limited photo library access in settings there a sheet pops up allowing the user to select either photos or videos. In this case I close this window without a selectios.
+
+Selecting a video in Limited mode the user cannot select more videos after the first selection, the limited feature cuts off the auto populate sheet.

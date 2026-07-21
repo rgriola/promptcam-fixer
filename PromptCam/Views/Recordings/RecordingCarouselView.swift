@@ -64,10 +64,18 @@ struct RecordingCarouselView: View {
                     // withAnimation isolates this spring so it doesn't bleed
                     // into the parent ZStack / full-screen player.
                     .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
-                    .onTapGesture {
-                        guard !isActive else { return }
-                        onSelect(recording)
-                    }
+                    // .highPriorityGesture ensures the tap wins over the
+                    // parent HStack's DragGesture (minimumDistance: 5). Plain
+                    // .onTapGesture was intermittently swallowed when a
+                    // natural finger-drift of 5+ pt activated the parent
+                    // drag path first — user tapped a non-active cell and
+                    // nothing happened.
+                    .highPriorityGesture(
+                        TapGesture().onEnded {
+                            guard !isActive else { return }
+                            onSelect(recording)
+                        }
+                    )
                 }
             }
             .offset(x: totalOffset)
@@ -96,7 +104,21 @@ struct RecordingCarouselView: View {
                             baseOffset = -CGFloat(targetIndex) * slotWidth
                             dragOffset = 0
                         }
-                        onSelect(recordings[targetIndex])
+
+                        // Only fire onSelect when the drag actually landed on
+                        // a different clip. Without this guard, a tap-like
+                        // gesture with a few points of drift would round to
+                        // the current active index and call
+                        // onSelect(currentActive) — which sets
+                        // activeRecording to its existing value, so
+                        // .onChange(of: activeRecordingID) never fires and
+                        // the user's tap on a NEIGHBOURING cell appeared to
+                        // do nothing (the parent drag ate the tap AND then
+                        // no-op'd the select).
+                        let target = recordings[targetIndex]
+                        if target.id != activeRecordingID {
+                            onSelect(target)
+                        }
                     }
             )
             // Scroll active item to center when selection changes from outside.
