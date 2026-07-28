@@ -87,6 +87,12 @@ final class CameraViewModel {
     var cameraError: CameraError?
     var lockStatus: CameraLockStatus = .auto
     var isCameraReady = false
+    /// True while the camera view is on-screen (between `onAppear` and
+    /// `onDisappear`). Read from `sessionQueue` by the camera service to
+    /// decide whether it is safe to auto-restart the capture session after
+    /// an interruption. Defaults to `false` so the service is conservative
+    /// before the view has appeared.
+    private(set) var isForegroundActive: Bool = false
     /// Serializes sheet presentation. The active sheet is bound via
     /// `viewModel.modalQueue.activeSheet`.
     ///
@@ -167,6 +173,10 @@ final class CameraViewModel {
 
     func onAppear() {
         isCameraReady = false
+        isForegroundActive = true
+        // Notify the service before startSession so the interruption-ended
+        // handler will restart the session if it fires during startup.
+        cameraService.setForegroundActive(true)
         // Permissions are already granted by the onboarding page.
         cameraService.configureSession(format: recordingFormat)
         cameraService.startSession()
@@ -186,9 +196,14 @@ final class CameraViewModel {
     func onDisappear() {
         recordingTimer.stop()
         audioMeter.stop()
+        // Clear the foreground flag BEFORE stopping the session so any
+        // interruption-ended notification racing with teardown will not
+        // attempt an auto-restart.
+        cameraService.setForegroundActive(false)
         cameraService.stopSession()
         photoLibraryMonitor.stop()
         isCameraReady = false
+        isForegroundActive = false
     }
 
     func toggleRecording() {

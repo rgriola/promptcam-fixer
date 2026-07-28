@@ -42,6 +42,14 @@ final class CameraErrorTests: XCTestCase {
                        "sessionNotReady should have a non-empty description")
     }
 
+    func testSessionRuntimeErrorDescription() {
+        let error = CameraError.sessionRuntimeError("media services unavailable")
+        XCTAssertFalse(error.localizedDescription.isEmpty,
+                       "sessionRuntimeError should have a non-empty description")
+        XCTAssertTrue(error.localizedDescription.contains("media services unavailable"),
+                      "sessionRuntimeError should include the detail string")
+    }
+
     // MARK: - Format Errors
 
     func testFormatChangeDuringRecordingDescription() {

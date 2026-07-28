@@ -36,6 +36,22 @@ protocol CameraServiceProtocol: AnyObject, Sendable {
     /// waiting for the next app launch. Does NOT fire if the save failed.
     var onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)? { get set }
 
+    // MARK: - Foreground State
+
+    /// Pushes the foreground-active state of the camera view down to the
+    /// service. Consulted from `sessionQueue` by the interruption-ended
+    /// handler to decide whether it is safe to auto-restart the capture
+    /// session after an interruption (e.g. dictation, phone call).
+    ///
+    /// The ViewModel calls `setForegroundActive(true)` in `onAppear`
+    /// (before `startSession`) and `setForegroundActive(false)` in
+    /// `onDisappear` (after `stopSession`). This mutator pattern is used
+    /// instead of a `@Sendable () -> Bool` provider closure because the
+    /// service reads the flag synchronously from `sessionQueue`, which
+    /// cannot safely reach into `@MainActor`-isolated state without
+    /// hopping actors.
+    func setForegroundActive(_ active: Bool)
+
     // MARK: - Session Lifecycle
 
     func configureSession(format: RecordingFormat)
