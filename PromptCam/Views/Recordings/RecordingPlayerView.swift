@@ -448,20 +448,18 @@ struct RecordingPlayerView: View {
 
     // MARK: - Share Button
 
-    @ViewBuilder
     private var shareButton: some View {
-        if let activeURL {
-            ShareLink(
-                item: VideoFile(url: activeURL),
-                preview: SharePreview(activeRecording.formattedDuration)
-            ) {
-                controlIcon("square.and.arrow.up.circle.fill", 
-                tint: Theme.primaryText)
-            }
-        } else {
-            controlIcon("square.and.arrow.up.circle.fill", 
-            tint: Theme.secondaryText)
+        ShareLink(
+            item: VideoFile(url: activeURL ?? URL(fileURLWithPath: "")),
+            preview: SharePreview(activeRecording.formattedDuration)
+        ) {
+            controlIcon(
+                "square.and.arrow.up.circle.fill",
+                tint: Theme.primaryText
+            )
         }
+        .disabled(activeURL == nil)
+        .animation(nil, value: activeURL)
     }
 
     // MARK: - Icon Helper
