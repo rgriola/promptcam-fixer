@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -460,11 +460,7 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			name = PromptCam;
-			packageProductDependencies = (
-			);
 			productName = PromptCam;
 			productReference = B860643BC28289FBEEAD4BEB /* PromptCam.app */;
 			productType = "com.apple.product-type.application";
@@ -481,8 +477,6 @@
 				8C14754B3224D8C1DA56D276 /* PBXTargetDependency */,
 			);
 			name = PromptCamTests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamTests;
 			productReference = B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -499,8 +493,6 @@
 				588AFCE987247FAA4211833B /* PBXTargetDependency */,
 			);
 			name = PromptCamUITests;
-			packageProductDependencies = (
-			);
 			productName = PromptCamUITests;
 			productReference = 14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -531,7 +523,7 @@
 			);
 			mainGroup = 46670FAA51A038C48CD673E6;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 100;
 			productRefGroup = 3B4BD104ECFD2942830E596F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -546,18 +538,15 @@
 /* Begin PBXResourcesBuildPhase section */
 		6DE863103C09C9CA56239477 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				BCB223FEE017DB469F72F1EE /* Assets.xcassets in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		522FA85F8775078B52BB6766 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				1508D674F39F1C5C347B47DA /* AVPlayerHostingView.swift in Sources */,
 				DBBD18B267D4C94FD11941EA /* AppEntryRouter.swift in Sources */,
@@ -633,19 +622,15 @@
 				ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B9A846631032535B26871809 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FB3580842ABA90D4EF1F10A1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				58CA05A1F7F1CA9D34077868 /* AppEntryRouterTests.swift in Sources */,
 				41DC8BC23D7AA37EA938C17E /* AudioMeterServiceTests.swift in Sources */,
@@ -664,7 +649,6 @@
 				917A4B3E6F5422FB01A632CF /* RequiredAccessGateStateTests.swift in Sources */,
 				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -682,7 +666,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		1FE7FEBEBEE341B8A664B32D /* Debug */ = {
+		1FE7FEBEBEE341B8A664B32D /* Debug configuration for PBXNativeTarget "PromptCam" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ED52035DB32C31DC9FD2FAB2 /* Signing.xcconfig */;
 			buildSettings = {
@@ -718,7 +702,7 @@
 			};
 			name = Debug;
 		};
-		887B3805572C019D6955045E /* Release */ = {
+		887B3805572C019D6955045E /* Release configuration for PBXProject "PromptCam" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -776,7 +760,7 @@
 			};
 			name = Release;
 		};
-		959F341E4E2373FF2053F415 /* Release */ = {
+		959F341E4E2373FF2053F415 /* Release configuration for PBXNativeTarget "PromptCamTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -794,7 +778,7 @@
 			};
 			name = Release;
 		};
-		A95E86E3BA5F41D2EA2C8CE8 /* Debug */ = {
+		A95E86E3BA5F41D2EA2C8CE8 /* Debug configuration for PBXProject "PromptCam" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -859,7 +843,7 @@
 			};
 			name = Debug;
 		};
-		B029F8713C66AEC26C9F82AF /* Debug */ = {
+		B029F8713C66AEC26C9F82AF /* Debug configuration for PBXNativeTarget "PromptCamUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -877,7 +861,7 @@
 			};
 			name = Debug;
 		};
-		D3D5CF8924C071FD3A3D5D53 /* Release */ = {
+		D3D5CF8924C071FD3A3D5D53 /* Release configuration for PBXNativeTarget "PromptCam" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ED52035DB32C31DC9FD2FAB2 /* Signing.xcconfig */;
 			buildSettings = {
@@ -913,7 +897,7 @@
 			};
 			name = Release;
 		};
-		E9AED8F4C4B132F834AE4D5B /* Release */ = {
+		E9AED8F4C4B132F834AE4D5B /* Release configuration for PBXNativeTarget "PromptCamUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -931,7 +915,7 @@
 			};
 			name = Release;
 		};
-		F3E3347D22F5D4701378E598 /* Debug */ = {
+		F3E3347D22F5D4701378E598 /* Debug configuration for PBXNativeTarget "PromptCamTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -955,37 +939,33 @@
 		163E3AFE8AD2135CCECDEBEB /* Build configuration list for PBXProject "PromptCam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A95E86E3BA5F41D2EA2C8CE8 /* Debug */,
-				887B3805572C019D6955045E /* Release */,
+				A95E86E3BA5F41D2EA2C8CE8 /* Debug configuration for PBXProject "PromptCam" */,
+				887B3805572C019D6955045E /* Release configuration for PBXProject "PromptCam" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		52002EC79685C9B46AE107A1 /* Build configuration list for PBXNativeTarget "PromptCamTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F3E3347D22F5D4701378E598 /* Debug */,
-				959F341E4E2373FF2053F415 /* Release */,
+				F3E3347D22F5D4701378E598 /* Debug configuration for PBXNativeTarget "PromptCamTests" */,
+				959F341E4E2373FF2053F415 /* Release configuration for PBXNativeTarget "PromptCamTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		53018625C7D3479E0412F198 /* Build configuration list for PBXNativeTarget "PromptCamUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B029F8713C66AEC26C9F82AF /* Debug */,
-				E9AED8F4C4B132F834AE4D5B /* Release */,
+				B029F8713C66AEC26C9F82AF /* Debug configuration for PBXNativeTarget "PromptCamUITests" */,
+				E9AED8F4C4B132F834AE4D5B /* Release configuration for PBXNativeTarget "PromptCamUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		72ADE166D321D2AF0AECC55E /* Build configuration list for PBXNativeTarget "PromptCam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1FE7FEBEBEE341B8A664B32D /* Debug */,
-				D3D5CF8924C071FD3A3D5D53 /* Release */,
+				1FE7FEBEBEE341B8A664B32D /* Debug configuration for PBXNativeTarget "PromptCam" */,
+				D3D5CF8924C071FD3A3D5D53 /* Release configuration for PBXNativeTarget "PromptCam" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */

@@ -268,6 +268,7 @@ struct CameraView: View {
         }
         .fullScreenCover(isPresented: $viewModel.recordings.showDirectPlayer) {
             if let recording = viewModel.recordings.latestRecording {
+                let service = RecordingsService()
                 RecordingPlayerView(
                     recording: recording,
                     videoURL: viewModel.recordings.latestVideoURL,
@@ -303,7 +304,7 @@ struct CameraView: View {
                         // render as soon as any rep (degraded or full) lands,
                         // instead of returning nil and waiting for the cell's
                         // 3s retry. Pre-warm / cover paths keep .fastFormat.
-                        await RecordingsService().thumbnail(
+                        await service.thumbnail(
                             for: rec,
                             targetSize: CGSize(width: 144, height: 144),
                             deliveryMode: .opportunistic
@@ -317,16 +318,16 @@ struct CameraView: View {
                         // large enough that the transition doesn't look pixelated
                         // when scaled up, and PhotoKit can serve it from a much
                         // cheaper cached representation.
-                        return await RecordingsService().thumbnail(
+                        return await service.thumbnail(
                             for: rec,
                             targetSize: CGSize(width: 500, height: 500)
                         )
                     },
                     resolveURL: { rec in
-                        await RecordingsService().resolveURL(for: rec)
+                        await service.resolveURL(for: rec)
                     },
                     resolveURLWithProgress: { rec, reporter, onStart in
-                        let result = await RecordingsService().resolveURL(
+                        let result = await service.resolveURL(
                             for: rec,
                             progress: { fraction in
                                 reporter.report(fraction)

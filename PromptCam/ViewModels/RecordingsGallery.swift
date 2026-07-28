@@ -33,13 +33,10 @@ final class RecordingsGallery {
     /// first window of thumbnails is pre-warmed; the rest load on demand as
     /// the user swipes.
     func prefetch() async {
-        let latest = recordingsService.fetchLatestRecording()
+        let latest = await recordingsService.fetchLatestRecording()
         latestRecording = latest
 
-        // Resolve URL in background so it's ready when player opens.
-        if let latest {
-            latestVideoURL = await recordingsService.resolveURL(for: latest)
-        }
+        latestVideoURL = nil // Resolve lazily when player opens
 
         // Fetch all recordings — no limit. PHAsset references are tiny.
         let all = await recordingsService.fetchAllRecordings()
@@ -49,7 +46,7 @@ final class RecordingsGallery {
         let warmIDs = all.prefix(8).map(\.id)
         if !warmIDs.isEmpty {
             let carouselSize = CGSize(width: 144, height: 144)
-            recordingsService.startCaching(ids: Array(warmIDs), targetSize: carouselSize)
+            recordingsService.startCaching(ids: Array(warmIDs), targetSize: carouselSize, deliveryMode: .opportunistic)
         }
     }
 
@@ -65,7 +62,7 @@ final class RecordingsGallery {
         let lo = max(0, index - windowSize)
         let hi = min(recentRecordings.count - 1, index + windowSize)
         let ids = recentRecordings[lo...hi].map(\.id)
-        recordingsService.startCaching(ids: ids, targetSize: CGSize(width: 144, height: 144))
+        recordingsService.startCaching(ids: ids, targetSize: CGSize(width: 144, height: 144), deliveryMode: .opportunistic)
     }
 
     /// Call after a recording finishes saving to refresh the player state.

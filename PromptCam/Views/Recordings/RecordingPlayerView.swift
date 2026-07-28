@@ -203,12 +203,11 @@ struct RecordingPlayerView: View {
                         .onChanged { value in updateDrag(value) }
                         .onEnded { value in commitDrag(value, width: w) }
                 )
-                .onChange(of: activeRecording) { _, _ in
-                    Task { await loadAdjacentThumbnails() }
+                .task(id: activeRecording.id) {
+                    await loadAdjacentThumbnails()
                 }
             }
             .ignoresSafeArea()
-            .onAppear { Task { await loadAdjacentThumbnails() } }
 
             // ── Control Overlay ────────────────────────────────────────────
             if showControls {
@@ -218,7 +217,7 @@ struct RecordingPlayerView: View {
         }
         // ── Player Lifecycle ───────────────────────────────────────────────
         .task(id: activeURL) {
-            await loadPlayer()
+            loadPlayer()
         }
         .task(id: activeRecording.id) {
             // If the initial URL was nil (e.g. iCloud video whose prefetch
@@ -230,6 +229,7 @@ struct RecordingPlayerView: View {
             let url = await resolveURLWithReporting(activeRecording)
             activeURL = url
             if url == nil { loadFailed = true }
+            await onSelectRecording?(activeRecording, url)
         }
         .onChange(of: recentRecordings) { _, newRecordings in
             // Post-delete sync. The parent gallery has already computed the
@@ -237,7 +237,7 @@ struct RecordingPlayerView: View {
             // + `recentRecordings` in a single main-actor transaction.
             //
             // Our job is to reflect that decision — never to re-decide.
-            // Racing the parent (via a parallel Task { selectRecording(...) })
+            // Racing the parent (via a parallel Task { selectRecording(...))
             // is what used to crash under Swift 6 concurrency when the
             // AVPlayer teardown and the parent view re-render overlapped.
             //
@@ -348,7 +348,7 @@ struct RecordingPlayerView: View {
                     activeRecordingID: activeRecording.id,
                     thumbnailLoader: loader,
                     onSelect: { selected in
-                        Task { await selectRecording(selected) }
+                        selectRecording(selected)
                     }
                 )
             }
@@ -546,7 +546,7 @@ struct RecordingPlayerView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
             dragOffset = 0
         }
-        Task { await selectRecording(target) }
+        selectRecording(target)
     }
 
     /// Shared logic for both carousel taps and video swipes.
@@ -557,16 +557,13 @@ struct RecordingPlayerView: View {
     /// the loadingView branch and destroy the AVPlayerViewController,
     /// causing the UIKit appearance animation on the next player. Instead
     /// `loadPlayer` reuses the existing player via `replaceCurrentItem`.
-    private func selectRecording(_ selected: Recording) async {
+    private func selectRecording(_ selected: Recording) {
         // Cancel any in-flight resolve from the previous recording so we don't
         // leak PhotoKit requests as the user rapidly swipes through the carousel.
         cancelInFlightResolve()
-        activeRecording = selected
         loadFailed = false                                // reset before new attempt
-        let url = await resolveURLWithReporting(selected)
-        activeURL = url                                   // triggers loadPlayer() which reuses the AVPlayer
-        if url == nil { loadFailed = true }
-        await onSelectRecording?(selected, url)
+        activeURL = nil                                   // triggers .task(id: activeRecording.id)
+        activeRecording = selected
     }
 
     /// Cancels an in-flight PhotoKit resolve request, if any, and clears the
@@ -648,7 +645,7 @@ struct RecordingPlayerView: View {
     }
 
     @MainActor
-    private func loadPlayer() async {
+    private func loadPlayer() {
         guard let url = activeURL else { return }
 
         let item = AVPlayerItem(url: url)
@@ -706,9 +703,11 @@ struct RecordingPlayerView: View {
         isPlaying = false
         showControls = true
 
-        let d = try? await item.asset.load(.duration)
-        if let d, d.isNumeric {
-            duration = d.seconds
+        Task {
+            let d = try? await item.asset.load(.duration)
+            if let d, d.isNumeric {
+                await MainActor.run { duration = d.seconds }
+            }
         }
     }
 
@@ -766,6 +765,8 @@ struct RecordingPlayerView: View {
         isPlaying = false
         currentTime = 0
         duration = 1
+
+        RecordingsService().stopCachingAll()
     }
 
     // MARK: - Playback Control
