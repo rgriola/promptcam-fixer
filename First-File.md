@@ -451,3 +451,13 @@ Discovered issue on iPhone 17 Pro device. User in Full Photo Access. 2nd Delete 
 Question when the user selects limited photo library access in settings there a sheet pops up allowing the user to select either photos or videos. In this case I close this window without a selectios.
 
 Selecting a video in Limited mode the user cannot select more videos after the first selection, the limited feature cuts off the auto populate sheet.
+
+july 27
+
+**_ issue _**
+When user opens the app video-player-carousel the app eventually crashes. The entire feature is slow and jerky. Tapping the icon button just to open the is akwardly slow. We need a full review of the features and code causing these issues.
+
+**_ Context _**
+The Native iOS app also has a carousel player ui and it is not this slow. Are the thumbnails created differently? Are we calling the assests multiple times to creatw the player and carousel?
+
+In Settings View > Formats I believe the formats displayed are incorrect. Can you trace to see if this is true. The formats shown here are only ones available for this app; Front Camera; Cine or Standand Mode Camera; 4k or 1080; 24p, 30p or 60p - if available.

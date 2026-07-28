@@ -33,6 +33,8 @@ struct RecordingCarouselView: View {
     @State private var baseOffset: CGFloat = 0
     /// Live drag translation added on top of baseOffset.
     @State private var dragOffset: CGFloat = 0
+    /// Live connectivity state for retry loops.
+    @State private var networkMonitor = NetworkMonitor.shared
 
     var body: some View {
         GeometryReader { geo in
@@ -51,7 +53,8 @@ struct RecordingCarouselView: View {
                         isActive: isActive,
                         cellWidth: cellWidth,
                         cellHeight: cellHeight,
-                        thumbnailLoader: thumbnailLoader
+                        thumbnailLoader: thumbnailLoader,
+                        networkConnected: networkMonitor.isConnected
                     )
                     // Force distinct view identity per recording so @State
                     // (thumbnail, loadAttempt, loadFailed) never leaks across
@@ -185,6 +188,7 @@ private struct CarouselCell: View {
     let cellWidth: CGFloat
     let cellHeight: CGFloat
     let thumbnailLoader: (Recording) async -> UIImage?
+    let networkConnected: Bool
 
     @State private var thumbnail: UIImage?
     /// Incremented to re-trigger the .task when a retry is needed.
@@ -199,20 +203,13 @@ private struct CarouselCell: View {
     /// download before playback.
     @State private var wasFromCloud = false
 
-    /// Live connectivity state. When the network goes from down to up while
-    /// a cell is in `loadFailed`, we reset `loadAttempt` to 0 to re-trigger
-    /// the `.task` — lets users regain thumbnails after a network hiccup
-    /// without swiping the cell out of view and back.
-    @State private var networkMonitor = NetworkMonitor.shared
-
     /// Retry ceiling. After this many failed attempts we stop trying and
-    /// show the unavailable placeholder. Bumped from 2 to 5 (Phase 3) so
-    /// slow iCloud downloads have room to complete; each retry still
-    /// requires an actual PhotoKit request so the ceiling matters.
-    private static let maxRetries = 5
-    /// Backoff delays in seconds keyed by attempt index. Extended alongside
-    /// the retry ceiling so later attempts don't hammer PhotoKit.
-    private static let retryDelays: [UInt64] = [3, 5, 8, 15, 30]
+    /// show the unavailable placeholder. Reduced (Phase 2) to prevent
+    /// storming PhotoKit.
+    private static let maxRetries = 3
+    /// Backoff delays in seconds keyed by attempt index. Widened
+    /// to avoid hammering PhotoKit on offline libraries.
+    private static let retryDelays: [UInt64] = [5, 15, 30]
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -296,7 +293,7 @@ private struct CarouselCell: View {
         // When the network flips from down to up while a cell is in the
         // failed state, reset the retry counter so the .task re-fires. Only
         // recovers cells that gave up — an in-flight retry is unaffected.
-        .onChange(of: networkMonitor.isConnected) { _, connected in
+        .onChange(of: networkConnected) { _, connected in
             guard connected, loadFailed else { return }
             loadFailed = false
             loadAttempt = 0

@@ -17,6 +17,11 @@ struct RecordingsService: Sendable {
         qos: .userInitiated
     )
 
+    nonisolated(unsafe) private static let assetCache = NSCache<NSString, PHAsset>()
+
+    /// Maximum videos loaded into the carousel. Tune during testing.
+    static let carouselFetchLimit = 15
+
     /// Fetches videos from the user's library, newest first.
     func fetchAllRecordings() async -> [Recording] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -28,6 +33,7 @@ struct RecordingsService: Sendable {
         return await Task.detached(priority: .userInitiated) {
             let options = PHFetchOptions()
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            options.fetchLimit = Self.carouselFetchLimit
 
             // mediaType: .video already excludes photos and Live Photo images.
             let fetch = PHAsset.fetchAssets(with: .video, options: options)
@@ -81,7 +87,20 @@ struct RecordingsService: Sendable {
 
     /// Resolves a recording id back to its underlying `PHAsset`.
     private func asset(for id: String) -> PHAsset? {
-        PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
+        if let cached = Self.assetCache.object(forKey: id as NSString) { return cached }
+        if let fetched = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject {
+            Self.assetCache.setObject(fetched, forKey: id as NSString)
+            return fetched
+        }
+        return nil
+    }
+
+    static func imageRequestOptions(deliveryMode: PHImageRequestOptionsDeliveryMode = .fastFormat) -> PHImageRequestOptions {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = deliveryMode
+        options.isNetworkAccessAllowed = true
+        options.version = .current
+        return options
     }
 
     /// Thumbnail via the shared caching manager.
@@ -110,10 +129,7 @@ struct RecordingsService: Sendable {
     ) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
-            let options = PHImageRequestOptions()
-            options.deliveryMode = deliveryMode
-            options.isNetworkAccessAllowed = true    // pull from iCloud in the background if needed
-            options.version = .current
+            let options = Self.imageRequestOptions(deliveryMode: deliveryMode)
 
             // Guard against .opportunistic firing the callback twice.
             // withCheckedContinuation crashes if resumed more than once.
@@ -145,13 +161,13 @@ struct RecordingsService: Sendable {
     /// Pre-warm thumbnails for visible cells. Runs the PhotoKit fetch and
     /// caching-start on a background queue to keep the main thread free
     /// during rapid carousel navigation.
-    func startCaching(ids: [String], targetSize: CGSize) {
+    func startCaching(ids: [String], targetSize: CGSize, deliveryMode: PHImageRequestOptionsDeliveryMode = .fastFormat) {
         Self.cachingQueue.async {
             let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
             var assets: [PHAsset] = []
             fetch.enumerateObjects { a, _, _ in assets.append(a) }
             Self.cachingManager.startCachingImages(
-                for: assets, targetSize: targetSize, contentMode: .aspectFill, options: nil)
+                for: assets, targetSize: targetSize, contentMode: .aspectFill, options: Self.imageRequestOptions(deliveryMode: deliveryMode))
         }
     }
 
@@ -261,16 +277,19 @@ struct RecordingsService: Sendable {
     }
 
     /// Fetches the most recent video recording, or nil if the library is empty.
-    func fetchLatestRecording() -> Recording? {
+    func fetchLatestRecording() async -> Recording? {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return nil }
-        let options = PHFetchOptions()
-        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        options.fetchLimit = 1
-        guard let asset = PHAsset.fetchAssets(with: .video, options: options).firstObject else {
+        
+        return await Task.detached(priority: .userInitiated) {
+            let options = PHFetchOptions()
+            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            options.fetchLimit = 1
+            if let asset = PHAsset.fetchAssets(with: .video, options: options).firstObject {
+                return Recording(asset: asset)
+            }
             return nil
-        }
-        return Recording(asset: asset)
+        }.value
     }
 
     /// Exports the asset to a temp file URL so it can be shared via iMessage,
