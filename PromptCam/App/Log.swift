@@ -13,4 +13,9 @@ enum Log {
     static let hdmi = Logger(subsystem: subsystem, category: "HDMI")
     static let network = Logger(subsystem: subsystem, category: "Network")
     static let analytics = Logger(subsystem: subsystem, category: "Analytics")
+
+    /// Signposter for timing camera/audio restart intervals in Instruments
+    /// (Points of Interest track). Shares the "Camera" category so signposts
+    /// interleave with `Log.camera`'s log lines in Console.app.
+    static let cameraSignposter = OSSignposter(logger: camera)
 }

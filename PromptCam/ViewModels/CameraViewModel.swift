@@ -386,6 +386,11 @@ final class CameraViewModel {
             // hasn't added its audio input yet. `setup()` is idempotent.
             if isRunning {
                 self.audioMeter.setup()
+                // If the meter deferred its own post-interruption restart
+                // (see AudioMeterService.pendingReconnectAfterInterruption),
+                // this is the confirmed signal that it's now safe to do so
+                // without racing this same restart. No-op if nothing pending.
+                self.audioMeter.reconnectIfPending()
             }
         }
 

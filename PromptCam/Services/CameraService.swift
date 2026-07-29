@@ -703,7 +703,10 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         }
 
         Log.camera.info("AVCaptureSession interruption ended — restarting")
+        let signpostID = Log.cameraSignposter.makeSignpostID()
+        let state = Log.cameraSignposter.beginInterval("CaptureSessionRestart", id: signpostID)
         session.startRunning()
+        Log.cameraSignposter.endInterval("CaptureSessionRestart", state)
         wasInterrupted = false
         if session.isRunning {
             Log.camera.info("AVCaptureSession startRunning succeeded (post-interruption)")

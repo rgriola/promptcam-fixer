@@ -132,6 +132,31 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Work item for debouncing rapid route-change restarts.
     private var restartWorkItem: DispatchWorkItem?
+
+    /// True after an `AVAudioSession` interruption ends, until an external
+    /// caller confirms the paired `AVCaptureSession` has resumed running
+    /// (via `reconnectIfPending()`) or the fallback timer fires.
+    ///
+    /// **Why**: `CameraService` runs its own independent restart pipeline
+    /// driven by `AVCaptureSession.wasInterruptedNotification` /
+    /// `.interruptionEndedNotification`. If this service also reactivates
+    /// `AVAudioSession` and rebuilds its own `AVAudioEngine` on its own
+    /// timer at the same moment `CameraService` calls `session.startRunning()`
+    /// on `sessionQueue`, the two uncoordinated reactivations race for the
+    /// shared `AVAudioSession` and can leave the capture session's video
+    /// pipeline frozen even though `isRunning` reads `true` — the same
+    /// symptom as the original dictation-freeze bug, just re-triggered by
+    /// this service instead of the system. Deferring the reconnect until
+    /// the capture session has confirmed it is running again removes the
+    /// race entirely.
+    private var pendingReconnectAfterInterruption = false
+
+    /// Safety-net timer for `pendingReconnectAfterInterruption`. If no
+    /// external caller invokes `reconnectIfPending()` within this window
+    /// (e.g. this service is used without a paired `CameraService`, or the
+    /// paired session legitimately stays stopped), reconnect independently
+    /// so metering doesn't stay dead forever.
+    private var reconnectFallbackWorkItem: DispatchWorkItem?
     
     /// One-shot watchdog that verifies the input tap becomes live after
     /// an engine start. If no buffer is received within the delay window,
@@ -299,6 +324,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         Log.camera.info("AudioMeterService: stopMetering called — engine and route observer will be removed")
         restartWorkItem?.cancel()
         restartWorkItem = nil
+        reconnectFallbackWorkItem?.cancel()
+        reconnectFallbackWorkItem = nil
+        pendingReconnectAfterInterruption = false
         tearDownEngine()
         stopMonitoringRoute()
     }
@@ -329,6 +357,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // Cancel any pending restart.
         restartWorkItem?.cancel()
 
+        // Signpost ID created now (not inside the work item) so the
+        // interval's start-to-scheduling latency is visible too if needed,
+        // though the interval itself is begun/ended around the actual
+        // teardown+start work below.
+        let signpostID = Log.cameraSignposter.makeSignpostID()
+
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             // Neutralize any restart scheduled just before `.began` fired.
@@ -339,6 +373,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
                 return
             }
             Log.camera.debug("AudioMeterService: restarting engine (delay=\(delay)s)")
+
+            // Signpost interval around the actual rebuild — this is the
+            // main-thread work under suspicion for the camera-preview
+            // flash. Compare its duration/timestamp against
+            // "CaptureSessionRestart" from CameraService in the same trace.
+            let state = Log.cameraSignposter.beginInterval("AudioMeterEngineRestart", id: signpostID)
             self.tearDownEngine()
 
             // A fresh AVAudioEngine automatically connects its inputNode
@@ -347,6 +387,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             // AVCaptureSession shares the same AVAudioSession; deactivating
             // would kill the capture session's audio connection.
             self.startMetering()
+            Log.cameraSignposter.endInterval("AudioMeterEngineRestart", state)
 
             // Only re-publish route state if the engine actually started.
             // If startMetering() failed, it has already scheduled its own
@@ -668,23 +709,31 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         if type == .ended {
             isInterrupted = false
-            Log.camera.debug("AudioMeterService: interruption ended — preparing restart")
+            Log.camera.debug("AudioMeterService: interruption ended — deferring restart to reconnectIfPending()")
             // Re-seed the poller's baseline BEFORE restart so it doesn't
             // interpret the newly-settled route as a hot-swap.
             lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
-            // Re-activate the session after interruption.
-            do {
-                try AVAudioSession.sharedInstance().setActive(true)
-            } catch {
-                Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
+
+            // Do NOT reactivate the session or restart the engine here.
+            // `CameraService` is independently restarting `AVCaptureSession`
+            // in response to the paired `AVCaptureSession.interruptionEndedNotification`
+            // right now, on its own queue. Reactivating `AVAudioSession` and
+            // rebuilding this engine at the same moment races that restart.
+            // Instead, mark reconnect as pending and wait for the caller to
+            // confirm the capture session is running again via
+            // `reconnectIfPending()`. A fallback timer covers callers that
+            // never invoke it (no paired capture session, or it legitimately
+            // stayed stopped).
+            pendingReconnectAfterInterruption = true
+            reconnectFallbackWorkItem?.cancel()
+            let fallbackDelay: TimeInterval = 2.5
+            let fallback = DispatchWorkItem { [weak self] in
+                guard let self, self.pendingReconnectAfterInterruption else { return }
+                Log.camera.notice("AudioMeterService: no external reconnect after \(fallbackDelay)s — reconnecting independently")
+                self.reconnectIfPending()
             }
-            // Choose a slightly longer delay when the system still hints
-            // secondary audio should be silenced. This gives dictation/Siri
-            // time to fully release the route before we restart the engine.
-            let session = AVAudioSession.sharedInstance()
-            let stabilizationDelay: TimeInterval = session.secondaryAudioShouldBeSilencedHint ? 1.0 : 0.8
-            Log.camera.debug("AudioMeterService: interruption ended — scheduling restart after \(stabilizationDelay)s (silenceHint=\(session.secondaryAudioShouldBeSilencedHint))")
-            restartEngine(delay: stabilizationDelay)
+            reconnectFallbackWorkItem = fallback
+            DispatchQueue.main.asyncAfter(deadline: .now() + fallbackDelay, execute: fallback)
         } else {
             isInterrupted = true
             // Cancel any pending route-change restart so it doesn't fire
@@ -696,9 +745,50 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             // Also cancel the first-buffer watchdog so it doesn't fire during interruption.
             firstBufferWatchdogWorkItem?.cancel()
             firstBufferWatchdogWorkItem = nil
+
+            // A new interruption supersedes any reconnect pending from a
+            // previous cycle.
+            reconnectFallbackWorkItem?.cancel()
+            reconnectFallbackWorkItem = nil
+            pendingReconnectAfterInterruption = false
             
             Log.camera.debug("AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
         }
+    }
+
+    /// Reconnects the metering engine after an interruption, but only if a
+    /// reconnect is actually pending (i.e. `.ended` fired since the last
+    /// reconnect). Safe to call unconditionally — a no-op when nothing is
+    /// pending.
+    ///
+    /// **Call this after the paired `AVCaptureSession` has confirmed it is
+    /// running again** (e.g. from `CameraService.onSessionRunningStateChanged`
+    /// firing `true`). Sequencing the reconnect behind that confirmation is
+    /// what avoids the dueling-reactivation race described on
+    /// `pendingReconnectAfterInterruption`.
+    func reconnectIfPending() {
+        guard pendingReconnectAfterInterruption else { return }
+        pendingReconnectAfterInterruption = false
+        reconnectFallbackWorkItem?.cancel()
+        reconnectFallbackWorkItem = nil
+
+        // A fresh interruption may have started between `.ended` and this
+        // call (e.g. rapid Siri + dictation back-to-back) — don't fight it.
+        guard !isInterrupted else {
+            Log.camera.debug("AudioMeterService: reconnect skipped — new interruption in progress")
+            return
+        }
+
+        // Re-activate the session. By this point the paired capture session
+        // (if any) has already confirmed it is running, so this no longer
+        // races another client's reactivation attempt.
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
+        }
+        Log.camera.debug("AudioMeterService: reconnecting engine after interruption")
+        restartEngine(delay: 0.3)
     }
 
     /// Stops route polling and interruption observation.

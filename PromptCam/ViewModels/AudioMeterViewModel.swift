@@ -187,6 +187,18 @@ final class AudioMeterViewModel {
         audioMeterService?.stopMonitoringRoute()
     }
 
+    /// Reconnects the metering engine after an `AVAudioSession` interruption,
+    /// but only if a reconnect from that interruption is actually pending.
+    /// Safe to call on every `isRunning == true` event — a no-op otherwise.
+    ///
+    /// Call this from `CameraService.onSessionRunningStateChanged` alongside
+    /// `setup()` so the metering engine's post-interruption restart is
+    /// sequenced strictly after the capture session confirms it resumed,
+    /// instead of racing it on an independent timer.
+    func reconnectIfPending() {
+        audioMeterService?.reconnectIfPending()
+    }
+
     /// Opens the audio source picker, refreshing the available inputs list
     /// from `AVAudioSession` first.
     ///

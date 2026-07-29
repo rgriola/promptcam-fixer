@@ -463,4 +463,15 @@ The Native iOS app also has a carousel player ui and it is not this slow. Are th
 July 28
 In Settings View > Formats I believe the formats displayed are incorrect. Can you trace to see if this is true. The formats shown here are only ones available for this app; Front Camera; Cine or Standand Mode Camera; 4k or 1080; 24p, 30p or 60p - if available.
 
-I found an issue where in script view with voice dication to write out the script > save >  the camera preview is frozen returning to the main UI,  the rest of the app seemingly works.  Closing and opening the app refreshes the Camera Preview and the script is still present as it should. 
+I found an issue where in script view with voice dication to write out the script > save > the camera preview is frozen returning to the main UI, the rest of the app seemingly works. Closing and opening the app refreshes the Camera Preview and the script is still present as it should.
+
+July 29
+** issue **
+We are working on an issue where the Camera Preview fails to restart properly after using speech-to-text feature in script view. We pushed two fixes last night but device testing shows the issue persists.
+
+**_ Context _**
+In Script View user selects speech-to-text feature > saves the script > returns to main view camera preview is frozen. It may be speech-to-text does not release the audio session, camera preview does not start back up.
+
+Testing on device, iPhone 17, the green circle camera active indicator on the dynamic island is present at the start of script view. Selecting speech-to-text this circle turns to orange indicating the camera preview is off but the microphone is still active. Returning to the main view the orange circle is still on, camera preview is frozen. This is confirmed in several device tests.
+
+We need another look at the coding issue.
