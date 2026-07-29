@@ -1,6 +1,7 @@
 // PromptCam — Compose Script Sheet
 // Extracted from CameraView.swift (refactor June 1, 2026)
 import SwiftUI
+import UIKit
 
 // MARK: - Compose Sheet
 
@@ -19,7 +20,9 @@ struct ComposeScriptSheet: View {
         static let focusDelay: Duration = .milliseconds(500)
         /// Delay between dismissing the keyboard and running the callback so
         /// the keyboard animates down before the sheet closes.
-        static let keyboardDismissDelay: Duration = .milliseconds(350)
+        // Leave extra headroom for iOS dictation teardown so audio session
+        // ownership is released before CameraView restarts capture.
+        static let keyboardDismissDelay: Duration = .milliseconds(850)
         /// How long the "Cleaned" confirmation stays visible on the Clean button.
         static let cleanIndicatorDuration: Duration = .milliseconds(1500)
     }
@@ -157,11 +160,31 @@ struct ComposeScriptSheet: View {
     /// view disappears (e.g. system dismiss during the delay window).
     private func dismissAndRun(_ action: @escaping () -> Void) {
         dismissTask?.cancel()
+        Log.ui.info("\(Log.ts(), privacy: .public) Compose dismiss requested")
         isEditorFocused = false
+        resignAnyFirstResponder()
         dismissTask = Task {
+            // A second resign shortly after the first helps ensure dictation
+            // UI/input session teardown has actually started.
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else { return }
+            resignAnyFirstResponder()
+
+            Log.ui.info("\(Log.ts(), privacy: .public) Compose waiting for keyboard/dictation teardown")
             try? await Task.sleep(for: Timing.keyboardDismissDelay)
             guard !Task.isCancelled else { return }
+            Log.ui.info("\(Log.ts(), privacy: .public) Compose dismiss callback firing")
             action()
+        }
+    }
+
+    private func resignAnyFirstResponder() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+           let window = scene.windows.first(where: \.isKeyWindow) {
+            window.endEditing(true)
         }
     }
 

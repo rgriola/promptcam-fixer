@@ -83,6 +83,14 @@ struct CameraView: View {
                     )
                     .aspectRatio(CameraLayout.Preview.aspect, contentMode: .fit)
                     .frame(maxWidth: .infinity)
+                    // Masks the visible flash from the interruption-recovery stop/start bounce.
+                    .overlay(
+                        Rectangle()
+                            .fill(Color.black)
+                            .opacity(viewModel.isCameraReady ? 0 : 1)
+                            .animation(.easeInOut(duration: 0.18), value: viewModel.isCameraReady)
+                            .allowsHitTesting(false)
+                    )
                     .clipped()
 
                     // MARK: - 2: Controls Row (padding + background are intrinsic)

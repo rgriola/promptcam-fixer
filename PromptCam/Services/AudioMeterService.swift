@@ -594,6 +594,19 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         guard currentUID != lastSeenInputUID else { return }
         let previousUID = lastSeenInputUID
         lastSeenInputUID = currentUID
+
+        // Post-interruption settling can briefly report no active input UID
+        // and then immediately resolve to the built-in mic. Treat that
+        // first nil -> built-in transition as baseline stabilization, not a
+        // real device hot-swap.
+        if previousUID == nil,
+           let currentIn = AVAudioSession.sharedInstance().currentRoute.inputs.first,
+           currentIn.portType == .builtInMic,
+           !hasAnyExternalAvailableInput() {
+            Log.camera.debug("AudioMeterService: route baseline settled to built-in mic; skipping hot-swap handling")
+            return
+        }
+
         Log.camera.info("AudioMeterService: poller detected route change uid \(previousUID ?? "nil", privacy: .public) → \(currentUID ?? "nil", privacy: .public)")
 
         // Best-guess reason: a new port appeared → newDeviceAvailable,
@@ -603,6 +616,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // external, which is what we want.
         let reason: AVAudioSession.RouteChangeReason = currentUID != nil ? .newDeviceAvailable : .oldDeviceUnavailable
         handleRouteChange(reasonRaw: reason.rawValue)
+    }
+
+    private func hasAnyExternalAvailableInput() -> Bool {
+        let inputs = AVAudioSession.sharedInstance().availableInputs ?? []
+        return inputs.contains { Self.isExternalMicPort($0.portType) }
     }
 
     /// Handles an audio route change by detecting the new input, explicitly
@@ -709,7 +727,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         if type == .ended {
             isInterrupted = false
-            Log.camera.debug("AudioMeterService: interruption ended — deferring restart to reconnectIfPending()")
+            Log.camera.debug("\(Log.ts(), privacy: .public) AudioMeterService: interruption ended — deferring restart to reconnectIfPending()")
             // Re-seed the poller's baseline BEFORE restart so it doesn't
             // interpret the newly-settled route as a hot-swap.
             lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
@@ -752,7 +770,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             reconnectFallbackWorkItem = nil
             pendingReconnectAfterInterruption = false
             
-            Log.camera.debug("AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
+            Log.camera.debug("\(Log.ts(), privacy: .public) AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
         }
     }
 
@@ -787,7 +805,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         } catch {
             Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
         }
-        Log.camera.debug("AudioMeterService: reconnecting engine after interruption")
+        Log.camera.debug("\(Log.ts(), privacy: .public) AudioMeterService: reconnecting engine after interruption")
         restartEngine(delay: 0.3)
     }
 

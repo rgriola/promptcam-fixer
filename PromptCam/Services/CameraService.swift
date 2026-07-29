@@ -191,6 +191,12 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// handler after a successful restart.
     var wasInterrupted = false
 
+    /// True when the interruption cause was a competing audio/video client
+    /// (dictation, Siri, another app). In this case, iOS can occasionally
+    /// report `session.isRunning == true` while the preview pipeline is still
+    /// stale, so interruption-ended may need a controlled stop/start bounce.
+    var interruptionNeedsRunningSessionBounce = false
+
     /// The most recent `RecordingFormat` handed to `configureSession`.
     /// Cached so `.mediaServicesWereReset` recovery can replay the same
     /// configuration without re-plumbing through the view model.
@@ -511,15 +517,19 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     func startSession() {
         sessionQueue.async {
             guard self.isSessionConfigured else {
+                Log.camera.info("\(Log.ts(), privacy: .public) startSession skipped (not configured)")
                 self.publishSessionRunningState(false)
                 return
             }
 
             guard !self.session.isRunning else {
+                Log.camera.info("\(Log.ts(), privacy: .public) startSession no-op (already running)")
                 self.publishSessionRunningState(true)
                 return
             }
+            Log.camera.info("\(Log.ts(), privacy: .public) startSession begin")
             self.session.startRunning()
+            Log.camera.info("\(Log.ts(), privacy: .public) startSession end isRunning=\(self.session.isRunning, privacy: .public)")
             self.publishSessionRunningState(true)
         }
     }
@@ -527,7 +537,9 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     func stopSession() {
         sessionQueue.async {
             guard self.session.isRunning else { return }
+            Log.camera.info("\(Log.ts(), privacy: .public) stopSession begin")
             self.session.stopRunning()
+            Log.camera.info("\(Log.ts(), privacy: .public) stopSession end isRunning=\(self.session.isRunning, privacy: .public)")
             self.publishSessionRunningState(false)
         }
     }
@@ -636,24 +648,28 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // Another client (dictation, Siri, phone, another app) took the
             // hardware. Mark for restart when interruption ends.
             wasInterrupted = true
-            Log.camera.info("AVCaptureSession interrupted: reason=\(reason?.debugName ?? "unknown", privacy: .public)")
+            interruptionNeedsRunningSessionBounce = true
+            Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interrupted: reason=\(reason?.debugName ?? "unknown", privacy: .public)")
 
         case .videoDeviceNotAvailableInBackground:
             // App was backgrounded. Scene phase / onDisappear owns this;
             // do NOT set wasInterrupted so we don't auto-restart on
             // .interruptionEnded when the app returns to foreground —
             // onAppear will handle that path.
+            interruptionNeedsRunningSessionBounce = false
             Log.camera.info("AVCaptureSession interrupted: reason=videoDeviceNotAvailableInBackground (ignoring — scene phase owns restart)")
 
         case .videoDeviceNotAvailableWithMultipleForegroundApps:
             // iPad Slide Over / Split View. User-initiated multitasking —
             // do not auto-restart, iOS controls this lifecycle.
+            interruptionNeedsRunningSessionBounce = false
             Log.camera.info("AVCaptureSession interrupted: reason=videoDeviceNotAvailableWithMultipleForegroundApps (ignoring — user multitasking)")
 
         case .videoDeviceNotAvailableDueToSystemPressure:
             // Thermal or performance throttle. Surface to the user so they
             // know the camera stopped for a reason outside their control.
             wasInterrupted = true
+            interruptionNeedsRunningSessionBounce = false
             Log.camera.error("AVCaptureSession interrupted: reason=videoDeviceNotAvailableDueToSystemPressure")
             publishError(.sessionRuntimeError("System pressure paused the camera. Try again when the device cools down."))
 
@@ -662,6 +678,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // `.interruptionEnded` can attempt a restart if the view is
             // still on-screen.
             wasInterrupted = true
+            interruptionNeedsRunningSessionBounce = false
             Log.camera.info("AVCaptureSession interrupted: reason=unknown(\(reasonRaw ?? -1, privacy: .public))")
         }
     }
@@ -671,12 +688,13 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// Attempts to restart the session, but only when every guard passes:
     ///   1. We set `wasInterrupted` (i.e. we own the restart).
     ///   2. The session is fully configured.
-    ///   3. The session is not already running.
-    ///   4. The camera view is still on-screen (`isForegroundActive`),
+    ///   3. The camera view is still on-screen (`isForegroundActive`),
     ///      which is driven by `CameraView.onAppear`/`onDisappear` and
     ///      therefore also flips false when SwiftUI tears the view down
     ///      on app backgrounding. This flag is authoritative for both
     ///      "view visible" and "app in foreground".
+    ///   4. If already running when interruption ends, optionally performs
+    ///      a controlled stop/start bounce for competing-client interruptions.
     @objc private func sessionInterruptionEnded(_ notification: Notification) {
         sessionQueue.async { [weak self] in
             self?.handleInterruptionEnded()
@@ -688,31 +706,48 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     func handleInterruptionEnded() {
         guard wasInterrupted else { return }
         guard isSessionConfigured else {
-            Log.camera.info("AVCaptureSession interruption ended — skipping restart (not configured)")
-            return
-        }
-        guard !session.isRunning else {
-            // Rare: session recovered on its own before we could act.
-            wasInterrupted = false
-            Log.camera.info("AVCaptureSession interruption ended — already running, clearing flag")
+            Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (not configured)")
             return
         }
         guard isForegroundActive else {
-            Log.camera.info("AVCaptureSession interruption ended — skipping restart (view not foreground-active)")
+            Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (view not foreground-active)")
+            return
+        }
+        guard !session.isRunning else {
+            if interruptionNeedsRunningSessionBounce {
+                // Recover from the edge case where AVCaptureSession reports
+                // running after interruption, but preview frames are stale.
+                Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, forcing restart bounce")
+                session.stopRunning()
+                publishSessionRunningState(false)
+                session.startRunning()
+                if session.isRunning {
+                    Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession restart bounce succeeded")
+                    publishSessionRunningState(true)
+                } else {
+                    Log.camera.error("\(Log.ts(), privacy: .public) AVCaptureSession restart bounce failed")
+                }
+            } else {
+                // Rare: session recovered on its own before we could act.
+                Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, clearing flag")
+            }
+            interruptionNeedsRunningSessionBounce = false
+            wasInterrupted = false
             return
         }
 
-        Log.camera.info("AVCaptureSession interruption ended — restarting")
+        Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — restarting")
         let signpostID = Log.cameraSignposter.makeSignpostID()
         let state = Log.cameraSignposter.beginInterval("CaptureSessionRestart", id: signpostID)
         session.startRunning()
         Log.cameraSignposter.endInterval("CaptureSessionRestart", state)
+        interruptionNeedsRunningSessionBounce = false
         wasInterrupted = false
         if session.isRunning {
-            Log.camera.info("AVCaptureSession startRunning succeeded (post-interruption)")
+            Log.camera.info("\(Log.ts(), privacy: .public) AVCaptureSession startRunning succeeded (post-interruption)")
             publishSessionRunningState(true)
         } else {
-            Log.camera.error("AVCaptureSession startRunning failed (post-interruption)")
+            Log.camera.error("\(Log.ts(), privacy: .public) AVCaptureSession startRunning failed (post-interruption)")
         }
     }
 
