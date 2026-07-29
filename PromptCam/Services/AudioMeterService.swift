@@ -132,6 +132,14 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
     /// Work item for debouncing rapid route-change restarts.
     private var restartWorkItem: DispatchWorkItem?
+    
+    /// One-shot watchdog that verifies the input tap becomes live after
+    /// an engine start. If no buffer is received within the delay window,
+    /// a single retry restart is attempted.
+    private var firstBufferWatchdogWorkItem: DispatchWorkItem?
+
+    /// Guards the watchdog so it only retries once per engine start.
+    private var firstBufferRetryCount: Int = 0
 
     /// True between `AVAudioSession.interruptionNotification` `.began`
     /// and `.ended`. While set, the restart pipeline and the route poller
@@ -229,6 +237,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         silenceAlertFired = false
         hasLoggedFirstBuffer = false
         stateLock.unlock()
+        
+        // Reset first-buffer watchdog state for this engine start.
+        firstBufferRetryCount = 0
+        firstBufferWatchdogWorkItem?.cancel()
+        firstBufferWatchdogWorkItem = nil
 
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
@@ -269,6 +282,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             try engine.start()
             self.audioEngine = engine
             Log.camera.debug("AudioMeterService: engine started, format=\(format)")
+            
+            // Verify that the tap actually becomes live shortly after start.
+            scheduleFirstBufferWatchdog(delay: 1.0)
         } catch {
             Log.camera.error("AudioMeterService: engine start failed – \(error.localizedDescription)")
             // Remove the tap from the orphaned engine so it doesn't leak,
@@ -295,6 +311,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             audioEngine = nil
             isStereoInput = false
             Log.camera.debug("AudioMeterService: engine stopped")
+            
+            // Cancel any pending first-buffer watchdog as the engine is torn down.
+            firstBufferWatchdogWorkItem?.cancel()
+            firstBufferWatchdogWorkItem = nil
+            firstBufferRetryCount = 0
         }
     }
 
@@ -341,6 +362,37 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
+    
+    /// Schedules a one-shot check to verify the input tap becomes live after an engine start
+    /// or route change. If no buffer has arrived within `delay` seconds, and the session is
+    /// not interrupted, a single restart attempt is made with a slightly longer delay.
+    private func scheduleFirstBufferWatchdog(delay: TimeInterval) {
+        // Cancel any previously scheduled watchdog.
+        firstBufferWatchdogWorkItem?.cancel()
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            // Do not act while the session is interrupted.
+            guard !self.isInterrupted else {
+                Log.camera.debug("AudioMeterService: watchdog suppressed — session interrupted")
+                return
+            }
+            // Only act if the engine is present and the tap has not gone live yet.
+            guard self.audioEngine != nil, !self.hasLoggedFirstBuffer else { return }
+
+            if self.firstBufferRetryCount == 0 {
+                self.firstBufferRetryCount = 1
+                Log.camera.warning("AudioMeterService: no buffer received after \(delay)s — retrying engine start")
+                // Give the audio route extra time to settle before reconnecting.
+                self.restartEngine(delay: 1.2)
+            } else {
+                Log.camera.error("AudioMeterService: no buffer received after retry — giving up")
+            }
+        }
+
+        firstBufferWatchdogWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
 
     /// Processes a PCM buffer from the input tap — computes RMS, converts
     /// to dB, normalizes, applies peak hold, and publishes.
@@ -358,6 +410,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         if !hasLoggedFirstBuffer {
             hasLoggedFirstBuffer = true
             Log.camera.info("AudioMeterService: first buffer received — tap is live. format=\(buffer.format.channelCount, privacy: .public)ch frameLength=\(buffer.frameLength, privacy: .public)")
+            
+            // Cancel any pending watchdog once the first buffer arrives.
+            firstBufferWatchdogWorkItem?.cancel()
+            firstBufferWatchdogWorkItem = nil
         }
 
         // SIMD-accelerated RMS — Ch1 (channel 0, always present).
@@ -552,9 +608,20 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             evaluateCurrentRoute()
             guard audioEngine != nil else { return }
             restartEngine(delay: 0.8)
+            
+        case .categoryChange:
+            evaluateCurrentRoute()
+            // If the tap fails to go live after a category change, schedule a guarded restart.
+            if audioEngine != nil {
+                scheduleFirstBufferWatchdog(delay: 0.8)
+            }
 
         default:
             evaluateCurrentRoute()
+            // For unknown reasons, schedule a guarded watchdog to verify the tap becomes live.
+            if audioEngine != nil {
+                scheduleFirstBufferWatchdog(delay: 0.8)
+            }
         }
     }
 
@@ -601,7 +668,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         if type == .ended {
             isInterrupted = false
-            Log.camera.debug("AudioMeterService: interruption ended — restarting engine")
+            Log.camera.debug("AudioMeterService: interruption ended — preparing restart")
             // Re-seed the poller's baseline BEFORE restart so it doesn't
             // interpret the newly-settled route as a hot-swap.
             lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
@@ -611,7 +678,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             } catch {
                 Log.camera.error("AudioMeterService: reactivation failed – \(error.localizedDescription)")
             }
-            restartEngine(delay: 0.5)
+            // Choose a slightly longer delay when the system still hints
+            // secondary audio should be silenced. This gives dictation/Siri
+            // time to fully release the route before we restart the engine.
+            let session = AVAudioSession.sharedInstance()
+            let stabilizationDelay: TimeInterval = session.secondaryAudioShouldBeSilencedHint ? 1.0 : 0.8
+            Log.camera.debug("AudioMeterService: interruption ended — scheduling restart after \(stabilizationDelay)s (silenceHint=\(session.secondaryAudioShouldBeSilencedHint))")
+            restartEngine(delay: stabilizationDelay)
         } else {
             isInterrupted = true
             // Cancel any pending route-change restart so it doesn't fire
@@ -619,6 +692,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             // audio route.
             restartWorkItem?.cancel()
             restartWorkItem = nil
+            
+            // Also cancel the first-buffer watchdog so it doesn't fire during interruption.
+            firstBufferWatchdogWorkItem?.cancel()
+            firstBufferWatchdogWorkItem = nil
+            
             Log.camera.debug("AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
         }
     }
