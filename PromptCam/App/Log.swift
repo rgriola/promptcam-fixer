@@ -1,9 +1,11 @@
 import os
+import Foundation
 
 /// Centralized OSLog loggers. Prefer `Log.{category}.debug(...)` over `print()`
 /// so traces are stripped from Release builds and filterable in Console.app.
 enum Log {
     private static let subsystem = "com.promptcam.fixer"
+    private static let sessionStartUptime = ProcessInfo.processInfo.systemUptime
 
     static let camera = Logger(subsystem: subsystem, category: "Camera")
     static let viewmodel = Logger(subsystem: subsystem, category: "ViewModel")
@@ -18,4 +20,11 @@ enum Log {
     /// (Points of Interest track). Shares the "Camera" category so signposts
     /// interleave with `Log.camera`'s log lines in Console.app.
     static let cameraSignposter = OSSignposter(logger: camera)
+
+    /// Monotonic elapsed timestamp since app process launch.
+    /// Example: "t+15234ms".
+    static func ts() -> String {
+        let elapsedMs = Int((ProcessInfo.processInfo.systemUptime - sessionStartUptime) * 1000)
+        return "t+\(elapsedMs)ms"
+    }
 }

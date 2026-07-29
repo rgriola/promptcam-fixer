@@ -172,6 +172,7 @@ final class CameraViewModel {
     var session: AVCaptureSession { cameraService.previewSession }
 
     func onAppear() {
+        Log.viewmodel.info("\(Log.ts(), privacy: .public) CameraViewModel onAppear")
         isCameraReady = false
         isForegroundActive = true
         // Notify the service before startSession so the interruption-ended
@@ -194,6 +195,7 @@ final class CameraViewModel {
     }
 
     func onDisappear() {
+        Log.viewmodel.info("\(Log.ts(), privacy: .public) CameraViewModel onDisappear")
         recordingTimer.stop()
         audioMeter.stop()
         // Clear the foreground flag BEFORE stopping the session so any
@@ -244,11 +246,13 @@ final class CameraViewModel {
 
     func openCompose() {
         guard !isRecording else { return }
+        Log.viewmodel.info("\(Log.ts(), privacy: .public) openCompose")
         cameraMode = .compose
         showComposeSheet = true
     }
 
     func dismissComposeSheet() {
+        Log.viewmodel.info("\(Log.ts(), privacy: .public) dismissComposeSheet")
         showComposeSheet = false
         cameraMode = .camera
     }

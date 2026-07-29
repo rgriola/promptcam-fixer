@@ -58,6 +58,8 @@ final class CameraServiceInterruptionTests: XCTestCase {
         onSessionQueue(service) {
             XCTAssertTrue(service.wasInterrupted,
                           "audioDeviceInUseByAnotherClient must set wasInterrupted so .interruptionEnded can restart the session.")
+            XCTAssertTrue(service.interruptionNeedsRunningSessionBounce,
+                          "Competing-client interruption should request a running-session bounce on interruption end.")
         }
     }
 
@@ -76,6 +78,32 @@ final class CameraServiceInterruptionTests: XCTestCase {
         onSessionQueue(service) {
             XCTAssertFalse(service.wasInterrupted,
                            "videoDeviceNotAvailableInBackground is owned by scene-phase teardown; the service must not mark for auto-restart.")
+            XCTAssertFalse(service.interruptionNeedsRunningSessionBounce,
+                           "Background interruptions must not request a running-session bounce.")
+        }
+    }
+
+    // MARK: - 2b. interruptionEnded clears bounce flag after restart path
+
+    func test_interruptionEnded_clearsBounceFlag_afterRestartPath() {
+        let (service, _) = makeService()
+
+        service.setForegroundActive(true)
+        onSessionQueue(service) {
+            service.isSessionConfigured = true
+            service.wasInterrupted = true
+            service.interruptionNeedsRunningSessionBounce = true
+        }
+
+        onSessionQueue(service) {
+            service.handleInterruptionEnded()
+        }
+
+        onSessionQueue(service) {
+            XCTAssertFalse(service.wasInterrupted,
+                           "wasInterrupted should be consumed once interruption-ended restart logic runs.")
+            XCTAssertFalse(service.interruptionNeedsRunningSessionBounce,
+                           "Running-session bounce intent must clear after interruption-ended handling.")
         }
     }
 

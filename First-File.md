@@ -475,3 +475,13 @@ In Script View user selects speech-to-text feature > saves the script > returns 
 Testing on device, iPhone 17, the green circle camera active indicator on the dynamic island is present at the start of script view. Selecting speech-to-text this circle turns to orange indicating the camera preview is off but the microphone is still active. Returning to the main view the orange circle is still on, camera preview is frozen. This is confirmed in several device tests.
 
 We need another look at the coding issue.
+
+I noticed a behavior in the scriptview related to the speech-to-text/ audio issue we worked on.
+
+**_ Issue _**
+When using speech-to-text I noticed the camera flash does not happen when returning to the main view if speech-to-text is turned off before saving the script. If I leave speech-to-text active > save > exit scriptview the camera flash occurs.
+
+**_ context _**
+We have worked on an issue, now resolved, where activating speech-to-text would kill the camera preview returning to main view.
+
+Could you trace the flow of this button. No Code.
