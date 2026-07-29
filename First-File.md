@@ -460,4 +460,7 @@ When user opens the app video-player-carousel the app eventually crashes. The en
 **_ Context _**
 The Native iOS app also has a carousel player ui and it is not this slow. Are the thumbnails created differently? Are we calling the assests multiple times to creatw the player and carousel?
 
+July 28
 In Settings View > Formats I believe the formats displayed are incorrect. Can you trace to see if this is true. The formats shown here are only ones available for this app; Front Camera; Cine or Standand Mode Camera; 4k or 1080; 24p, 30p or 60p - if available.
+
+I found an issue where in script view with voice dication to write out the script > save >  the camera preview is frozen returning to the main UI,  the rest of the app seemingly works.  Closing and opening the app refreshes the Camera Preview and the script is still present as it should. 
