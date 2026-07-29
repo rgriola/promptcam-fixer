@@ -133,6 +133,29 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Work item for debouncing rapid route-change restarts.
     private var restartWorkItem: DispatchWorkItem?
 
+    /// True between `AVAudioSession.interruptionNotification` `.began`
+    /// and `.ended`. While set, the restart pipeline and the route poller
+    /// take no action.
+    ///
+    /// **Why**: voice dictation (and similar system-owned audio takeovers)
+    /// posts `.began`, then temporarily hijacks the input route. The 1 Hz
+    /// poller detects the hijack as a route change, calls `selectInput` +
+    /// `restartEngine`, which fights the system for ownership. Every
+    /// restart triggers another route flip, causing a runaway restart loop
+    /// that thrashes `mediaservicesd` and starves `AVCaptureSession`'s
+    /// audio path — which manifests as a frozen camera preview even though
+    /// `AVCaptureSession` never posts `.wasInterrupted` itself.
+    ///
+    /// Suspending the pipeline during `.began` lets the system own the
+    /// route uncontested; `.ended` re-seeds the baseline UID and issues a
+    /// single clean restart.
+    ///
+    /// Main-thread only: all writers are inside `handleInterruption`
+    /// (main-dispatched) and all readers (`pollRouteForChange`,
+    /// `handleRouteChange`, `restartEngine` work item) also execute on
+    /// main.
+    var isInterrupted = false
+
     /// Cleared on each engine start; set true on the first processBuffer
     /// callback so we can confirm data is actually flowing into the tap.
     ///
@@ -287,6 +310,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
+            // Neutralize any restart scheduled just before `.began` fired.
+            // The `.ended` handler is responsible for scheduling the clean
+            // post-interruption restart; don't fight the system in between.
+            guard !self.isInterrupted else {
+                Log.camera.debug("AudioMeterService: restart suppressed — session interrupted")
+                return
+            }
             Log.camera.debug("AudioMeterService: restarting engine (delay=\(delay)s)")
             self.tearDownEngine()
 
@@ -457,6 +487,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Polls `AVAudioSession.currentRoute` and triggers the auto-switch
     /// logic when the active input UID changes.
     private func pollRouteForChange() {
+        // While an interruption is active (voice dictation, phone call,
+        // Siri, etc.) iOS owns the route and may swap it multiple times
+        // as the system UI comes and goes. Acting on these transient
+        // swaps starts a restart loop; the `.ended` handler will re-seed
+        // and restart cleanly.
+        guard !isInterrupted else { return }
         let currentUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
         guard currentUID != lastSeenInputUID else { return }
         let previousUID = lastSeenInputUID
@@ -476,6 +512,9 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// setting it as preferred, and restarting the engine.
     /// Called from the polling loop in `pollRouteForChange()`.
     private func handleRouteChange(reasonRaw: UInt?) {
+        // Defense-in-depth: `pollRouteForChange` already guards, but any
+        // future direct caller must also honor the interruption gate.
+        guard !isInterrupted else { return }
         let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw ?? 0) ?? .unknown
 
         Log.camera.debug("AudioMeterService: route changed, reason=\(reason.rawValue)")
@@ -536,12 +575,36 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         AVAudioSession.sharedInstance().availableInputs?.first(where: { $0.portType == .builtInMic })
     }
 
-    /// Handles an audio session interruption (phone call, Siri, etc.).
-    private func handleInterruption(typeRaw: UInt?) {
-        let type = AVAudioSession.InterruptionType(rawValue: typeRaw ?? 0) ?? .began
+    /// Handles an audio session interruption (phone call, Siri, voice
+    /// dictation, etc.).
+    ///
+    /// On `.began` we suspend the entire restart/route pipeline: the poller
+    /// bails out early and any in-flight restart work item no-ops when it
+    /// fires. This is the fix for the "voice dictation freezes the camera"
+    /// symptom — without suspension, the poller mistakes iOS's transient
+    /// route hijack for a hot-swap and enters a restart loop that starves
+    /// `mediaservicesd` and stalls `AVCaptureSession`.
+    ///
+    /// On `.ended` we clear the flag, re-seed the poller's baseline to the
+    /// system's post-interruption route (so it doesn't spuriously fire on
+    /// the very next tick), then issue a single clean restart.
+    ///
+    /// Made `internal` so tests can drive the state machine directly
+    /// without depending on real `AVAudioSession` interruption delivery.
+    func handleInterruption(typeRaw: UInt?) {
+        // Fail-safe default: `.began` (raw 1), NOT the enum's raw-value-0
+        // which would be `.ended`. If a stray/malformed notification lacks
+        // the type key, suspending the pipeline is safer than clearing it.
+        let type = AVAudioSession.InterruptionType(
+            rawValue: typeRaw ?? AVAudioSession.InterruptionType.began.rawValue
+        ) ?? .began
 
         if type == .ended {
+            isInterrupted = false
             Log.camera.debug("AudioMeterService: interruption ended — restarting engine")
+            // Re-seed the poller's baseline BEFORE restart so it doesn't
+            // interpret the newly-settled route as a hot-swap.
+            lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
             // Re-activate the session after interruption.
             do {
                 try AVAudioSession.sharedInstance().setActive(true)
@@ -550,7 +613,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             }
             restartEngine(delay: 0.5)
         } else {
-            Log.camera.debug("AudioMeterService: interruption began — engine will pause")
+            isInterrupted = true
+            // Cancel any pending route-change restart so it doesn't fire
+            // during the interruption window and fight the system for the
+            // audio route.
+            restartWorkItem?.cancel()
+            restartWorkItem = nil
+            Log.camera.debug("AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
         }
     }
 
