@@ -181,12 +181,53 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// `PHPhotoLibrary`-backed implementation; tests substitute a fake.
     let photoSaver: PhotoLibrarySaver
 
-    init(photoSaver: PhotoLibrarySaver = DefaultPhotoLibrarySaver()) {
+    // MARK: - Interruption / Runtime-Error Recovery State
+    // All three properties below are `sessionQueue`-only. Readers/writers
+    // outside `sessionQueue` must hop to it via `sessionQueue.async { ... }`.
+
+    /// True while the session is currently in an interrupted state (audio
+    /// device grabbed by another client, phone call, etc.). Set by
+    /// `sessionWasInterrupted(_:)` and cleared by the interruption-ended
+    /// handler after a successful restart.
+    var wasInterrupted = false
+
+    /// The most recent `RecordingFormat` handed to `configureSession`.
+    /// Cached so `.mediaServicesWereReset` recovery can replay the same
+    /// configuration without re-plumbing through the view model.
+    var lastConfiguredFormat: RecordingFormat?
+
+    /// Test-only counter incremented every time the media-services-reset
+    /// recovery path is entered. Not intended for production use.
+    var mediaServicesResetRecoveryCount = 0
+
+    /// Foreground-active flag pushed down by the view model via
+    /// `setForegroundActive(_:)`. Protected by `callbackLock` because it is
+    /// written from `@MainActor` and read from `sessionQueue`.
+    private var _isForegroundActive = false
+
+    /// Notification center used to observe capture-session lifecycle
+    /// notifications. Injectable so unit tests can post synthetic
+    /// notifications to an isolated center without interfering with the
+    /// process-wide `.default`.
+    let notificationCenter: NotificationCenter
+
+    init(
+        photoSaver: PhotoLibrarySaver = DefaultPhotoLibrarySaver(),
+        notificationCenter: NotificationCenter = .default
+    ) {
         self.photoSaver = photoSaver
+        self.notificationCenter = notificationCenter
         super.init()
     }
 
     deinit {
+        // Remove notification observers BEFORE the sessionQueue teardown
+        // block is scheduled. Otherwise a notification could be delivered
+        // to a partially-deallocated instance while the queue block is
+        // still pending. `removeObserver(self)` is synchronous and safe
+        // during deinit even when called from an arbitrary thread.
+        notificationCenter.removeObserver(self)
+
         // AVCaptureSession mutations must run on sessionQueue. Capture the
         // session reference locally so the closure does not capture self,
         // which is being deallocated.
@@ -196,6 +237,18 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             for input in session.inputs { session.removeInput(input) }
             for output in session.outputs { session.removeOutput(output) }
         }
+    }
+
+    // MARK: - Foreground State
+
+    func setForegroundActive(_ active: Bool) {
+        callbackLock.withLock { _isForegroundActive = active }
+    }
+
+    /// Reads the foreground-active flag from `sessionQueue`. Non-blocking
+    /// because it goes through `callbackLock`, not through the main actor.
+    private var isForegroundActive: Bool {
+        callbackLock.withLock { _isForegroundActive }
     }
 
     /// Returns the preferred physical device for a given video mode.
@@ -430,6 +483,15 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 self.applyFrameRate(format.frameRate, to: videoDevice)
 
                 self.isSessionConfigured = true
+                // Cache the format so `.mediaServicesWereReset` recovery can
+                // rebuild the same configuration without re-plumbing through
+                // the view model.
+                self.lastConfiguredFormat = format
+
+                // Register interruption / runtime-error observers now that
+                // the session is fully wired. Registering earlier would risk
+                // receiving callbacks for a partially-configured session.
+                self.registerSessionObservers()
 
                 // Dump all camera formats on first configure — visible in Xcode console.
                 self.logAllCameraFormats()
@@ -495,6 +557,241 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         guard let completion else { return }
         Task { @MainActor in
             completion(outcome)
+        }
+    }
+
+    // MARK: - Interruption / Runtime-Error Observers
+
+    /// Registers observers for the three `AVCaptureSession` lifecycle
+    /// notifications required for reliable interruption recovery.
+    ///
+    /// Called from `configureSession` on the `sessionQueue`. Uses
+    /// selector-based observation so `deinit`'s `removeObserver(self)` (on
+    /// the notification center) cleanly deregisters all three at once.
+    ///
+    /// Filtering by `object: session` ensures we only receive notifications
+    /// from our own capture session, not other sessions in the process
+    /// (e.g. from `AVCaptureMetadataOutput` or a background HLS session).
+    ///
+    /// **Idempotency**: `NotificationCenter` does not de-duplicate
+    /// `addObserver` calls by (self, selector, name, object), so we guard
+    /// re-entry with a one-shot flag. `configureSession` short-circuits on
+    /// its second call via `isSessionConfigured`, so under normal flow this
+    /// is only called once, but the guard makes the media-services-reset
+    /// recovery path safe when it calls `configureSession` again.
+    ///
+    /// Exposed at `internal` so unit tests can register observers on a
+    /// `CameraService` instance without needing hardware to complete
+    /// `configureSession`.
+    func registerSessionObservers() {
+        guard !didRegisterSessionObservers else { return }
+        didRegisterSessionObservers = true
+
+        notificationCenter.addObserver(
+            self,
+            selector: #selector(sessionWasInterrupted(_:)),
+            name: AVCaptureSession.wasInterruptedNotification,
+            object: session
+        )
+        notificationCenter.addObserver(
+            self,
+            selector: #selector(sessionInterruptionEnded(_:)),
+            name: AVCaptureSession.interruptionEndedNotification,
+            object: session
+        )
+        notificationCenter.addObserver(
+            self,
+            selector: #selector(sessionRuntimeError(_:)),
+            name: AVCaptureSession.runtimeErrorNotification,
+            object: session
+        )
+    }
+
+    /// One-shot latch so `registerSessionObservers` is safe to call more
+    /// than once per instance. `sessionQueue`-only.
+    var didRegisterSessionObservers = false
+
+    /// Handler for `AVCaptureSession.wasInterruptedNotification`.
+    ///
+    /// Delivered on the posting thread — hops to `sessionQueue` immediately
+    /// so all state access is serialized under the class's Sendable contract.
+    @objc func sessionWasInterrupted(_ notification: Notification) {
+        // `Notification` is not Sendable; extract the sendable payload here
+        // on the posting thread before hopping queues.
+        let reasonRaw = (notification.userInfo?[AVCaptureSessionInterruptionReasonKey] as? Int)
+        sessionQueue.async { [weak self] in
+            self?.handleInterruption(reasonRaw: reasonRaw)
+        }
+    }
+
+    /// Reason-branching logic for `sessionWasInterrupted`. Exposed at
+    /// `internal` so tests can drive the branches directly without
+    /// building a real `Notification`.
+    func handleInterruption(reasonRaw: Int?) {
+        let reason = reasonRaw.flatMap(AVCaptureSession.InterruptionReason.init(rawValue:))
+
+        switch reason {
+        case .audioDeviceInUseByAnotherClient,
+             .videoDeviceInUseByAnotherClient:
+            // Another client (dictation, Siri, phone, another app) took the
+            // hardware. Mark for restart when interruption ends.
+            wasInterrupted = true
+            Log.camera.info("AVCaptureSession interrupted: reason=\(reason?.debugName ?? "unknown", privacy: .public)")
+
+        case .videoDeviceNotAvailableInBackground:
+            // App was backgrounded. Scene phase / onDisappear owns this;
+            // do NOT set wasInterrupted so we don't auto-restart on
+            // .interruptionEnded when the app returns to foreground —
+            // onAppear will handle that path.
+            Log.camera.info("AVCaptureSession interrupted: reason=videoDeviceNotAvailableInBackground (ignoring — scene phase owns restart)")
+
+        case .videoDeviceNotAvailableWithMultipleForegroundApps:
+            // iPad Slide Over / Split View. User-initiated multitasking —
+            // do not auto-restart, iOS controls this lifecycle.
+            Log.camera.info("AVCaptureSession interrupted: reason=videoDeviceNotAvailableWithMultipleForegroundApps (ignoring — user multitasking)")
+
+        case .videoDeviceNotAvailableDueToSystemPressure:
+            // Thermal or performance throttle. Surface to the user so they
+            // know the camera stopped for a reason outside their control.
+            wasInterrupted = true
+            Log.camera.error("AVCaptureSession interrupted: reason=videoDeviceNotAvailableDueToSystemPressure")
+            publishError(.sessionRuntimeError("System pressure paused the camera. Try again when the device cools down."))
+
+        case .none, .some:
+            // Unknown or future reason. Set defensively so
+            // `.interruptionEnded` can attempt a restart if the view is
+            // still on-screen.
+            wasInterrupted = true
+            Log.camera.info("AVCaptureSession interrupted: reason=unknown(\(reasonRaw ?? -1, privacy: .public))")
+        }
+    }
+
+    /// Handler for `AVCaptureSession.interruptionEndedNotification`.
+    ///
+    /// Attempts to restart the session, but only when every guard passes:
+    ///   1. We set `wasInterrupted` (i.e. we own the restart).
+    ///   2. The session is fully configured.
+    ///   3. The session is not already running.
+    ///   4. The camera view is still on-screen (`isForegroundActive`),
+    ///      which is driven by `CameraView.onAppear`/`onDisappear` and
+    ///      therefore also flips false when SwiftUI tears the view down
+    ///      on app backgrounding. This flag is authoritative for both
+    ///      "view visible" and "app in foreground".
+    @objc private func sessionInterruptionEnded(_ notification: Notification) {
+        sessionQueue.async { [weak self] in
+            self?.handleInterruptionEnded()
+        }
+    }
+
+    /// Restart-attempt logic for `sessionInterruptionEnded`. Exposed at
+    /// `internal` so tests can drive the guards directly.
+    func handleInterruptionEnded() {
+        guard wasInterrupted else { return }
+        guard isSessionConfigured else {
+            Log.camera.info("AVCaptureSession interruption ended — skipping restart (not configured)")
+            return
+        }
+        guard !session.isRunning else {
+            // Rare: session recovered on its own before we could act.
+            wasInterrupted = false
+            Log.camera.info("AVCaptureSession interruption ended — already running, clearing flag")
+            return
+        }
+        guard isForegroundActive else {
+            Log.camera.info("AVCaptureSession interruption ended — skipping restart (view not foreground-active)")
+            return
+        }
+
+        Log.camera.info("AVCaptureSession interruption ended — restarting")
+        session.startRunning()
+        wasInterrupted = false
+        if session.isRunning {
+            Log.camera.info("AVCaptureSession startRunning succeeded (post-interruption)")
+            publishSessionRunningState(true)
+        } else {
+            Log.camera.error("AVCaptureSession startRunning failed (post-interruption)")
+        }
+    }
+
+    /// Handler for `AVCaptureSession.runtimeErrorNotification`.
+    ///
+    /// Recovers from `.mediaServicesWereReset` by tearing down the session
+    /// and re-running `configureSession` with the last-known format. Other
+    /// errors are surfaced through `publishError` — the session is not
+    /// restarted automatically because the underlying cause is not
+    /// predictable.
+    @objc private func sessionRuntimeError(_ notification: Notification) {
+        // Extract sendable payload on the posting thread.
+        let error = notification.userInfo?[AVCaptureSessionErrorKey] as? AVError
+        let localized = error?.localizedDescription ?? "unknown"
+        let code = error?.code
+        sessionQueue.async { [weak self] in
+            self?.handleRuntimeError(code: code, localized: localized)
+        }
+    }
+
+    /// Branch-dispatch logic for `sessionRuntimeError`. Exposed at
+    /// `internal` so tests can drive each branch without building an
+    /// `AVError` `Notification`.
+    func handleRuntimeError(code: AVError.Code?, localized: String) {
+        switch code {
+        case .some(.mediaServicesWereReset):
+            Log.camera.error("AVCaptureSession runtime error: mediaServicesWereReset — recovering")
+            recoverFromMediaServicesReset()
+
+        case .some(.sessionWasInterrupted):
+            // Defensive: iOS should have posted .wasInterrupted first, but
+            // occasionally a runtime error lands here too. Treat as an
+            // interruption event.
+            Log.camera.notice("AVCaptureSession runtime error: sessionWasInterrupted (treating as interruption)")
+            wasInterrupted = true
+
+        default:
+            Log.camera.error("AVCaptureSession runtime error: \(localized, privacy: .public) (no auto-recovery)")
+            publishError(.sessionRuntimeError(localized))
+        }
+    }
+
+    /// Rebuilds the session after `.mediaServicesWereReset`. All outputs
+    /// are invalidated by this event, so a simple `startRunning()` is not
+    /// enough — the session must be fully re-plumbed.
+    ///
+    /// Exposed at `internal` so tests can assert the recovery counter and
+    /// state transitions without building a real `Notification`.
+    func recoverFromMediaServicesReset() {
+        mediaServicesResetRecoveryCount += 1
+        let format = lastConfiguredFormat ?? .default
+
+        // Tear down: mark unconfigured and drop all existing inputs/outputs
+        // so `configureSession`'s `session.inputs.isEmpty` guard passes.
+        isSessionConfigured = false
+        session.beginConfiguration()
+        for input in session.inputs { session.removeInput(input) }
+        for output in session.outputs { session.removeOutput(output) }
+        session.commitConfiguration()
+
+        // Reconfigure + restart. Both hop back onto `sessionQueue` via
+        // their own `async` blocks; we're already there, but that's fine —
+        // dispatch on a serial queue from the same queue just enqueues.
+        configureSession(format: format)
+        startSession()
+    }
+}
+
+// MARK: - AVCaptureSession.InterruptionReason Debug Names
+
+private extension AVCaptureSession.InterruptionReason {
+    /// Compact stable name used in log statements. `debugDescription` on
+    /// the raw type is not guaranteed to be stable across iOS versions.
+    var debugName: String {
+        switch self {
+        case .videoDeviceNotAvailableInBackground: return "videoDeviceNotAvailableInBackground"
+        case .audioDeviceInUseByAnotherClient: return "audioDeviceInUseByAnotherClient"
+        case .videoDeviceInUseByAnotherClient: return "videoDeviceInUseByAnotherClient"
+        case .videoDeviceNotAvailableWithMultipleForegroundApps: return "videoDeviceNotAvailableWithMultipleForegroundApps"
+        case .videoDeviceNotAvailableDueToSystemPressure: return "videoDeviceNotAvailableDueToSystemPressure"
+        case .sensitiveContentMitigationActivated: return "sensitiveContentMitigationActivated"
+        @unknown default: return "unknown(\(rawValue))"
         }
     }
 }

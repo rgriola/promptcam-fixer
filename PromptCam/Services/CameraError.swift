@@ -11,6 +11,10 @@ enum CameraError: LocalizedError, Sendable {
     case outputConfigurationFailed
     case sessionConfigurationFailed(String)
     case sessionNotReady
+    /// Non-recoverable AVCaptureSession runtime error. Fired when
+    /// `AVCaptureSession.runtimeErrorNotification` posts an error we can't
+    /// automatically recover from (i.e. not `.mediaServicesWereReset`).
+    case sessionRuntimeError(String)
 
     // Format
     case formatChangeDuringRecording
@@ -39,6 +43,8 @@ enum CameraError: LocalizedError, Sendable {
             "Failed to configure camera: \(detail)"
         case .sessionNotReady:
             "Camera is still preparing. Try again in a moment."
+        case .sessionRuntimeError(let detail):
+            "Camera stopped unexpectedly: \(detail)"
         case .formatChangeDuringRecording:
             "Cannot change format while recording."
         case .formatUnavailable(let detail):

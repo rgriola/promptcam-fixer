@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 100;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -32,6 +32,7 @@
 		41DC8BC23D7AA37EA938C17E /* AudioMeterServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */; };
 		458BEE449E3C2807C04630BA /* CameraLockStatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */; };
 		4718DE5C64AD0E7571CC2AB1 /* SaveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525F4215FDEF56A0D72B7C58 /* SaveButton.swift */; };
+		47FA63CC56951E7AEFFDB7FE /* CameraServiceInterruptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E2EC5A0962F7F740519F36E /* CameraServiceInterruptionTests.swift */; };
 		48965C15F496BB1BD799A0E0 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6CF1CBDA28AF2C0D93B83A /* Log.swift */; };
 		55F6FB9B93DFF0F9ECC8877A /* AudioMeterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0758B72A7B23803C0E912B5 /* AudioMeterService.swift */; };
 		565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */; };
@@ -98,6 +99,7 @@
 		F56BDE0C22089A91B9C64228 /* MockCameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C32ECD1FCBB3084C02BC23 /* MockCameraService.swift */; };
 		F9571A615D04517E7ECC75EA /* RecordingFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB0454A29233FAEB99F404A /* RecordingFormatTests.swift */; };
 		FA87F384E496D0441EB2B2C3 /* ArchiveButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 282D751A219D3E66926CBBD2 /* ArchiveButton.swift */; };
+		FAEDF9BE7B25C51B815AA63B /* AudioMeterServiceInterruptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 426754D797C59A663409CC1E /* AudioMeterServiceInterruptionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -133,6 +135,7 @@
 		26EEA7971142FD517E1511C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		27C29C958DC64AAE85A56C2A /* PermissionCopyCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCopyCatalog.swift; sourceTree = "<group>"; };
 		282D751A219D3E66926CBBD2 /* ArchiveButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveButton.swift; sourceTree = "<group>"; };
+		2E2EC5A0962F7F740519F36E /* CameraServiceInterruptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraServiceInterruptionTests.swift; sourceTree = "<group>"; };
 		3106519F65278FD08E96B7F5 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMeterServiceTests.swift; sourceTree = "<group>"; };
 		34FC767E922485CBD62F8C39 /* TeleprompterOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeleprompterOverlayView.swift; sourceTree = "<group>"; };
@@ -141,6 +144,7 @@
 		3F4A29AC4DC15FCA0A77EAF5 /* PhotoLibraryChangeMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryChangeMonitorTests.swift; sourceTree = "<group>"; };
 		3F592A45A216D3C5B6B6DA2D /* CameraSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsSheet.swift; sourceTree = "<group>"; };
 		417DA9E312EFD96A00C9C88F /* CameraLockStatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLockStatusBadgeView.swift; sourceTree = "<group>"; };
+		426754D797C59A663409CC1E /* AudioMeterServiceInterruptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMeterServiceInterruptionTests.swift; sourceTree = "<group>"; };
 		42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilitiesTests.swift; sourceTree = "<group>"; };
 		435AAB502F3AF82DDD93946B /* ModalQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalQueue.swift; sourceTree = "<group>"; };
 		439A02F5797E4C147A1FC37D /* CinematicAperturePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CinematicAperturePanel.swift; sourceTree = "<group>"; };
@@ -221,8 +225,10 @@
 			isa = PBXGroup;
 			children = (
 				CCFDF9156AB3C9E58AFF0EE4 /* AppEntryRouterTests.swift */,
+				426754D797C59A663409CC1E /* AudioMeterServiceInterruptionTests.swift */,
 				34483F21F9FD48665DB92622 /* AudioMeterServiceTests.swift */,
 				946A6C79D85DE079AA168C65 /* CameraErrorTests.swift */,
+				2E2EC5A0962F7F740519F36E /* CameraServiceInterruptionTests.swift */,
 				59F519045CC1413E5A9411F4 /* CameraServiceRecordingSavedTests.swift */,
 				AED4F18D8B1D717D1F6078F4 /* CameraViewModelTests.swift */,
 				42C7633E8A44BC425F024691 /* DeviceCapabilitiesTests.swift */,
@@ -460,7 +466,11 @@
 			);
 			buildRules = (
 			);
+			dependencies = (
+			);
 			name = PromptCam;
+			packageProductDependencies = (
+			);
 			productName = PromptCam;
 			productReference = B860643BC28289FBEEAD4BEB /* PromptCam.app */;
 			productType = "com.apple.product-type.application";
@@ -477,6 +487,8 @@
 				8C14754B3224D8C1DA56D276 /* PBXTargetDependency */,
 			);
 			name = PromptCamTests;
+			packageProductDependencies = (
+			);
 			productName = PromptCamTests;
 			productReference = B3F85129F3610BC5788D0DFB /* PromptCamTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -493,6 +505,8 @@
 				588AFCE987247FAA4211833B /* PBXTargetDependency */,
 			);
 			name = PromptCamUITests;
+			packageProductDependencies = (
+			);
 			productName = PromptCamUITests;
 			productReference = 14AEF897C9030960C8A442DA /* PromptCamUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -523,7 +537,7 @@
 			);
 			mainGroup = 46670FAA51A038C48CD673E6;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 100;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B4BD104ECFD2942830E596F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -538,15 +552,18 @@
 /* Begin PBXResourcesBuildPhase section */
 		6DE863103C09C9CA56239477 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
 				BCB223FEE017DB469F72F1EE /* Assets.xcassets in Resources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		522FA85F8775078B52BB6766 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
 				1508D674F39F1C5C347B47DA /* AVPlayerHostingView.swift in Sources */,
 				DBBD18B267D4C94FD11941EA /* AppEntryRouter.swift in Sources */,
@@ -622,19 +639,25 @@
 				ECB1BC219DDD6D23CA2F2E3E /* VUMeterView.swift in Sources */,
 				919C0DEDD4107472DBCB0702 /* VideoModeBadgeView.swift in Sources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B9A846631032535B26871809 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
 				7510A8A934F5388C7CD60690 /* PromptCamUITests.swift in Sources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FB3580842ABA90D4EF1F10A1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
 			files = (
 				58CA05A1F7F1CA9D34077868 /* AppEntryRouterTests.swift in Sources */,
+				FAEDF9BE7B25C51B815AA63B /* AudioMeterServiceInterruptionTests.swift in Sources */,
 				41DC8BC23D7AA37EA938C17E /* AudioMeterServiceTests.swift in Sources */,
 				3B6E3F78C05929C617935C9A /* CameraErrorTests.swift in Sources */,
+				47FA63CC56951E7AEFFDB7FE /* CameraServiceInterruptionTests.swift in Sources */,
 				06B611B17F34388EE24D00B3 /* CameraServiceRecordingSavedTests.swift in Sources */,
 				565B1849376F7F79E3459643 /* CameraViewModelTests.swift in Sources */,
 				A82A98A6DFEC958503F82421 /* DeviceCapabilitiesTests.swift in Sources */,
@@ -649,6 +672,7 @@
 				917A4B3E6F5422FB01A632CF /* RequiredAccessGateStateTests.swift in Sources */,
 				41872F9B93A5B4E60DD4061E /* TeleprompterConfigTests.swift in Sources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -666,12 +690,11 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		1FE7FEBEBEE341B8A664B32D /* Debug configuration for PBXNativeTarget "PromptCam" */ = {
+		1FE7FEBEBEE341B8A664B32D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ED52035DB32C31DC9FD2FAB2 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 39;
 				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
@@ -692,7 +715,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -702,7 +724,7 @@
 			};
 			name = Debug;
 		};
-		887B3805572C019D6955045E /* Release configuration for PBXProject "PromptCam" */ = {
+		887B3805572C019D6955045E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -760,7 +782,7 @@
 			};
 			name = Release;
 		};
-		959F341E4E2373FF2053F415 /* Release configuration for PBXNativeTarget "PromptCamTests" */ = {
+		959F341E4E2373FF2053F415 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -778,7 +800,7 @@
 			};
 			name = Release;
 		};
-		A95E86E3BA5F41D2EA2C8CE8 /* Debug configuration for PBXProject "PromptCam" */ = {
+		A95E86E3BA5F41D2EA2C8CE8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -843,7 +865,7 @@
 			};
 			name = Debug;
 		};
-		B029F8713C66AEC26C9F82AF /* Debug configuration for PBXNativeTarget "PromptCamUITests" */ = {
+		B029F8713C66AEC26C9F82AF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -861,12 +883,11 @@
 			};
 			name = Debug;
 		};
-		D3D5CF8924C071FD3A3D5D53 /* Release configuration for PBXNativeTarget "PromptCam" */ = {
+		D3D5CF8924C071FD3A3D5D53 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ED52035DB32C31DC9FD2FAB2 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 39;
 				DEVELOPMENT_TEAM = LW5P4PVL96;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PromptCam/Info.plist;
@@ -887,7 +908,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -897,7 +917,7 @@
 			};
 			name = Release;
 		};
-		E9AED8F4C4B132F834AE4D5B /* Release configuration for PBXNativeTarget "PromptCamUITests" */ = {
+		E9AED8F4C4B132F834AE4D5B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -915,7 +935,7 @@
 			};
 			name = Release;
 		};
-		F3E3347D22F5D4701378E598 /* Debug configuration for PBXNativeTarget "PromptCamTests" */ = {
+		F3E3347D22F5D4701378E598 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -939,33 +959,37 @@
 		163E3AFE8AD2135CCECDEBEB /* Build configuration list for PBXProject "PromptCam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A95E86E3BA5F41D2EA2C8CE8 /* Debug configuration for PBXProject "PromptCam" */,
-				887B3805572C019D6955045E /* Release configuration for PBXProject "PromptCam" */,
+				A95E86E3BA5F41D2EA2C8CE8 /* Debug */,
+				887B3805572C019D6955045E /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		52002EC79685C9B46AE107A1 /* Build configuration list for PBXNativeTarget "PromptCamTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F3E3347D22F5D4701378E598 /* Debug configuration for PBXNativeTarget "PromptCamTests" */,
-				959F341E4E2373FF2053F415 /* Release configuration for PBXNativeTarget "PromptCamTests" */,
+				F3E3347D22F5D4701378E598 /* Debug */,
+				959F341E4E2373FF2053F415 /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		53018625C7D3479E0412F198 /* Build configuration list for PBXNativeTarget "PromptCamUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B029F8713C66AEC26C9F82AF /* Debug configuration for PBXNativeTarget "PromptCamUITests" */,
-				E9AED8F4C4B132F834AE4D5B /* Release configuration for PBXNativeTarget "PromptCamUITests" */,
+				B029F8713C66AEC26C9F82AF /* Debug */,
+				E9AED8F4C4B132F834AE4D5B /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		72ADE166D321D2AF0AECC55E /* Build configuration list for PBXNativeTarget "PromptCam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1FE7FEBEBEE341B8A664B32D /* Debug configuration for PBXNativeTarget "PromptCam" */,
-				D3D5CF8924C071FD3A3D5D53 /* Release configuration for PBXNativeTarget "PromptCam" */,
+				1FE7FEBEBEE341B8A664B32D /* Debug */,
+				D3D5CF8924C071FD3A3D5D53 /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */

@@ -40,6 +40,7 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
     var onCinematicApertureAvailable: (@MainActor @Sendable (Float, Float, Float) -> Void)?
     var onError: (@MainActor @Sendable (CameraError) -> Void)?
     var onRecordingSavedToLibrary: (@MainActor @Sendable () -> Void)?
+    private(set) var lastForegroundActive: Bool?
 
     // MARK: - Session Lifecycle
 
@@ -54,6 +55,12 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
 
     func stopSession() {
         stopSessionCalled = true
+    }
+
+    // MARK: - Foreground State
+
+    func setForegroundActive(_ active: Bool) {
+        lastForegroundActive = active
     }
 
     // MARK: - Recording
