@@ -13,6 +13,12 @@ Video Recording, Camera Preview, Audio Session, Live Video-Audio Output to HDMI 
   24p, 30p, 60p
   (slow-mo options not supported)
 
+supportedInterfaceOrientations: [
+.portrait,
+.landscapeLeft,
+.portraitUpsideDown(.when(deviceFamilies: [.pad]))
+],
+
 - Back Camera Controls:
   Zoom Control
   White Balence (Auto / Manual) Manual Presets 3200k, 4500k, 6200k
