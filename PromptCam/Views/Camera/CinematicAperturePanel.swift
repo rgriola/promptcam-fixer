@@ -31,12 +31,12 @@ struct CinematicAperturePanel: View {
                     apertureRange: apertureRange,
                     onAdjust: onAdjust
                 )
-                HStack{
+                HStack {
                     Spacer()
                     DefaultButton(onReset: {
                         aperture = defaultAperture
                         onReset()
-                        })
+                    })
                     Spacer()
                 }
             }
@@ -112,9 +112,12 @@ private struct ApertureSliderRow: View {
 
                 Spacer()
 
-                Text(String(format: "f/%.1f", (apertureRange.lowerBound + apertureRange.upperBound) / 2))
-                    .font(Theme.font12Regular)
-                    .foregroundStyle(Theme.primaryText)
+                Text(
+                    String(
+                        format: "f/%.1f", (apertureRange.lowerBound + apertureRange.upperBound) / 2)
+                )
+                .font(Theme.font12Regular)
+                .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 

@@ -2,7 +2,9 @@ New Project
 iPhone ENG
 The purpose of this app is to provide a simple to use camera for news.
 
-Video Recording, Camera Preview, Audio Session, Live Video-Audio Output to HDMI (1080p)
+Video Recording, Camera Preview, Audio Session, Live Stream Video+Audio(monitoring) Output to HDMI (1080p)
+
+Also allow video recording to live stream out via HDMI (live playback)
 
 - Front Camera (Selfie Camera)
 - Back Camera(s)

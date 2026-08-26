@@ -1,0 +1,38 @@
+{
+  "folders": [
+	{
+		"path": "../../../video-camera"
+	},
+	{
+		"path": "../.."
+	},
+	{
+		"path": "../../../CineCameraApp"
+	}
+],
+  "settings": {},
+  "launch": {
+    "configurations": [
+      {
+        "type": "swift",
+        "request": "launch",
+        "args": [],
+        "cwd": "${workspaceFolder:video-camera}",
+        "name": "Debug video-camera (video-camera)",
+        "target": "video-camera",
+        "configuration": "debug",
+        "preLaunchTask": "swift: Build Debug video-camera (video-camera)"
+      },
+      {
+        "type": "swift",
+        "request": "launch",
+        "args": [],
+        "cwd": "${workspaceFolder:video-camera}",
+        "name": "Release video-camera (video-camera)",
+        "target": "video-camera",
+        "configuration": "release",
+        "preLaunchTask": "swift: Build Release video-camera (video-camera)"
+      }
+    ]
+  }
+}
