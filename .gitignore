@@ -4,6 +4,8 @@ DerivedData/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
+*.psd
+CUE-VUE-ART/
 
 # Local, per-developer code-signing overrides (see Signing.local.xcconfig.example)
 Signing.local.xcconfig
