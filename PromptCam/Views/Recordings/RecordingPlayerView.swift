@@ -4,7 +4,7 @@
 // so no native AirPlay / PiP icons appear. All chrome is ours.
 // July 8, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add iCloud download progress UI
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Phase 1: cancel in-flight PHImageRequestID,
-//     observe AVPlayerItem.status, add 60s resolve timeout, id: on fallback .task
+//     Observe AVPlayerItem.status, add 60s resolve timeout, id: on fallback .task
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Delete confirmation stays in player view
 // July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Auto-advance to next video after delete
 import AVKit

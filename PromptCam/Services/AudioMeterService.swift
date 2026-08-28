@@ -130,8 +130,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Observer token for interruption notifications.
     private var interruptionObserver: NSObjectProtocol?
 
-    /// Work item for debouncing rapid route-change restarts.
-    private var restartWorkItem: DispatchWorkItem?
+    /// Task for debouncing rapid route-change restarts.
+    private var restartTask: Task<Void, Never>?
 
     /// True after an `AVAudioSession` interruption ends, until an external
     /// caller confirms the paired `AVCaptureSession` has resumed running
@@ -156,12 +156,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// (e.g. this service is used without a paired `CameraService`, or the
     /// paired session legitimately stays stopped), reconnect independently
     /// so metering doesn't stay dead forever.
-    private var reconnectFallbackWorkItem: DispatchWorkItem?
+    private var reconnectFallbackTask: Task<Void, Never>?
     
     /// One-shot watchdog that verifies the input tap becomes live after
     /// an engine start. If no buffer is received within the delay window,
     /// a single retry restart is attempted.
-    private var firstBufferWatchdogWorkItem: DispatchWorkItem?
+    private var firstBufferWatchdogTask: Task<Void, Never>?
 
     /// Guards the watchdog so it only retries once per engine start.
     private var firstBufferRetryCount: Int = 0
@@ -265,8 +265,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         
         // Reset first-buffer watchdog state for this engine start.
         firstBufferRetryCount = 0
-        firstBufferWatchdogWorkItem?.cancel()
-        firstBufferWatchdogWorkItem = nil
+        firstBufferWatchdogTask?.cancel()
+        firstBufferWatchdogTask = nil
 
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
@@ -322,10 +322,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Stops the audio engine and removes the input tap.
     func stopMetering() {
         Log.camera.info("AudioMeterService: stopMetering called — engine and route observer will be removed")
-        restartWorkItem?.cancel()
-        restartWorkItem = nil
-        reconnectFallbackWorkItem?.cancel()
-        reconnectFallbackWorkItem = nil
+        restartTask?.cancel()
+        restartTask = nil
+        reconnectFallbackTask?.cancel()
+        reconnectFallbackTask = nil
         pendingReconnectAfterInterruption = false
         tearDownEngine()
         stopMonitoringRoute()
@@ -341,8 +341,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.debug("AudioMeterService: engine stopped")
             
             // Cancel any pending first-buffer watchdog as the engine is torn down.
-            firstBufferWatchdogWorkItem?.cancel()
-            firstBufferWatchdogWorkItem = nil
+            firstBufferWatchdogTask?.cancel()
+            firstBufferWatchdogTask = nil
             firstBufferRetryCount = 0
         }
     }
@@ -355,16 +355,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     ///   interruption recovery.
     private func restartEngine(delay: TimeInterval = 0.5) {
         // Cancel any pending restart.
-        restartWorkItem?.cancel()
+        restartTask?.cancel()
 
-        // Signpost ID created now (not inside the work item) so the
+        // Signpost ID created now (not inside the task) so the
         // interval's start-to-scheduling latency is visible too if needed,
         // though the interval itself is begun/ended around the actual
         // teardown+start work below.
         let signpostID = Log.cameraSignposter.makeSignpostID()
 
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
+        restartTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled, let self else { return }
             // Neutralize any restart scheduled just before `.began` fired.
             // The `.ended` handler is responsible for scheduling the clean
             // post-interruption restart; don't fight the system in between.
@@ -399,9 +400,6 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
                 self.evaluateCurrentRoute()
             }
         }
-        restartWorkItem = work
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
     
     /// Schedules a one-shot check to verify the input tap becomes live after an engine start
@@ -409,10 +407,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// not interrupted, a single restart attempt is made with a slightly longer delay.
     private func scheduleFirstBufferWatchdog(delay: TimeInterval) {
         // Cancel any previously scheduled watchdog.
-        firstBufferWatchdogWorkItem?.cancel()
+        firstBufferWatchdogTask?.cancel()
 
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
+        firstBufferWatchdogTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled, let self else { return }
             // Do not act while the session is interrupted.
             guard !self.isInterrupted else {
                 Log.camera.debug("AudioMeterService: watchdog suppressed — session interrupted")
@@ -430,9 +429,6 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
                 Log.camera.error("AudioMeterService: no buffer received after retry — giving up")
             }
         }
-
-        firstBufferWatchdogWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     /// Processes a PCM buffer from the input tap — computes RMS, converts
@@ -453,8 +449,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             Log.camera.info("AudioMeterService: first buffer received — tap is live. format=\(buffer.format.channelCount, privacy: .public)ch frameLength=\(buffer.frameLength, privacy: .public)")
             
             // Cancel any pending watchdog once the first buffer arrives.
-            firstBufferWatchdogWorkItem?.cancel()
-            firstBufferWatchdogWorkItem = nil
+            firstBufferWatchdogTask?.cancel()
+            firstBufferWatchdogTask = nil
         }
 
         // SIMD-accelerated RMS — Ch1 (channel 0, always present).
@@ -566,7 +562,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             queue: nil
         ) { [weak self] notification in
             let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
-            DispatchQueue.main.async { self?.handleInterruption(typeRaw: typeRaw) }
+            Task { @MainActor in self?.handleInterruption(typeRaw: typeRaw) }
         }
 
         // Publish initial state.
@@ -743,31 +739,30 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             // never invoke it (no paired capture session, or it legitimately
             // stayed stopped).
             pendingReconnectAfterInterruption = true
-            reconnectFallbackWorkItem?.cancel()
+            reconnectFallbackTask?.cancel()
             let fallbackDelay: TimeInterval = 2.5
-            let fallback = DispatchWorkItem { [weak self] in
-                guard let self, self.pendingReconnectAfterInterruption else { return }
+            reconnectFallbackTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(fallbackDelay * 1_000_000_000))
+                guard !Task.isCancelled, let self, self.pendingReconnectAfterInterruption else { return }
                 Log.camera.notice("AudioMeterService: no external reconnect after \(fallbackDelay)s — reconnecting independently")
                 self.reconnectIfPending()
             }
-            reconnectFallbackWorkItem = fallback
-            DispatchQueue.main.asyncAfter(deadline: .now() + fallbackDelay, execute: fallback)
         } else {
             isInterrupted = true
             // Cancel any pending route-change restart so it doesn't fire
             // during the interruption window and fight the system for the
             // audio route.
-            restartWorkItem?.cancel()
-            restartWorkItem = nil
+            restartTask?.cancel()
+            restartTask = nil
             
             // Also cancel the first-buffer watchdog so it doesn't fire during interruption.
-            firstBufferWatchdogWorkItem?.cancel()
-            firstBufferWatchdogWorkItem = nil
+            firstBufferWatchdogTask?.cancel()
+            firstBufferWatchdogTask = nil
 
             // A new interruption supersedes any reconnect pending from a
             // previous cycle.
-            reconnectFallbackWorkItem?.cancel()
-            reconnectFallbackWorkItem = nil
+            reconnectFallbackTask?.cancel()
+            reconnectFallbackTask = nil
             pendingReconnectAfterInterruption = false
             
             Log.camera.debug("\(Log.ts(), privacy: .public) AudioMeterService: interruption began — engine will pause, restart pipeline suspended")
@@ -787,8 +782,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     func reconnectIfPending() {
         guard pendingReconnectAfterInterruption else { return }
         pendingReconnectAfterInterruption = false
-        reconnectFallbackWorkItem?.cancel()
-        reconnectFallbackWorkItem = nil
+        reconnectFallbackTask?.cancel()
+        reconnectFallbackTask = nil
 
         // A fresh interruption may have started between `.ended` and this
         // call (e.g. rapid Siri + dictation back-to-back) — don't fight it.

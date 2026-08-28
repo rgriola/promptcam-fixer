@@ -74,6 +74,7 @@ extension CameraService {
 // MARK: - AVCaptureFileOutputRecordingDelegate
 
 extension CameraService: AVCaptureFileOutputRecordingDelegate {
+    // AVFoundation calls these on an arbitrary thread — do not assume main actor.
     func fileOutput(
         _ output: AVCaptureFileOutput,
         didStartRecordingTo fileURL: URL,

@@ -345,7 +345,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// built-in mic, so the capture session would record from the wrong device
     /// when an external mic has been selected. Instead, we resolve the active
     /// `AVAudioSession` route input to its matching `AVCaptureDevice` by UID.
-    func reconfigureAudioInput() {
+    nonisolated func reconfigureAudioInput() {
         sessionQueue.async { [self] in
             guard isSessionConfigured else { return }
             guard !movieFileOutput.isRecording else {
@@ -418,7 +418,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
     // MARK: - Session Lifecycle
 
-    func configureSession(format: RecordingFormat = .default) {
+    nonisolated func configureSession(format: RecordingFormat = .default) {
         sessionQueue.async {
             guard !self.isSessionConfigured else { return }
             guard self.session.inputs.isEmpty else {
@@ -532,7 +532,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         }
     }
 
-    func startSession() {
+    nonisolated func startSession() {
         sessionQueue.async {
             guard self.isSessionConfigured else {
                 Log.camera.info(
@@ -556,7 +556,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         }
     }
 
-    func stopSession() {
+    nonisolated func stopSession() {
         sessionQueue.async {
             guard self.session.isRunning else { return }
             Log.camera.info("\(Log.ts(), privacy: .public) stopSession begin")
