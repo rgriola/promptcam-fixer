@@ -81,6 +81,7 @@ enum Theme {
 
     // Display
     static let display24 = fontFamily.font(size: 24)
+    static let display28Bold = fontFamily.font(size: 28, weight: .bold)
     static let display32 = fontFamily.font(size: 32)
     static let display44 = fontFamily.font(size: 44, weight: .bold)
     static let display64 = fontFamily.font(size: 64)
@@ -98,8 +99,6 @@ enum Theme {
    
     static let yellow = Color(hex: "#FFD60A")
     static let yellowTwo = Color(hex: "#CCA000")
-
-
 
     static let gray = Color(hex: "#8E8E93")
 

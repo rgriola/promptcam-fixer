@@ -44,29 +44,43 @@ struct PermissionsOnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 60)
+          //  Spacer().frame(height: 60)
 
             // App icon and title
             VStack(spacing: Theme.space12) {
-                Image(systemName: "video.fill")
-                    .font(Theme.display44)
-                    .foregroundStyle(Theme.white)
+                //Image(systemName: "video.fill")
+                Image("permissions-icon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 280, height: 100)
+                .accessibilityHidden(true)
+                //.font(Theme.icon12)
+                   // .font(Theme.display44)
+                   // .foregroundStyle(Theme.white)
 
-                Text(PermissionCopyCatalog.onboardingTitle)
+              /*  Text(PermissionCopyCatalog.onboardingTitle)
                     .font(Theme.font28Bold)
                     .foregroundStyle(Theme.white)
+                */
 
-                Text(PermissionCopyCatalog.onboardingRequiredSummary)
+              /*  Text(PermissionCopyCatalog.onboardingRequiredSummary)
                     .font(Theme.font16Regular)
                     .foregroundStyle(Theme.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, Theme.space32)
+                    .padding(.horizontal, Theme.space32)*/
 
+                Text("Permissions")
+                    .font(Theme.display28Bold)
+                    .foregroundStyle(Theme.white)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, Theme.space32)
+                /*
                 Text(PermissionCopyCatalog.onboardingOptionalSummary)
                     .font(Theme.font12Regular)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.space32)
+                    */
             }
 
             Spacer().frame(height: 40)

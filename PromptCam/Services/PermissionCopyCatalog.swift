@@ -13,16 +13,17 @@ enum PermissionCopyKey: CaseIterable {
 }
 
 enum PermissionCopyCatalog {
+
      static let onboardingTitle = "Cue Vue"
 
      static let onboardingRequiredSummary =
-          "Cue Vue needs access to Camera, Microphone & Photo Library."
+          "Camera, Mic & Photo Library access required."
 
      static let onboardingOptionalSummary =
           "GPS & Speech-to-Text are optional."
 
      static let onboardingBlockedRequiredMessage =
-          "A required permission are not active. Tap Settings to enable access."
+          "A required permission is not active. Tap Settings to enable access."
 
      static func description(for key: PermissionCopyKey) -> String {
           switch key {
@@ -31,11 +32,11 @@ enum PermissionCopyCatalog {
           case .microphone:
                return "Required to record audio."
           case .photoLibrary:
-               return "Required to save recordings."
+               return "Required to save videos."
           case .location:
-               return "Optional: adds GPS tags to clips."
+               return "Optional: GPS tag on video."
           case .speechToText:
-               return "Optional: enables automatic transcript features."
+               return "Optional: Speech-to-Text for scripting."
           }
      }
 
@@ -59,16 +60,16 @@ enum PermissionCopyCatalog {
           switch key {
           case .camera:
                return
-                    "Cue Vue cannot record video without Camera access. Open Settings, enable Camera, then return to continue."
+                    "Camera access required. Open Settings, enable Camera, then return to continue."
           case .microphone:
                return
-                    "Cue Vue cannot record audio without Microphone access. Open Settings, enable Microphone, then return to continue."
+                    "Microphone access required. Open Settings, enable Microphone, then return to continue."
           case .photoLibrary:
                return
-                    "Cue Vue cannot save recordings without Photo Library access. Open Settings, enable Photos access, then return to continue."
+                    "Photo Library access required. Open Settings, enable Photos access, then return to continue."
 
           case .location:
-               return "Location access is optional and only used for GPS metadata."
+               return "GPS Data is optional for tagging videos."
 
           case .speechToText:
                return optionalSpeechRecoveryMessage
@@ -76,5 +77,5 @@ enum PermissionCopyCatalog {
      }
 
      static let optionalSpeechRecoveryMessage =
-          "Speech to Text is optional. Enable it in Settings if you want transcript features; recording still works without it."
+          "Speech to Text is optional. Open Settings to enable."
 }
