@@ -17,9 +17,8 @@ Bluetooth, and the built-in mic via the Audio Sources panel. Routing follows the
 user's pick, the VU meter tracks the active device, and the "No audio" banner
 fires and clears correctly. This was the primary goal of the plan and it is met.
 
-**Known remaining gap:** a Bluetooth device that reconnects while another input
-holds the route is not noticed by the app — see finding 11. Workaround: reopen the
-Audio Sources panel, which re-enumerates inputs.
+**Known remaining gap:** none outstanding from manual testing. Finding 11
+(Bluetooth reconnect) is fixed and device-verified.
 
 **Not started:** Phases 2, 3, 5 — the capture-output metering migration. Note that
 the evidence that motivated them (mis-binding, contention) was refuted, so their
@@ -183,26 +182,27 @@ Conclusions:
     does not overwrite the user's choice. (This is the "stickiness" item listed
     in the stash-harvest notes above.)
 11. **A reconnecting Bluetooth device is invisible while another input holds the
-    route (found by manual test, 2026-08-29). OPEN.** Repro: swap to AirPods in
-    the panel, disconnect them, then put them back in — the app does not pick
-    them up. Two independent causes:
-    - `pollRouteForChange()` returns early on
-      `guard currentUID != lastSeenInputUID`, so it only ever reacts to the
+    route (found by manual test, 2026-08-29). FIXED and device-verified.** Repro:
+    swap to AirPods in the panel, disconnect them, then put them back in — the
+    app did not pick them up. Two independent causes:
+    - `pollRouteForChange()` returned early on
+      `guard currentUID != lastSeenInputUID`, so it only ever reacted to the
       **current route input** changing. A device that becomes _available_ without
-      iOS moving the route to it produces no UID change, so no callback fires,
-      `onInputsAvailable` never re-publishes, and `availableAudioInputs` goes
-      stale. Reopening the panel works around it because
+      iOS moving the route to it produces no UID change, so no callback fired,
+      `onInputsAvailable` never re-published, and `availableAudioInputs` went
+      stale. Reopening the panel worked around it because
       `openAudioSourcePicker()` re-reads `AVAudioSession.availableInputs`
       directly.
-    - `.oldDeviceUnavailable` clears `userPreferredInputUID` when the picked
-      device disappears, so the user's choice is not restored when that same
-      device returns.
+    - `.oldDeviceUnavailable` cleared `userPreferredInputUID` when the picked
+      device disappeared, so the user's choice was not restored when that same
+      device returned.
 
-    Likely fix: also poll the _set_ of available input UIDs (not just the active
-    one) and publish `onInputsAvailable` when it changes; and retain the user's
-    pick as a "desired" input across disconnects so its return re-selects it.
-    Deliberately not implemented yet — it widens the poller's trigger surface and
-    warrants its own hardware pass.
+    Fixed by tracking `lastSeenAvailableUIDs` (the _set_ of available input
+    UIDs) alongside the active-route UID. When the set changes the poller
+    republishes via `evaluateCurrentRoute()`, and if a newly-arrived UID matches
+    the user's standing pick it is re-selected. `.oldDeviceUnavailable` no longer
+    clears the pick — `userPreferredAvailableInput()` already returns nil while
+    the device is absent, so a retained pick cannot block fallback.
 
 **Still unreproduced:** the silent recording. Five runs, zero occurrences. The
 original report likely bundled two separate defects — a false "no audio" banner
@@ -632,8 +632,10 @@ _survive.)_
       **Bug found and fixed (2026-08-29)** — see finding 10. Re-verified
       2026-08-29: DJI ↔ Bluetooth ↔ built-in swapping via the Audio Sources
       panel routes correctly and the meter follows.
-- [ ] A Bluetooth input that reconnects while another device holds the route is
-      picked up automatically — **currently fails**, see finding 11.
+- [x] A Bluetooth input that reconnects while another device holds the route is
+      picked up automatically — see finding 11. Verified 2026-08-29: disconnect
+      AirPods mid-session, fallback occurs, reconnecting re-lists and re-selects
+      them.
 - [ ] `mediaServicesWereReset` recovery re-establishes both the audio data
       output and meter liveness (Phase 3).
 - [ ] Only after all of the above pass with the engine tap still present as

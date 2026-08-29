@@ -222,6 +222,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// changes that iOS notifications miss.
     private var lastSeenInputUID: String?
 
+    /// UIDs of every available input on the last poll. Tracked separately from
+    /// `lastSeenInputUID` because a device can appear or disappear without iOS
+    /// moving the active route to it.
+    private var lastSeenAvailableUIDs: Set<String> = []
+
     /// Guards `nextInterruptionSequence`, which is stamped on the notification
     /// thread rather than the main queue.
     private let interruptionSequenceLock = NSLock()
@@ -636,6 +641,7 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         // Seed the polling baseline so the first tick doesn't fire spuriously.
         lastSeenInputUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
+        lastSeenAvailableUIDs = Set((AVAudioSession.sharedInstance().availableInputs ?? []).map(\.uid))
 
         // Interruption notifications are unrelated to route changes (phone
         // calls, Siri, etc.) and are reliably posted by iOS, so they still
@@ -677,6 +683,33 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // swaps starts a restart loop; the `.ended` handler will re-seed
         // and restart cleanly.
         guard !isInterrupted else { return }
+
+        let session = AVAudioSession.sharedInstance()
+        let available = session.availableInputs ?? []
+        let availableUIDs = Set(available.map(\.uid))
+        if availableUIDs != lastSeenAvailableUIDs {
+            let arrived = availableUIDs.subtracting(lastSeenAvailableUIDs)
+            lastSeenAvailableUIDs = availableUIDs
+
+            // A device can become available without iOS moving the route to it
+            // (AirPods reconnecting while a USB mic holds the route), which
+            // leaves the active-input UID unchanged and invisible to the guard
+            // below. Republish so the picker list doesn't go stale.
+            Log.camera.info("AudioMeterService: available inputs changed, arrived=[\(arrived.joined(separator: ", "), privacy: .public)]")
+            evaluateCurrentRoute()
+
+            // The user's standing pick outranks whatever currently holds the
+            // route, so restore it the moment that device comes back.
+            if let uid = userPreferredInputUID,
+               arrived.contains(uid),
+               let port = available.first(where: { $0.uid == uid }) {
+                Log.camera.info("AudioMeterService: preferred input '\(port.portName, privacy: .public)' returned — restoring")
+                applyPreferredInput(port)
+                lastSeenInputUID = port.uid
+                return
+            }
+        }
+
         let currentUID = AVAudioSession.sharedInstance().currentRoute.inputs.first?.uid
         guard currentUID != lastSeenInputUID else { return }
         let previousUID = lastSeenInputUID
@@ -746,8 +779,10 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             }
 
         case .oldDeviceUnavailable:
-            // Drop a stale pick so a removed device can't block auto-fallback.
-            if userPreferredAvailableInput() == nil { userPreferredInputUID = nil }
+            // Deliberately does not clear `userPreferredInputUID`: it is the
+            // user's standing choice, and the poller restores it if the device
+            // returns. `userPreferredAvailableInput()` already returns nil while
+            // the device is absent, so a stale pick cannot block fallback.
             let target = userPreferredAvailableInput() ?? findBuiltInInput()
             Log.camera.info("AudioMeterService: oldDeviceUnavailable — falling back to \(target?.portName ?? "system default", privacy: .public)")
             applyPreferredInput(target)  // nil resets to system default

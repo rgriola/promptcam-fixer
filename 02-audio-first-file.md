@@ -31,3 +31,8 @@ _** Increase sixe of Text on Warning Bannner \*\*\*
 
 **_ non-audio changes _**
 For Permission Screen Remove SF Icon and add Cue Vue Icon at the top and create space for the permissoin list.
+
+**_ Bluetooth Control _**
+Apple Airpods can switch easily between Apple Devices, ie iPhone, Mac Book, iPad. The issue to be carefull with is this app may see your airpods, but the airpods are actually being used by your Mac Book.
+
+The Audio Selection Panel will show the Airpods as available, you must switch the Airpods back to your iPhone. An example; On your Mac Book you are watching a video with audio coming through your Airpods. You need to defocus your video and open your iPhone. The audio should switch back to the App on the iPhone. I believe this is an Apple design I cannot code around.
