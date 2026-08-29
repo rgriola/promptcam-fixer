@@ -8,7 +8,7 @@ Cue Vue is a SwiftUI iOS vertical camera teleprompter app. It includes a recordi
 - **Min iOS:** 18.0
 - **Architecture:** MVVM with protocol-backed services for testability
 - **Camera / video:** AVFoundation (`AVCaptureSession`, `AVCaptureMovieFileOutput`, cinematic video where available)
-- **Audio metering:** `AVAudioEngine` input tap with `vDSP` (Accelerate) RMS computation, route monitoring, hot-swap input selection
+- **Audio metering:** `AVAudioEngine` input tap with `vDSP` (Accelerate) RMS + peak computation, route monitoring, hot-swap input selection with a user-preferred input that survives automatic route changes
 - **Permissions:** AVFoundation + Photos framework
 - **Persistence:** PhotoKit (`PHPhotoLibrary`) for saved recordings, UserDefaults for format + teleprompter style
 - **Project generation:** XcodeGen (`project.yml`)
@@ -26,7 +26,7 @@ Cue Vue is a SwiftUI iOS vertical camera teleprompter app. It includes a recordi
   - `Teleprompter/` — scrolling text + adjustment panel
   - `Recordings/` — recordings library UI
   - `Components/` — reusable views (permission rows, warning banners)
-- [PromptCamTests](PromptCamTests) — XCTest unit tests (73 tests)
+- [PromptCamTests](PromptCamTests) — XCTest unit tests (157 tests)
 - [PromptCamUITests](PromptCamUITests) — XCUITest smoke test
 
 ## Local setup
@@ -70,6 +70,8 @@ Coverage focus areas:
 
 ## Notes
 
-- Camera mutations run on a dedicated serial `sessionQueue`; `AudioMeterService` is a `Sendable` value type with `NSLock`-protected callback storage to satisfy Swift 6 strict concurrency.
+- Camera mutations run on a dedicated serial `sessionQueue`; `AudioMeterService` is a `final class` marked `@unchecked Sendable`, with `NSLock`-protected callback and metering state to satisfy Swift 6 strict concurrency.
 - `AudioMeterService` shares the global `AVAudioSession` with `AVCaptureSession` and intentionally never calls `setActive(false)` — doing so would silence recordings.
+- Audio-session interruptions are delivered via `DispatchQueue.main.async` (not `Task`) to preserve FIFO ordering, plus a sequence-number guard that discards stale deliveries. See `audio-fix.md`, Phase 0.
+- The silence watchdog triggers on **peak** amplitude, taken as the max across channels. RMS cannot distinguish a quiet room from a dead mic; peak separates them by >50 dB. See `audio-fix.md`, Phase 4.
 - Recordings are saved to the Photos library; the in-app library uses `PHPickerViewController`-style fetches via `PhotoKit`.

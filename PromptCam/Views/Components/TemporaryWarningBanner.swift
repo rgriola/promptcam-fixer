@@ -1,12 +1,12 @@
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Temporary warning banner component
 import SwiftUI
 
-/// A temporary warning banner that appears at the top center of the screen
-/// and auto-dismisses after a specified duration.
+/// A warning banner that appears at the top center of the screen. Auto-dismisses
+/// after `autoDismissAfter`, or stays until dismissed by the caller when `nil`.
 struct TemporaryWarningBanner: View {
     let message: String
     let systemImage: String
-    let autoDismissAfter: TimeInterval
+    let autoDismissAfter: TimeInterval?
     @Binding var isPresented: Bool
     
     var body: some View {
@@ -29,7 +29,7 @@ struct TemporaryWarningBanner: View {
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: isPresented) {
-                    guard isPresented else { return }
+                    guard isPresented, let autoDismissAfter else { return }
                     try? await Task.sleep(for: .seconds(autoDismissAfter))
                     guard !Task.isCancelled else { return }
                     withAnimation(.easeInOut(duration: 0.3)) {

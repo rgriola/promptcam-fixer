@@ -339,12 +339,11 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// Safe to call while not recording. If called during an active
     /// recording, it's a no-op to avoid corrupting the file.
     ///
-    /// **Why not `AVCaptureDevice.default(for: .audio)`?**
-    /// That API reads the system default device and ignores any preferred input
-    /// set via `AVAudioSession.setPreferredInput()`. It always returns the
-    /// built-in mic, so the capture session would record from the wrong device
-    /// when an external mic has been selected. Instead, we resolve the active
-    /// `AVAudioSession` route input to its matching `AVCaptureDevice` by UID.
+    /// iOS exposes a single audio `AVCaptureDevice` that proxies whatever the
+    /// audio session route is, so there is nothing to look up: the device
+    /// already follows `AVAudioSession.setPreferredInput()`. Verified on device
+    /// — its `uniqueID` is the fixed `built-in_audio:0` while its
+    /// `localizedName` tracks the active route.
     nonisolated func reconfigureAudioInput() {
         sessionQueue.async { [self] in
             guard isSessionConfigured else { return }
@@ -353,35 +352,21 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 return
             }
 
-            // Resolve the AVCaptureDevice that matches the currently active
-            // AVAudioSession route input.  Falls back to the system default
-            // only if no active route input is found (e.g. no mic at all).
-            let newDevice: AVCaptureDevice?
             if let activeInput = AVAudioSession.sharedInstance().currentRoute.inputs.first {
-                // Match by UID: AVAudioSessionPortDescription.uid == AVCaptureDevice.uniqueID
-                // for built-in and most wired/USB inputs.
-                let discovery = AVCaptureDevice.DiscoverySession(
-                    deviceTypes: [.microphone],
-                    mediaType: .audio,
-                    position: .unspecified
-                )
-                newDevice =
-                    discovery.devices.first { $0.uniqueID == activeInput.uid }
-                    ?? AVCaptureDevice.default(for: .audio)
                 Log.camera.debug(
                     "CameraService: active audio route = \(activeInput.portName) (uid=\(activeInput.uid))"
                 )
-            } else {
-                newDevice = AVCaptureDevice.default(for: .audio)
             }
 
-            guard let newDevice else {
+            guard let newDevice = AVCaptureDevice.default(for: .audio) else {
                 Log.camera.error("CameraService: no audio device available")
                 return
             }
 
-            // Skip if already using the same device.
-            if let current = audioDevice, current.uniqueID == newDevice.uniqueID {
+            // `audioInput != nil` matters: if `canAddInput` failed during
+            // configureSession, `audioDevice` is set while no input is attached,
+            // and without this the session would record silent forever.
+            if let current = audioDevice, current.uniqueID == newDevice.uniqueID, audioInput != nil {
                 Log.camera.debug(
                     "CameraService: audio device unchanged (\(newDevice.localizedName))")
                 return
@@ -464,7 +449,11 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                     if self.session.canAddInput(input) {
                         self.session.addInput(input)
                         self.audioInput = input
+                    } else {
+                        Log.camera.error("CameraService: cannot add audio input — session will have no audio track")
                     }
+                } else {
+                    Log.camera.error("CameraService: no audio device at configure time — session will have no audio track")
                 }
 
                 if self.session.canAddOutput(self.movieFileOutput) {

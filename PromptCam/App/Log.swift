@@ -8,6 +8,9 @@ enum Log {
     private static let sessionStartUptime = ProcessInfo.processInfo.systemUptime
 
     static let camera = Logger(subsystem: subsystem, category: "Camera")
+    /// Audio capture/metering diagnostics. Filter Console.app on this category
+    /// alone to correlate the VU meter against what the recording actually got.
+    static let audio = Logger(subsystem: subsystem, category: "Audio")
     static let viewmodel = Logger(subsystem: subsystem, category: "ViewModel")
     static let ui = Logger(subsystem: subsystem, category: "UI")
     static let teleprompter = Logger(subsystem: subsystem, category: "Teleprompter")

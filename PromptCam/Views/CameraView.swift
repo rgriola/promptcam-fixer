@@ -210,11 +210,11 @@ struct CameraView: View {
                 )
 
                 // MARK: - 13: Warn No Audio —
-                // sustained dead audio
+                // sustained dead audio. Persists until the signal returns.
                 TemporaryWarningBanner(
-                    message: "No audio signal detected. Check microphone connection.",
+                    message: "No audio signal. Check that your microphone is on and in range.",
                     systemImage: "waveform.badge.exclamationmark",
-                    autoDismissAfter: 6.0,
+                    autoDismissAfter: nil,
                     isPresented: $viewModel.audioMeter.showAudioSilenceWarning
                 )
 

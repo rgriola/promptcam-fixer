@@ -26,9 +26,14 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Minimum interval between UI updates (~30 fps).
     private static let uiUpdateInterval: TimeInterval = 1.0 / 30.0
 
-    /// Normalized level below which audio is considered "absolute silence".
-    /// Slightly above zero to ignore floating-point noise.
-    private static let silenceFloor: Float = 0.005
+    /// Peak amplitude below which the input is treated as truly dead.
+    ///
+    /// Measured on a DJI Wireless Mic Rx: transmitters off delivers exact
+    /// digital zero, while a quiet room with the transmitters on still peaks at
+    /// −50…−60 dBFS. −80 dBFS sits ~20 dB under real room tone and well above
+    /// zero, so it separates the two without tripping on a receiver that emits
+    /// dither or a DC offset rather than hard zero.
+    private static let silencePeakFloor: Float = 0.0001
 
     /// Seconds of sustained absolute silence before the watchdog fires.
     /// Set to 5s to avoid false positives from natural speech pauses.
@@ -115,11 +120,15 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// would add ~30 lock acquisitions per second for no observable benefit.
     nonisolated(unsafe) private(set) var isStereoInput: Bool = false
 
-    /// Timestamp of the last buffer with level above `silenceFloor`.
+    /// Timestamp of the last buffer peaking above `silencePeakFloor`.
     private var lastNonZeroBufferTime: TimeInterval = 0.0
     /// Whether the silence alert has already fired (prevents re-firing
     /// on every subsequent silent buffer).
     private var silenceAlertFired: Bool = false
+
+    /// UID of an input the user explicitly picked. While that input is still
+    /// available, route polling must not auto-switch away from it.
+    private var userPreferredInputUID: String?
 
     /// The audio engine used for input metering.
     private var audioEngine: AVAudioEngine?
@@ -196,6 +205,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// every buffer, written from the main queue once per engine start.
     nonisolated(unsafe) private var hasLoggedFirstBuffer = false
 
+    /// Uptime of the last throttled level log, so the 1 Hz diagnostic trace
+    /// doesn't run on every buffer.
+    ///
+    /// `nonisolated(unsafe)`: touched only from the audio tap thread.
+    nonisolated(unsafe) private var lastLevelLogUptime: CFTimeInterval = 0
+
     /// Timer that polls AVAudioSession.currentRoute as a safety net.
     /// iOS does not reliably post routeChangeNotification for USB devices
     /// with portType 'Other' (e.g. DJI Wireless Mic Rx), so we poll the
@@ -206,6 +221,18 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// UID of the input port last seen by the poller. Used to detect
     /// changes that iOS notifications miss.
     private var lastSeenInputUID: String?
+
+    /// Guards `nextInterruptionSequence`, which is stamped on the notification
+    /// thread rather than the main queue.
+    private let interruptionSequenceLock = NSLock()
+
+    /// Monotonic counter stamped onto each interruption notification at the
+    /// moment it arrives, before the hop to main.
+    private var nextInterruptionSequence: UInt64 = 0
+
+    /// Highest sequence already applied to the interruption state machine.
+    /// Main-queue only.
+    private var lastHandledInterruptionSequence: UInt64 = 0
 
     // MARK: - Init
 
@@ -259,9 +286,17 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // trigger a false positive from the gap between teardown and start.
         stateLock.lock()
         lastNonZeroBufferTime = CACurrentMediaTime()
+        let wasSilenceAlertFired = silenceAlertFired
         silenceAlertFired = false
         hasLoggedFirstBuffer = false
         stateLock.unlock()
+
+        // Clearing the flag without telling the UI would strand a latched
+        // banner: the service forgets it alerted while the warning stays up.
+        // If the new route is also silent the watchdog simply fires again.
+        if wasSilenceAlertFired, let callback = onSilenceWatchdog {
+            Task { @MainActor [callback] in callback(false) }
+        }
         
         // Reset first-buffer watchdog state for this engine start.
         firstBufferRetryCount = 0
@@ -284,6 +319,8 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         let activeInputType = session.currentRoute.inputs.first?.portType.rawValue ?? "unknown"
         let preferredName   = session.preferredInput?.portName ?? "(system default)"
         Log.camera.info("AudioMeterService: startMetering activeInput=\(activeInputName, privacy: .public) portType=\(activeInputType, privacy: .public) preferred=\(preferredName, privacy: .public) format=\(format.channelCount)ch@\(format.sampleRate)Hz")
+
+        logEngineOwnershipDiagnostics(session: session, format: format)
 
         // Detect stereo input and store for VU meter / ViewModel use.
         let stereo = format.channelCount >= 2
@@ -319,8 +356,30 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         }
     }
 
+    /// Records which mic the metering tap is about to claim, and whether that
+    /// mic is one of the single-input-stream devices that can't be shared with
+    /// `AVCaptureSession`. When the recording comes back silent, this line says
+    /// whether contention is a plausible cause.
+    private func logEngineOwnershipDiagnostics(session: AVAudioSession, format: AVAudioFormat) {
+        guard let input = session.currentRoute.inputs.first else {
+            Log.audio.error("\(Log.ts(), privacy: .public) [meter] engine starting with NO route input")
+            return
+        }
+        let portType = input.portType
+        let exclusiveRisk = portType == .usbAudio || portType.rawValue == "Other"
+        Log.audio.notice(
+            "\(Log.ts(), privacy: .public) [meter] engine CLAIMING input '\(input.portName, privacy: .public)' uid=\(input.uid, privacy: .public) portType=\(portType.rawValue, privacy: .public) format=\(format.channelCount, privacy: .public)ch@\(format.sampleRate, privacy: .public)Hz exclusiveAccessRisk=\(exclusiveRisk ? "YES" : "no", privacy: .public)"
+        )
+        if exclusiveRisk {
+            Log.audio.notice(
+                "\(Log.ts(), privacy: .public) [meter] '\(input.portName, privacy: .public)' may expose a single input stream — if the recording is silent while the meter moves, suspect tap/capture contention"
+            )
+        }
+    }
+
     /// Stops the audio engine and removes the input tap.
     func stopMetering() {
+        Log.audio.notice("\(Log.ts(), privacy: .public) [meter] engine RELEASING input — tap removed")
         Log.camera.info("AudioMeterService: stopMetering called — engine and route observer will be removed")
         restartTask?.cancel()
         restartTask = nil
@@ -459,13 +518,38 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         let db: Float = rms > 0 ? 20.0 * log10f(rms) : Self.silenceThresholdDb
         let normalizedLevel = Self.normalizeDecibels(db)
 
+        // Peak drives the silence watchdog. RMS cannot: a quiet room measures
+        // below the −60 dBFS display floor while the mic is working fine.
+        var channelPeak: Float = 0
+        vDSP_maxmgv(channelData[0], 1, &channelPeak, frameLength)
+
         // Ch2 (channel 1) — only when stereo input is active.
         var normalizedLevel2: Float? = nil
+        var db2: Float?
         if isStereoInput && buffer.format.channelCount >= 2 {
             var rms2: Float = 0
             vDSP_rmsqv(channelData[1], 1, &rms2, frameLength)
-            let db2: Float = rms2 > 0 ? 20.0 * log10f(rms2) : Self.silenceThresholdDb
-            normalizedLevel2 = Self.normalizeDecibels(db2)
+            let channel2Db: Float = rms2 > 0 ? 20.0 * log10f(rms2) : Self.silenceThresholdDb
+            db2 = channel2Db
+            normalizedLevel2 = Self.normalizeDecibels(channel2Db)
+
+            // Max across channels so muting one transmitter of a two-TX
+            // receiver doesn't read as silence.
+            var channel2Peak: Float = 0
+            vDSP_maxmgv(channelData[1], 1, &channel2Peak, frameLength)
+            channelPeak = max(channelPeak, channel2Peak)
+        }
+
+        // 1 Hz trace so the meter can be lined up against the recorded file's
+        // measured peak. Peak is logged alongside RMS because the file analysis
+        // reports peak — comparing RMS to peak overstates the gap.
+        let logNow = CACurrentMediaTime()
+        if logNow - lastLevelLogUptime >= 1.0 {
+            lastLevelLogUptime = logNow
+            let peakDb = channelPeak > 0 ? 20.0 * log10f(channelPeak) : Self.silenceThresholdDb
+            Log.audio.debug(
+                "\(Log.ts(), privacy: .public) [meter] rms ch1=\(db, format: .fixed(precision: 1), privacy: .public) ch2=\(db2 ?? -999, format: .fixed(precision: 1), privacy: .public) | peak(max of ch)=\(peakDb, format: .fixed(precision: 1), privacy: .public) dBFS"
+            )
         }
 
         let now = CACurrentMediaTime()
@@ -493,11 +577,11 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             peak2 = peakLevel2
         }
 
-        // Silence watchdog: track last non-zero buffer (Ch1 drives this).
+        // Silence watchdog: driven by peak across all metered channels.
         var fireSilenceAlert = false
         var fireSilenceRecovery = false
 
-        if normalizedLevel > Self.silenceFloor {
+        if channelPeak > Self.silencePeakFloor {
             lastNonZeroBufferTime = now
             if silenceAlertFired {
                 silenceAlertFired = false
@@ -562,7 +646,14 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
             queue: nil
         ) { [weak self] notification in
             let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
-            Task { @MainActor in self?.handleInterruption(typeRaw: typeRaw) }
+            guard let self else { return }
+            let sequence = self.stampInterruptionSequence()
+            // Deliberately `DispatchQueue.main.async`, NOT `Task { @MainActor }`:
+            // `.began`/`.ended` form an order-sensitive state machine and GCD
+            // guarantees FIFO, whereas unstructured tasks do not.
+            DispatchQueue.main.async {
+                self.handleInterruption(typeRaw: typeRaw, sequence: sequence)
+            }
         }
 
         // Publish initial state.
@@ -605,12 +696,13 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
 
         Log.camera.info("AudioMeterService: poller detected route change uid \(previousUID ?? "nil", privacy: .public) → \(currentUID ?? "nil", privacy: .public)")
 
-        // Best-guess reason: a new port appeared → newDeviceAvailable,
-        // the current port disappeared → oldDeviceUnavailable.
-        // Edge case: external A → external B (UID changes, both non-nil)
-        // maps to .newDeviceAvailable → findExternalInput → picks first
-        // external, which is what we want.
-        let reason: AVAudioSession.RouteChangeReason = currentUID != nil ? .newDeviceAvailable : .oldDeviceUnavailable
+        // Classify by what the route landed on, not by whether the UID went
+        // nil: unplugging USB audio falls straight back to the built-in mic, so
+        // the UID stays non-nil and the unplug would otherwise read as arrival.
+        // External A -> external B still lands external, so it stays an arrival.
+        let landedOnExternal = AVAudioSession.sharedInstance().currentRoute.inputs.first
+            .map { Self.isExternalMicPort($0.portType) } ?? false
+        let reason: AVAudioSession.RouteChangeReason = landedOnExternal ? .newDeviceAvailable : .oldDeviceUnavailable
         handleRouteChange(reasonRaw: reason.rawValue)
     }
 
@@ -639,25 +731,27 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // Only act on reasons that change the input device.
         switch reason {
         case .newDeviceAvailable:
-            // A new mic was plugged in. Use selectInput() — the same path
-            // as manual picker selection — so the engine restarts reliably
-            // via the exact mechanism that is known to work.
-            let externalPort = findExternalInput()
-            Log.camera.info("AudioMeterService: newDeviceAvailable — auto-switching to \(externalPort?.portName ?? "(none found)", privacy: .public)")
-            if let port = externalPort {
-                selectInput(port)
+            // An explicit picker choice outranks "first external found" — with
+            // two externals connected the poller would otherwise yank the route
+            // back to whichever enumerates first.
+            let target = userPreferredAvailableInput() ?? findExternalInput()
+            Log.camera.info("AudioMeterService: newDeviceAvailable — auto-switching to \(target?.portName ?? "(none found)", privacy: .public)")
+            if let port = target {
+                applyPreferredInput(port)
                 lastSeenInputUID = port.uid
             } else {
+                // The route still moved, so the tap is bound to a stale device.
                 evaluateCurrentRoute()
+                if audioEngine != nil { restartEngine(delay: 0.8) }
             }
 
         case .oldDeviceUnavailable:
-            // A mic was unplugged. Switch back to built-in via selectInput()
-            // for the same reliable restart path.
-            let builtIn = findBuiltInInput()
-            Log.camera.info("AudioMeterService: oldDeviceUnavailable — falling back to \(builtIn?.portName ?? "system default", privacy: .public)")
-            selectInput(builtIn)  // nil resets to system default
-            lastSeenInputUID = builtIn?.uid
+            // Drop a stale pick so a removed device can't block auto-fallback.
+            if userPreferredAvailableInput() == nil { userPreferredInputUID = nil }
+            let target = userPreferredAvailableInput() ?? findBuiltInInput()
+            Log.camera.info("AudioMeterService: oldDeviceUnavailable — falling back to \(target?.portName ?? "system default", privacy: .public)")
+            applyPreferredInput(target)  // nil resets to system default
+            lastSeenInputUID = target?.uid
 
         case .override, .routeConfigurationChange:
             evaluateCurrentRoute()
@@ -714,6 +808,33 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     /// Made `internal` so tests can drive the state machine directly
     /// without depending on real `AVAudioSession` interruption delivery.
     func handleInterruption(typeRaw: UInt?) {
+        handleInterruption(typeRaw: typeRaw, sequence: nil)
+    }
+
+    /// Returns the next monotonic interruption sequence number. Safe to call
+    /// from the arbitrary thread that delivers the notification.
+    private func stampInterruptionSequence() -> UInt64 {
+        interruptionSequenceLock.withLock {
+            nextInterruptionSequence += 1
+            return nextInterruptionSequence
+        }
+    }
+
+    /// - Parameter sequence: Arrival order stamped at notification time, or
+    ///   `nil` for direct callers (tests). Deliveries that arrive out of order
+    ///   are discarded, so the state machine stays correct even if the
+    ///   transport ever stops guaranteeing FIFO.
+    private func handleInterruption(typeRaw: UInt?, sequence: UInt64?) {
+        if let sequence {
+            guard sequence > lastHandledInterruptionSequence else {
+                Log.camera.error(
+                    "AudioMeterService: discarding out-of-order interruption seq=\(sequence, privacy: .public) (last=\(self.lastHandledInterruptionSequence, privacy: .public))"
+                )
+                return
+            }
+            lastHandledInterruptionSequence = sequence
+        }
+
         // Fail-safe default: `.began` (raw 1), NOT the enum's raw-value-0
         // which would be `.ended`. If a stray/malformed notification lacks
         // the type key, suspending the pipeline is safer than clearing it.
@@ -839,9 +960,16 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
     // MARK: - Input Selection
 
     /// Sets the preferred audio input and restarts the engine to use it.
+    /// Records the choice so route polling won't auto-switch away from it.
     /// - Parameter port: The `AVAudioSessionPortDescription` to switch to,
     ///   or `nil` to reset to system default.
     func selectInput(_ port: AVAudioSessionPortDescription?) {
+        userPreferredInputUID = port?.uid
+        applyPreferredInput(port)
+    }
+
+    /// Applies a preferred input without recording it as a user choice.
+    private func applyPreferredInput(_ port: AVAudioSessionPortDescription?) {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setPreferredInput(port)
@@ -852,6 +980,12 @@ final class AudioMeterService: NSObject, @unchecked Sendable {
         // Restart engine so the new preferred input takes effect.
         // 0.8s gives the audio route time to settle before reconnecting.
         restartEngine(delay: 0.8)
+    }
+
+    /// The input the user explicitly picked, if it is still available.
+    private func userPreferredAvailableInput() -> AVAudioSessionPortDescription? {
+        guard let uid = userPreferredInputUID else { return nil }
+        return AVAudioSession.sharedInstance().availableInputs?.first { $0.uid == uid }
     }
 
     /// Returns the currently active input port, if any.
