@@ -7,27 +7,32 @@ recorded**, fix the underlying device-binding bug so USB microphones actually
 capture audio into the file, and make the "No audio" banner persist until audio
 returns.
 
-## Status (2026-08-29) — ✅ Core audio routing working
+## Status (2026-08-29) — ✅ Closed
 
 **Shipped and device-verified:** Phase 0, the Phase 1 cleanup, all of Phase 4, and
-the two manual-test fixes from 2026-08-29 (findings 9 and 10).
+the three manual-test fixes from 2026-08-29 (findings 9, 10, and 11).
 
 **Device-verified working (2026-08-29):** live swapping between the DJI receiver,
 Bluetooth, and the built-in mic via the Audio Sources panel. Routing follows the
-user's pick, the VU meter tracks the active device, and the "No audio" banner
-fires and clears correctly. This was the primary goal of the plan and it is met.
+user's pick, the VU meter tracks the active device, the "No audio" banner fires
+and clears correctly, and a disconnected Bluetooth device is re-recognized when
+it returns. This was the primary goal of the plan and it is met.
 
-**Known remaining gap:** none outstanding from manual testing. Finding 11
-(Bluetooth reconnect) is fixed and device-verified.
+**Known remaining gap:** none outstanding from manual testing.
 
-**Not started:** Phases 2, 3, 5 — the capture-output metering migration. Note that
-the evidence that motivated them (mis-binding, contention) was refuted, so their
-remaining justification is architectural rather than bug-driven. Re-litigate the
-cost/benefit before starting (Open Question 6).
+**Not doing:** Phases 2, 3, and 5 — the capture-output metering migration. The
+evidence that motivated them (mis-binding, contention) was refuted on hardware,
+so only an architectural argument remains, and Phase 5 would retire working
+recovery logic. See Open Question 6.
 
-**Still open:** the silent recording has never been reproduced across five
-instrumented runs. A candidate code path was found by inspection and hardened,
-but remains unconfirmed.
+**Accepted as unresolved:** the silent recording was never reproduced across five
+instrumented runs. The reproducible half of the original report — the false "no
+audio" banner — was root-caused and fixed. A candidate path for the silent-file
+half was found by inspection and hardened, and both failure branches now log, so
+a recurrence will be visible. Reopen if it appears in the field.
+
+**Follow-up, low priority:** none. The `onChange(of: Float)` per-frame warning is
+fixed — see Open Question 7.
 
 **Test baseline:** 157 executed, 2 failures — the two known-failing
 `PermissionStatusDisplayTests` cases, unrelated to audio.
@@ -684,7 +689,38 @@ _survive.)_
    this hardware, and the meter now demonstrably agrees with the file to within
    ~2.5 dB. The remaining arguments for capture-output metering are architectural
    (one audio client instead of two) rather than bug-driven, and Phase 5 would
-   retire engine-tap recovery logic that is currently working. Decide
-   deliberately before starting.
+   retire engine-tap recovery logic that is currently working.
 
-   I
+   **ANSWERED — no. Closed 2026-08-29. Phases 2, 3, and 5 are not being done.**
+   Every defect this plan set out to fix is resolved and device-verified, and
+   both hypotheses that justified the migration were refuted on real hardware.
+   Proceeding would mean rewriting a working metering path to chase an
+   architectural preference, and deleting interruption/route recovery logic that
+   took real field debugging to get right. Reopen only if a concrete defect
+   appears that the engine tap structurally cannot fix — e.g. a device where the
+   tap and the capture session genuinely cannot coexist, which this hardware is
+   not.
+
+7. (New, 2026-08-29) **`onChange(of: Float) action tried to update multiple
+times per frame`** — noted in finding 7. **FIXED 2026-08-29.**
+
+   Cause: levels publish at ~30 Hz through independent `Task { @MainActor }`
+   hops, so several could land between two display frames. `VUBarView` reacted
+   with `.onChange(of: peak)` and `.onChange(of: level)` — observing raw
+   `Float`s — and each handler mutated `@State`. `.onChange(of: level)` set
+   `lastSignalTime = Date()`, a unique value every update, so
+   `.task(id: lastSignalTime)` cancelled and respawned its grace-period sleep
+   ~30×/second whenever audio was present.
+
+   Fix: reduce the levels to booleans (`isClipping = peak >= clipThreshold`,
+   `hasSignal = level >= noSignalThreshold`) before observing them, and drive
+   both behaviors from `.task(id:)` keyed on those booleans. They now fire only
+   on transitions rather than on every sample, and `.task(id:)` handles
+   cancellation on change and on disappear — which removed the manual
+   `clipClearTask` bookkeeping, the `lastSignalTime` state, and the `.onDisappear`
+   cleanup.
+
+   Latch semantics are unchanged: CLIP stays lit while clipping and clears one
+   second after it stops. The theoretical "transient clip inside a single frame
+   is missed" concern is not a practical risk, because the service peak-holds for
+   1.5 s, so any spike stays visible across many frames.

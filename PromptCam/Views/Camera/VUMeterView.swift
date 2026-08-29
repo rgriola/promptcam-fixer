@@ -187,8 +187,6 @@ private struct VUBarView: View {
     private let clipLatchDuration: TimeInterval   = 1.0
 
     @State private var clipLatched: Bool = false
-    @State private var clipClearTask: Task<Void, Never>?
-    @State private var lastSignalTime: Date = Date()
     @State private var isNoSignal: Bool = false
 
     private static let levelGradient = LinearGradient(
@@ -205,6 +203,11 @@ private struct VUBarView: View {
     )
 
     var body: some View {
+        // Levels arrive ~30x/sec, faster than SwiftUI draws. Reducing them to
+        // booleans first means the observers below fire only on transitions.
+        let isClipping = peak >= clipThreshold
+        let hasSignal = level >= noSignalThreshold
+
         GeometryReader { geo in
             let barHeight = geo.size.height
             let clampedLevel = CGFloat(min(max(level, 0), 1))
@@ -246,34 +249,28 @@ private struct VUBarView: View {
                 }
             }
         }
-        .onChange(of: peak) { _, newPeak in
-            guard newPeak >= clipThreshold else { return }
-            clipLatched = true
-            clipClearTask?.cancel()
-            clipClearTask = Task { @MainActor in
-                try? await Task.sleep(for: .seconds(clipLatchDuration))
-                guard !Task.isCancelled else { return }
-                clipLatched = false
-            }
-        }
-        .onChange(of: level) { _, newLevel in
-            if newLevel >= noSignalThreshold {
-                lastSignalTime = Date()
-                isNoSignal = false
-            }
-        }
         .onChange(of: isRecording) { _, recording in
             if recording { isNoSignal = false }
         }
-        .task(id: lastSignalTime) {
-            try? await Task.sleep(for: .seconds(noSignalGracePeriod))
-            if !isRecording {
-                isNoSignal = true
+        .task(id: isClipping) {
+            // Latch while clipping, then hold the badge for a beat after it stops.
+            if isClipping {
+                clipLatched = true
+                return
             }
+            guard clipLatched else { return }
+            try? await Task.sleep(for: .seconds(clipLatchDuration))
+            guard !Task.isCancelled else { return }
+            clipLatched = false
         }
-        .onDisappear {
-            clipClearTask?.cancel()
-            clipClearTask = nil
+        .task(id: hasSignal) {
+            if hasSignal {
+                isNoSignal = false
+                return
+            }
+            try? await Task.sleep(for: .seconds(noSignalGracePeriod))
+            guard !Task.isCancelled else { return }
+            if !isRecording { isNoSignal = true }
         }
         .animation(.easeInOut(duration: 0.25), value: clipLatched)
         .animation(.easeInOut(duration: 0.3),  value: isRecording)
