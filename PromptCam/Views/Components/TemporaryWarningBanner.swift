@@ -14,25 +14,25 @@ struct TemporaryWarningBanner: View {
             if isPresented {
                 HStack(spacing: Theme.space8) {
                     Image(systemName: systemImage)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(Theme.font22Semibold)
                     
                     Text(message)
-                        .font(Theme.font12Medium)
+                        .font(Theme.font16Medium)
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.white)
                 .padding(.horizontal, Theme.space16)
                 .padding(.vertical, Theme.space12)
                 .background(
                     Capsule()
-                        .fill(.red.opacity(0.9))
-                        .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+                        .fill(Theme.red.opacity(0.9))
+                        .shadow(color: Theme.black.opacity(0.3), radius: 8, y: 4)
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: isPresented) {
                     guard isPresented, let autoDismissAfter else { return }
                     try? await Task.sleep(for: .seconds(autoDismissAfter))
                     guard !Task.isCancelled else { return }
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(Theme.easeInOut3) {
                         isPresented = false
                     }
                 }
@@ -42,7 +42,7 @@ struct TemporaryWarningBanner: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Theme.space16)
-        .animation(.easeInOut(duration: 0.3), value: isPresented)
+        .animation(Theme.easeInOut3, value: isPresented)
         .allowsHitTesting(false)
     }
 }

@@ -109,8 +109,8 @@ struct VUMeterView: View {
         .clipped()
         .animation(.linear(duration: 0.05),    value: level)
         .animation(.linear(duration: 0.05),    value: level2)
-        .animation(.easeInOut(duration: 0.3),  value: isRecording)
-        .animation(.easeInOut(duration: 0.3),  value: isExternalMic)
+        .animation(Theme.easeInOut3,  value: isRecording)
+        .animation(Theme.easeInOut3,  value: isExternalMic)
         .animation(.easeInOut(duration: 0.25), value: sourceNameHint)
         .animation(.easeInOut(duration: 0.4),  value: level2 != nil)
     }
@@ -133,7 +133,7 @@ struct VUMeterView: View {
             }
         } else {
             Image(systemName: isExternalMic
-                  ? "mic.fill"
+                  ? "airpods.pro"
                   : "iphone.gen3.radiowaves.left.and.right")
                 .font(.system(size: micIconSize, weight: .semibold))
                 .foregroundStyle(Theme.white)
@@ -273,7 +273,7 @@ private struct VUBarView: View {
             if !isRecording { isNoSignal = true }
         }
         .animation(.easeInOut(duration: 0.25), value: clipLatched)
-        .animation(.easeInOut(duration: 0.3),  value: isRecording)
+        .animation(Theme.easeInOut3,  value: isRecording)
         .animation(.easeInOut(duration: 0.5),  value: isNoSignal)
     }
 }

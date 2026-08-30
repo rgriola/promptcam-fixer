@@ -88,7 +88,7 @@ struct CameraView: View {
                         Rectangle()
                             .fill(Color.black)
                             .opacity(viewModel.isCameraReady ? 0 : 1)
-                            .animation(.easeInOut(duration: 0.18), value: viewModel.isCameraReady)
+                            .animation(.easeInOut(duration: 0.2), value: viewModel.isCameraReady)
                             .allowsHitTesting(false)
                     )
                     .clipped()
@@ -192,16 +192,8 @@ struct CameraView: View {
                     }
                 }
 
-                // MARK: - 11: Warn Stop Recording (top center).
-                TemporaryWarningBanner(
-                    message: "Stop recording to change format.",
-                    systemImage: "exclamationmark.triangle.fill",
-                    autoDismissAfter: 3.0,
-                    isPresented: $viewModel.showFormatLockedWarning
-                )
-
-                // MARK: - 12: Warn Audio Changed
-                //(e.g. mic disconnectduring recording)
+                // MARK: - 11: Warn Audio Changed
+                //(e.g. mic disconnect during recording)
                 TemporaryWarningBanner(
                     message: viewModel.audioMeter.audioRouteChangedMessage,
                     systemImage: "mic.slash.fill",
@@ -209,13 +201,22 @@ struct CameraView: View {
                     isPresented: $viewModel.audioMeter.showAudioRouteChangedWarning
                 )
 
-                // MARK: - 13: Warn No Audio —
-                // sustained dead audio. Persists until the signal returns.
+                // MARK: - 12: Warn No Audio —
+                // Sustained dead audio. Persists until the signal returns.
                 TemporaryWarningBanner(
-                    message: "No audio signal. Check that your microphone is on and in range.",
+                    message: "No audio signal. \nCheck microphone connection.",
                     systemImage: "waveform.badge.exclamationmark",
                     autoDismissAfter: nil,
                     isPresented: $viewModel.audioMeter.showAudioSilenceWarning
+                )
+
+                // MARK: - 13: Warn Stop Recording (top center).
+                // Recording locks format. This warning may never be shown. 
+                TemporaryWarningBanner(
+                    message: "Stop recording to change format.",
+                    systemImage: "exclamationmark.triangle.fill",
+                    autoDismissAfter: 3.0,
+                    isPresented: $viewModel.showFormatLockedWarning
                 )
 
                 // MARK: - 14: Audio Source Picker —

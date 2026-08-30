@@ -117,11 +117,11 @@ final class AudioMeterViewModel {
                 // Mid-recording route change: do NOT swap the capture session
                 // (would corrupt the .mov). Warn the user instead.
                 if disconnected {
-                    self.audioRouteChangedMessage = "⚠ External mic disconnected. Recording continues on iPhone mic."
+                    self.audioRouteChangedMessage = "External mic disconnected.\nRecording continues on iPhone mic."
                 } else {
-                    self.audioRouteChangedMessage = "Audio source changed during recording. Stop to apply new mic."
+                    self.audioRouteChangedMessage = "Original audio source changed during recording. \nStop to apply new mic."
                 }
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(Theme.easeInOut3) {
                     self.showAudioRouteChangedWarning = true
                 }
             } else {
@@ -134,7 +134,7 @@ final class AudioMeterViewModel {
                     // Mic was unplugged: show a brief warning so the user
                     // knows recording would now use the built-in mic.
                     self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(Theme.easeInOut3) {
                         self.showAudioRouteChangedWarning = true
                     }
                 }
@@ -158,13 +158,13 @@ final class AudioMeterViewModel {
                 // Only warn when an external mic is active — a quiet room
                 // with the built-in mic is normal, not a hardware fault.
                 guard self.isExternalMic else { return }
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(Theme.easeInOut3) {
                     self.showAudioSilenceWarning = true
                 }
                 Log.camera.warning("AudioMeterService: silence watchdog fired — external mic may be disconnected or muted")
             } else {
                 // Audio recovered — dismiss the warning.
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(Theme.easeInOut3) {
                     self.showAudioSilenceWarning = false
                 }
                 Log.camera.debug("AudioMeterService: silence watchdog cleared — audio recovered")

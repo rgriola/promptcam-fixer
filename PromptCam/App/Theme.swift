@@ -29,10 +29,11 @@ enum FontFamily {
 }
 
 enum VUColor {
+    // colors the VU Meter
     static let peak = Color(hex: "#00FA47") // top color
     static let stepFour = Color(hex: "#00CC3A")       
     static let stepThree = Color(hex: "#FAC400")
-    static let stepTwo = Color(hex: "#CCA000")
+    static let stepTwo = Color(hex: "#CCA000") // oscar
     static let stepOne = Color(hex: "#F5F5F5")
     static let floor = Color(hex: "#FFFFFF")
 }
@@ -56,6 +57,9 @@ enum Theme {
 
     static let font20Semibold = fontFamily.font(size: 20, weight: .semibold)
     static let font20Bold = fontFamily.font(size: 20, weight: .bold)
+
+    static let font22Semibold = fontFamily.font(size: 22, weight: .semibold)
+    static let font22Bold = fontFamily.font(size: 22, weight: .bold)
 
     static let font28Light = fontFamily.font(size: 28, weight: .light)
     static let font28Bold = fontFamily.font(size: 28, weight: .bold)
@@ -94,7 +98,7 @@ enum Theme {
 
     static let blue = Color(hex: "#0012CC")
     static let green = Color(hex: "#00CC3A")
-    static let red = Color(hex: "#cc0000")
+    static let red = Color(hex: "#cc0000") // CNN Red
     static let redTwo = Color(hex: "#a80000")
    
     static let yellow = Color(hex: "#FFD60A")
@@ -115,8 +119,8 @@ enum Theme {
     static let glassOverlay = Color.white.opacity(0.2)
     static let glassBorder = Color.white.opacity(0.12)
 
-    // Materials
-    static let glassMaterial: Material = .ultraThinMaterial
+    // Materials - we don't use glass 
+    // static let glassMaterial: Material = .ultraThinMaterial
 
     // Radii
     static let radiusSm: CGFloat = 8
@@ -127,9 +131,10 @@ enum Theme {
     // Teleprompter
     static let teleprompterHPad: CGFloat = 24
 
-    // Animations
-    /// Standard spring for panel show/hide transitions (EV, aperture, adjustment).
+    // Animations - Standard spring for panel show/hide transitions 
+    // (EV, aperture, adjustment).
     static let panelSpring: Animation = .spring(response: 0.35, dampingFraction: 0.8)
+    static let easeInOut3: Animation = .easeInOut(duration: 0.3)
 
     // Spacing
     static let space4: CGFloat = 4
@@ -192,6 +197,7 @@ extension View {
 }
 
 extension Color {
+    /// this converts a hex string to a Color object. It supports 6-digit RGB and 8-digit ARGB hex strings.
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
