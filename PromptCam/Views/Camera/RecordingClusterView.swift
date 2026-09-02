@@ -62,7 +62,7 @@ struct RecordButton: View {
             ZStack {
                 Image(systemName: isRecording ? "square.fill" : "circle.fill")
                     .font(Theme.icon34)
-                    .foregroundStyle(isRecording ? Theme.white : Theme.red)
+                    .foregroundStyle(Theme.white)
                     .padding()
                     .background(
                         Circle()

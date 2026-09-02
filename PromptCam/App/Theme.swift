@@ -42,6 +42,8 @@ enum Theme {
     static let fontFamily: FontFamily = .system
 
     // Typography (even sizes only)
+    static let font08Regular = fontFamily.font(size: 8)
+
     static let font10Regular = fontFamily.font(size: 10)
     static let font10Medium = fontFamily.font(size: 10, weight: .medium)
     static let font10Semibold = fontFamily.font(size: 10, weight: .semibold)
@@ -65,6 +67,7 @@ enum Theme {
     static let font28Bold = fontFamily.font(size: 28, weight: .bold)
 
     // Monospaced
+    static let mono08 = fontFamily.mono(size: 8)
     static let mono10Medium = fontFamily.mono(size: 10, weight: .medium)
     static let mono12Medium = fontFamily.mono(size: 12, weight: .medium)
     static let mono16Medium = fontFamily.mono(size: 16, weight: .medium)

@@ -457,13 +457,15 @@ struct CameraView: View {
                     peak2: viewModel.audioMeter.isStereoInput ? viewModel.audioMeter.audioPeak2 : nil,
                     sourceNameHint: viewModel.audioMeter.audioSourceHint
                 )
-                //.padding(.leading, Theme.space8)
                 .frame(
                     width: CameraLayout.VUMeter.width,
                     height: CameraLayout.VUMeter.height
                 )
+                // expands padding inside frame. 
                 .padding(Theme.space6)
+                // adds a rounded background to the VU meter frame. without it there is no background. 
                 .roundedBackground()
+                // moves frame away from screen edge. 
                 .padding(.leading, Theme.space8)
                 .onTapGesture {
                     viewModel.audioMeter.openAudioSourcePicker()
@@ -496,6 +498,8 @@ struct CameraView: View {
                         viewModel.resetTeleprompterPosition()
                     }
                 )
+                .padding(.trailing, Theme.space8)
+
             
             }
           //  .padding(.horizontal, Theme.space12)

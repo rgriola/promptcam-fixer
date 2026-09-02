@@ -30,7 +30,7 @@ struct VUMeterView: View {
     /// dB hash mark positions: (normalized 0–1 position, label string).
     /// Derived from normalizeDecibels: dB → (dB + 60) / 60
     private static let hashMarks: [(position: CGFloat, label: String)] = [
-        (1.0,   "0"),     // 0 dB   — clipping
+        (1.0,   " 0"),     // 0 dB   — clipping
         (0.9,   "-6"),    // -6 dB
         (0.8,   "-12"),   // -12 dB
         (0.667, "-20"),   // -20 dB
@@ -47,7 +47,9 @@ struct VUMeterView: View {
             // ── Icon Row ── fixed intrinsic height
             iconRow(isStereo: isStereo)
                 .frame(height: micIconSize)
+                .padding(.top, 8)
                 .padding(.bottom, 8)
+
             // ── Meter Area ── fills remaining space
             GeometryReader { geo in
                 let barColumnFraction: CGFloat = 0.50
@@ -66,8 +68,8 @@ struct VUMeterView: View {
                             level: level,
                             peak: peak,
                             isRecording: isRecording
-                        )
-                        .frame(width: singleBarWidth)
+                            )
+                            .frame(width: singleBarWidth)
 
                         // Ch2 bar (stereo only)
                         if let l2 = level2, let p2 = peak2 {
@@ -80,29 +82,21 @@ struct VUMeterView: View {
                             .offset(x: singleBarWidth + channelGap)
                         }
                     }
-                    .frame(width: barColumnWidth, height: barHeight, alignment: .leading)
-                    .overlay {
-                        // Hash mark lines span the bar column
-                        hashMarkOverlay(barHeight: barHeight, barColumnWidth: barColumnWidth)
-                    }
+                    .frame(
+                        width: barColumnWidth,
+                        height: barHeight,
+                        alignment: .leading
+                        )
+                        .overlay {
+                            // Hash mark lines span the bar column
+                            hashMarkOverlay(
+                                barHeight: barHeight,
+                                barColumnWidth: barColumnWidth
+                                )
+                        }
 
                     // Right: dB labels
                     labelColumn(barHeight: barHeight)
-                }
-            }
-            .overlay {
-                // Source-name hint — floats over the meter area
-                if let name = sourceNameHint {
-                    Text(name)
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Theme.white)
-                        .lineLimit(1)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Theme.black.opacity(0.7), in: Capsule())
-                        .fixedSize()
-                        .offset(x: 40)
-                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
         }
@@ -121,22 +115,36 @@ struct VUMeterView: View {
     @ViewBuilder
     private func iconRow(isStereo: Bool) -> some View {
         if isStereo {
-            HStack(spacing: channelGap) {
-                Text("1")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+
+            VStack{
+
+                 Image(systemName: "microphone.fill")
+                    .font(.system(size: micIconSize, weight: .semibold))
                     .foregroundStyle(Theme.white)
-                    .frame(maxWidth: .infinity)
-                Text("2")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.white)
-                    .frame(maxWidth: .infinity)
+
+                HStack{
+                    Text("1")
+                        .font(Theme.mono08)
+                        .foregroundStyle(Theme.white)
+                        //.frame(maxWidth: .infinity)
+                    Text("2")
+                        .font(Theme.mono08)
+                        .foregroundStyle(Theme.white)
+                       // .frame(maxWidth: .infinity)
+                    
+                    Spacer()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    //.padding(.bottom, 4)
             }
+
         } else {
             Image(systemName: isExternalMic
                   ? "airpods.pro"
                   : "iphone.gen3.radiowaves.left.and.right")
                 .font(.system(size: micIconSize, weight: .semibold))
                 .foregroundStyle(Theme.white)
+                .padding(.bottom, 8)
         }
     }
 
@@ -157,7 +165,13 @@ struct VUMeterView: View {
     /// dB label column on the right side of the meter.
     private func labelColumn(barHeight: CGFloat) -> some View {
         ZStack {
-            ForEach(Array(Self.hashMarks.enumerated()), id: \.offset) { _, mark in
+            ForEach(
+                Array(
+                    Self.hashMarks.enumerated()
+                    ), 
+                    id: \.offset
+                    ) 
+            { _, mark in
                 let offsetY = barHeight / 2 - (mark.position * barHeight)
 
                 Text(mark.label)
@@ -190,16 +204,16 @@ private struct VUBarView: View {
     @State private var isNoSignal: Bool = false
 
     private static let levelGradient = LinearGradient(
-        stops: [
-            .init(color: VUColor.floor,  location: 0.0),
-            .init(color: VUColor.stepOne,  location: 0.6),
-            .init(color: VUColor.stepTwo, location: 0.7),
-            .init(color: VUColor.stepThree, location: 0.8),
-            .init(color: VUColor.stepFour,    location: 0.9),
-            .init(color: VUColor.peak,   location: 1.0),
-        ],
-        startPoint: .bottom,
-        endPoint: .top
+                    stops: [
+                        .init(color: VUColor.floor,  location: 0.0),
+                        .init(color: VUColor.stepOne,  location: 0.6),
+                        .init(color: VUColor.stepTwo, location: 0.7),
+                        .init(color: VUColor.stepThree, location: 0.8),
+                        .init(color: VUColor.stepFour,    location: 0.9),
+                        .init(color: VUColor.peak,   location: 1.0),
+                    ],
+                    startPoint: .bottom,
+                    endPoint: .top
     )
 
     var body: some View {
@@ -239,7 +253,13 @@ private struct VUBarView: View {
                 // CLIP badge at top of bar
                 if clipLatched {
                     Text("CLIP")
-                        .font(.system(size: 7, weight: .heavy, design: .monospaced))
+                        .font(
+                            .system(
+                                size: 8, 
+                                weight: .heavy, 
+                                design: .monospaced
+                                )
+                            )
                         .foregroundStyle(Theme.white)
                         .padding(.horizontal, 3)
                         .padding(.vertical, 1)

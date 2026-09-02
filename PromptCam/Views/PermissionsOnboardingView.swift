@@ -169,11 +169,18 @@ struct PermissionsOnboardingView: View {
                         .font(Theme.font16Semibold)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(gateState.canContinue ? Color.blue : Color.gray.opacity(0.3))
-                        .foregroundStyle(gateState.canContinue ? .white : .gray)
+                        .background(
+                            gateState.canContinue ? 
+                            Color.blue : Color.gray.opacity(0.3)
+                            )
+                        .foregroundStyle(
+                            gateState.canContinue ?
+                             .white : .gray
+                             )
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(!gateState.canContinue)
+                .sensoryFeedback(.impact, trigger: !gateState.canContinue)
             }
             .padding(.horizontal, Theme.space24)
             .padding(.bottom, 40)
