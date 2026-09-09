@@ -20,7 +20,7 @@ PRODUCT_BUNDLE_IDENTIFIER = com.rgriola.promptcam
 
 // No team by default so the repo stays neutral. Set this in
 // `Signing.local.xcconfig` (or via CI) to enable local signing.
-DEVELOPMENT_TEAM =
+DEVELOPMENT_TEAM = 
 
 // Optional per-developer overrides. The `?` makes the include optional, so the
 // build still succeeds when the local file is absent (e.g. on CI, which builds
