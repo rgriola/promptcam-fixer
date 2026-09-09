@@ -17,7 +17,7 @@ permissions:
 
 env:
   # Xcode major version required by the project (Swift 6.0 / iOS 18 SDK).
-  XCODE_VERSION: "16"
+  XCODE_VERSION: "26.0"
 
 jobs:
   lint:
