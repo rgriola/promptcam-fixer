@@ -6,7 +6,12 @@ import UIKit
 struct RecordingsService: Sendable {
 
     /// Shared caching image manager for grid thumbnails.
-    static let cachingManager = PHCachingImageManager()
+    /// PHCachingImageManager is documented by Apple as thread-safe, so it's
+    /// safe to share across the PhotoKit callback queue and `cachingQueue`
+    /// below without actor isolation. `nonisolated(unsafe)` opts this
+    /// non-Sendable Foundation type out of the compiler's Sendable check,
+    /// same rationale as `assetCache` below.
+    nonisolated(unsafe) static let cachingManager = PHCachingImageManager()
 
     /// Serial queue for pre-warm work. `PHAsset.fetchAssets(withLocalIdentifiers:)`
     /// is synchronous and takes several ms per call; running it on main pegs
