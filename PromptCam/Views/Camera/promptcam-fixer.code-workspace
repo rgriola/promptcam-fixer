@@ -1,0 +1,15 @@
+{
+  "folders": [
+	{
+		"path": "../../.."
+	},
+	{
+		"path": "../../../../CineCameraApp"
+	}
+],
+  "settings": {
+    "chat.tools.terminal.autoApprove": {
+      "xcodebuild": true
+    }
+  }
+}
