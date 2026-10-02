@@ -62,14 +62,16 @@ struct RecordButton: View {
             ZStack {
                 Image(systemName: isRecording ? "square.fill" : "circle.fill")
                     .font(Theme.icon34)
-                    .foregroundStyle(Theme.white)
+                    .foregroundStyle(
+                        isRecording ? Theme.white : Theme.white.opacity(0.7)
+                        )
+
                     .padding()
                     .background(
                         Circle()
-                            // .fill(isRecording ? Theme.red : Theme.red.opacity(0.5))
                             .fill(Theme.red)
                     )
-                    .overlay(
+                    .overlay( // the stroke on rec button
                         Circle().strokeBorder(Theme.white.opacity(0.7), lineWidth: 2)
                     )
 
