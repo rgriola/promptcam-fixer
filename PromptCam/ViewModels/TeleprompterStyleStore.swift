@@ -12,6 +12,7 @@ struct TeleprompterStyleStore {
         static let bgOpacity  = "tp.bgOpacity"
         static let alignment  = "tp.alignment"
         static let scriptText = "tp.scriptText"
+        static let allCaps    = "tp.allCaps"
     }
 
     private let defaults: UserDefaults
@@ -29,6 +30,7 @@ struct TeleprompterStyleStore {
         defaults.set(config.textColor.rawValue,    forKey: StyleKey.textColor)
         defaults.set(config.backgroundOpacity,     forKey: StyleKey.bgOpacity)
         defaults.set(config.textAlignment.rawValue, forKey: StyleKey.alignment)
+        defaults.set(config.usesAllCaps,           forKey: StyleKey.allCaps)
         // Only persist the script when it differs from the default placeholder
         // so a fresh install still shows the onboarding hint text.
         if config.text != TeleprompterConfig.default.text {
@@ -54,6 +56,8 @@ struct TeleprompterStyleStore {
            let alignment = TeleprompterTextAlignment(rawValue: raw) {
             config.textAlignment = alignment
         }
+        // Absent for users who saved styles before this setting existed; `false` matches the default.
+        config.usesAllCaps = defaults.bool(forKey: StyleKey.allCaps)
         config = config.clamped
         // Restore the saved script. If no script has been saved yet (fresh
         // install or user cleared it), fall back to the default hint text.

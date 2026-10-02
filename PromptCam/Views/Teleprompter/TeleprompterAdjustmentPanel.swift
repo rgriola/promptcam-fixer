@@ -72,6 +72,17 @@ struct TeleprompterAdjustmentPanel: View {
                     }
                 }
 
+                // MARK: All Caps
+                Toggle(isOn: $config.usesAllCaps) {
+                    Text("All Caps")
+                        .font(Theme.font16Medium)
+                        .foregroundStyle(Theme.primaryText)
+                }
+                .tint(Theme.accent)
+                .onChange(of: config.usesAllCaps) { _, isOn in
+                    Log.teleprompter.debug("usesAllCaps -> \(isOn, privacy: .public)")
+                }
+
                 // MARK: Reset
                 HStack {
                     Spacer()

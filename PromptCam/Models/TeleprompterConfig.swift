@@ -68,6 +68,13 @@ struct TeleprompterConfig: Equatable, Sendable {
     var backgroundOpacity: Double
     /// Text alignment for the teleprompter script.
     var textAlignment: TeleprompterTextAlignment
+    /// Uppercases the script on screen only; `text` keeps the author's casing.
+    var usesAllCaps: Bool = false
+
+    /// Script as it should appear in the overlay. Render and measure with this, never `text`.
+    var displayText: String {
+        usesAllCaps ? text.uppercased() : text
+    }
 
     static let `default` = TeleprompterConfig(
         text: "Tap script button below to load your script.",
@@ -75,7 +82,8 @@ struct TeleprompterConfig: Equatable, Sendable {
         fontSize: 30,
         textColor: .white,
         backgroundOpacity: 0.15,
-        textAlignment: .center
+        textAlignment: .center,
+        usesAllCaps: false
     )
 
     var clamped: TeleprompterConfig {

@@ -67,6 +67,102 @@ final class TeleprompterConfigTests: XCTestCase {
         XCTAssertEqual(TeleprompterTextAlignment.center.iconName, "text.aligncenter")
         XCTAssertEqual(TeleprompterTextAlignment.left.iconName, "text.alignleft")
     }
+
+    // MARK: - All Caps
+
+    func testDefaultConfigDoesNotUseAllCaps() {
+        XCTAssertFalse(TeleprompterConfig.default.usesAllCaps)
+        XCTAssertEqual(TeleprompterConfig.default.displayText, TeleprompterConfig.default.text)
+    }
+
+    func testDisplayTextUppercasesWithoutChangingSourceText() {
+        let script = "Hello there.\nSecond line, with punctuation!"
+        var config = TeleprompterConfig(text: script, speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+
+        config.usesAllCaps = true
+
+        XCTAssertEqual(config.displayText, "HELLO THERE.\nSECOND LINE, WITH PUNCTUATION!")
+        XCTAssertEqual(config.text, script, "Source script must keep its original casing")
+    }
+
+    func testDisplayTextIsReversible() {
+        var config = TeleprompterConfig(text: "Mixed Case Script", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+
+        config.usesAllCaps = true
+        config.usesAllCaps = false
+
+        XCTAssertEqual(config.displayText, "Mixed Case Script")
+    }
+
+    func testAllCapsChangesMeasurementKey() {
+        var config = TeleprompterConfig(text: "Mixed Case Script", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        let normalKey = TextMeasureKey(text: config.displayText, fontSize: config.fontSize, width: 300)
+
+        config.usesAllCaps = true
+        let capsKey = TextMeasureKey(text: config.displayText, fontSize: config.fontSize, width: 300)
+
+        XCTAssertNotEqual(normalKey, capsKey, "Re-measurement must fire so wrapping stays correct")
+    }
+
+    func testClampedPreservesAllCaps() {
+        var config = TeleprompterConfig(text: "Test", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        config.usesAllCaps = true
+
+        XCTAssertTrue(config.clamped.usesAllCaps)
+    }
+}
+
+// MARK: - All Caps Persistence Tests
+
+final class TeleprompterAllCapsPersistenceTests: XCTestCase {
+    private var suiteName: String!
+    private var defaults: UserDefaults!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        suiteName = "TeleprompterAllCapsTests.\(UUID().uuidString)"
+        defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    }
+
+    override func tearDownWithError() throws {
+        defaults.removePersistentDomain(forName: suiteName)
+        defaults = nil
+        suiteName = nil
+        try super.tearDownWithError()
+    }
+
+    func testAllCapsRoundTrips() {
+        let store = TeleprompterStyleStore(defaults: defaults)
+        var config = TeleprompterConfig.default
+        config.usesAllCaps = true
+
+        store.save(config)
+
+        XCTAssertTrue(store.applyingSaved(to: .default).usesAllCaps)
+    }
+
+    func testAllCapsOffRoundTrips() {
+        let store = TeleprompterStyleStore(defaults: defaults)
+        var config = TeleprompterConfig.default
+        config.usesAllCaps = true
+        store.save(config)
+
+        config.usesAllCaps = false
+        store.save(config)
+
+        XCTAssertFalse(store.applyingSaved(to: .default).usesAllCaps)
+    }
+
+    func testMissingAllCapsKeyDefaultsToOff() {
+        // Simulates styles saved before this setting existed.
+        defaults.set(40.0, forKey: "tp.fontSize")
+        defaults.set(35.0, forKey: "tp.speed")
+
+        let restored = TeleprompterStyleStore(defaults: defaults).applyingSaved(to: .default)
+
+        XCTAssertFalse(restored.usesAllCaps)
+        XCTAssertEqual(restored.fontSize, 40)
+    }
 }
 
 // MARK: - TeleprompterGeometry Tests

@@ -45,7 +45,7 @@ struct TeleprompterOverlayView: View {
                             viewportHeight: proxy.size.height
                         )
                         ScrollingTeleprompterText(
-                            text: config.text,
+                            text: config.displayText,
                             fontSize: config.fontSize,
                             textColor: config.textColor.color,
                             alignment: config.textAlignment.swiftUIAlignment,
@@ -54,7 +54,7 @@ struct TeleprompterOverlayView: View {
                     }
                 } else {
                     ScrollingTeleprompterText(
-                        text: config.text,
+                        text: config.displayText,
                         fontSize: config.fontSize,
                         textColor: config.textColor.color,
                         alignment: config.textAlignment.swiftUIAlignment,
@@ -151,8 +151,8 @@ struct TeleprompterOverlayView: View {
                 remeasureText(width: proxy.size.width)
             }
             // .task(id:) is more reliable than .onChange for large strings & view re-creations.
-            .task(id: TextMeasureKey(text: config.text, fontSize: config.fontSize, width: proxy.size.width)) {
-                tp("task(id:) fired textLen=\(config.text.count) width=\(Int(proxy.size.width))")
+            .task(id: TextMeasureKey(text: config.displayText, fontSize: config.fontSize, width: proxy.size.width)) {
+                tp("task(id:) fired textLen=\(config.displayText.count) width=\(Int(proxy.size.width))")
                 remeasureText(width: proxy.size.width)
             }
             .onChange(of: proxy.size.height) { _, newValue in
@@ -182,10 +182,10 @@ struct TeleprompterOverlayView: View {
 
     private func remeasureText(width: CGFloat) {
         guard let total = measureTeleprompterTextHeight(
-            text: config.text, fontSize: config.fontSize, viewWidth: width
+            text: config.displayText, fontSize: config.fontSize, viewWidth: width
         ) else { return }
         if abs(measuredTextHeight - total) > 0.5 {
-            tp("MEASURE width=\(Int(width)) textLen=\(config.text.count) -> textH=\(Int(total)) (was \(Int(measuredTextHeight)))")
+            tp("MEASURE width=\(Int(width)) textLen=\(config.displayText.count) -> textH=\(Int(total)) (was \(Int(measuredTextHeight)))")
             measuredTextHeight = total
             onTextHeightChanged(total)
             if !isScrolling { resetScrollPosition() }
