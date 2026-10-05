@@ -2,21 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Cue Vue uses speech recognition for optional transcript features.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>For tagging GPS data to the videos</string>
-	<key>UIUserInterfaceStyle</key>
-	<string>Dark</string>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>SplashBg</string>
-		<key>UIImageName</key>
-		<string>launchscreen</string>
-		<key>UIImageRespectsSafeAreaInsets</key>
-		<false/>
-	</dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>slack</string>
@@ -45,6 +30,14 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>SplashBg</string>
+		<key>UIImageName</key>
+		<string>launchscreen</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<false/>
+	</dict>
 </dict>
 </plist>
-

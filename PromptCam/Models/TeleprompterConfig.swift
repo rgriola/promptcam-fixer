@@ -29,7 +29,6 @@ enum TeleprompterTextAlignment: String, CaseIterable, Equatable, Sendable {
     var next: TeleprompterTextAlignment {
         switch self {
         case .center: return .left
-        //case .left: return .center
         case .left: return .right
         case .right: return .center
         }

@@ -26,12 +26,12 @@ Cue Vue is a SwiftUI iOS vertical camera teleprompter app. It includes a recordi
   - `Teleprompter/` — scrolling text + adjustment panel
   - `Recordings/` — recordings library UI
   - `Components/` — reusable views (permission rows, warning banners)
-- [PromptCamTests](PromptCamTests) — XCTest unit tests (157 tests)
+- [PromptCamTests](PromptCamTests) — XCTest unit tests (165 tests)
 - [PromptCamUITests](PromptCamUITests) — XCUITest smoke test
 
 ## Local setup
 
-1. Install Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). Optional: SwiftLint + SwiftFormat for the `.swiftlint.yml` / `.swiftformat` configs.
+1. Install Xcode 27 (Swift 6.4 toolchain; Xcode 26+ also builds the project) and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`). Optional: SwiftLint + SwiftFormat for the `.swiftlint.yml` / `.swiftformat` configs.
 2. Generate the project:
    ```bash
    xcodegen generate
@@ -63,10 +63,30 @@ Coverage focus areas:
 
 - `DeviceCapabilitiesTests` — `isSupported`, `adjusted` clamping rules, resolution / fps queries
 - `RecordingFormatTests` — UserDefaults round-trip + corruption resilience
-- `TeleprompterConfigTests` / `TeleprompterGeometryTests` — config clamping + geometry math
+- `TeleprompterConfigTests` / `TeleprompterGeometryTests` — config clamping + geometry math, plus the
+  3-state `center → left → right → center` alignment cycle and its `TextAlignment` / SF Symbol mappings
 - `CameraViewModelTests` — recording state, sheet routing, format application (via `MockCameraService`)
 - `AudioMeterServiceTests` — dB → linear normalization
+- `PermissionStatusDisplayTests` — label / color mapping for every permission state, including the
+  distinct `Limited` Photos badge
 - `CameraErrorTests` — every error case has a localized description
+
+### Troubleshooting: `xcodebuild requires Xcode`
+
+If `xcodebuild` fails with `tool 'xcodebuild' requires Xcode, but active developer directory
+'/Library/Developer/CommandLineTools' is a command line tools instance`, the active developer
+directory is pointed at the Command Line Tools rather than at Xcode. Point it at Xcode:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+xcode-select -p   # => /Applications/Xcode.app/Contents/Developer
+```
+
+For a one-off run without `sudo`, override it per-command instead:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test ...
+```
 
 ## Notes
 
@@ -75,3 +95,5 @@ Coverage focus areas:
 - Audio-session interruptions are delivered via `DispatchQueue.main.async` (not `Task`) to preserve FIFO ordering, plus a sequence-number guard that discards stale deliveries. See `audio-fix.md`, Phase 0.
 - The silence watchdog triggers on **peak** amplitude, taken as the max across channels. RMS cannot distinguish a quiet room from a dead mic; peak separates them by >50 dB. See `audio-fix.md`, Phase 4.
 - Recordings are saved to the Photos library; the in-app library uses `PHPickerViewController`-style fetches via `PhotoKit`.
+- Photo Library is the only permission with a middle state, so `.limited` surfaces as its own yellow **Limited** badge rather than collapsing into green **Granted** — users can tell full from partial access at a glance.
+- Teleprompter alignment cycles through all three states (`center → left → right → center`); right alignment is kept for right-to-left languages.
