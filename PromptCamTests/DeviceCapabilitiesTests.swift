@@ -5,11 +5,10 @@
 // derived resolutions(for:) / frameRates(for:) helpers used by the Format
 // Picker. No hardware is touched — capabilities are constructed in-memory.
 
-import XCTest
 @testable import PromptCam
+import XCTest
 
 final class DeviceCapabilitiesTests: XCTestCase {
-
     // MARK: - Fixtures
 
     /// Capabilities that mimic a device supporting:
@@ -20,11 +19,11 @@ final class DeviceCapabilitiesTests: XCTestCase {
         standardFormats: [
             RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard),
             RecordingFormat(resolution: .hd1080p, frameRate: .fps60, mode: .standard),
-            RecordingFormat(resolution: .uhd4K, frameRate: .fps30, mode: .standard)
+            RecordingFormat(resolution: .uhd4K, frameRate: .fps30, mode: .standard),
         ],
         cinematicFormats: [
-            RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .cinematic)
-        ]
+            RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .cinematic),
+        ],
     )
 
     /// Capabilities for a device without cinematic support.
@@ -32,9 +31,9 @@ final class DeviceCapabilitiesTests: XCTestCase {
         supportsCinematicMode: false,
         standardFormats: [
             RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard),
-            RecordingFormat(resolution: .hd1080p, frameRate: .fps60, mode: .standard)
+            RecordingFormat(resolution: .hd1080p, frameRate: .fps60, mode: .standard),
         ],
-        cinematicFormats: []
+        cinematicFormats: [],
     )
 
     // MARK: - resolutions(for:)
@@ -63,12 +62,12 @@ final class DeviceCapabilitiesTests: XCTestCase {
         // 4K only supports 30fps in our fixture.
         XCTAssertEqual(
             fullCapabilities.frameRates(for: .standard, resolution: .uhd4K),
-            [.fps30]
+            [.fps30],
         )
         // 1080p supports both.
         XCTAssertEqual(
             Set(fullCapabilities.frameRates(for: .standard, resolution: .hd1080p)),
-            Set([.fps30, .fps60])
+            Set([.fps30, .fps60]),
         )
     }
 

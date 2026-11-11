@@ -19,15 +19,15 @@ struct EVAdjustmentPanel: View {
             title: "EV Bias",
             icon: "sun.max.fill",
             autoDismissAfter: 12,
-            onDismiss: onDismiss
+            onDismiss: onDismiss,
         ) {
             VStack(alignment: .leading, spacing: Theme.space16) {
                 EVSliderRow(
                     exposureBias: $exposureBias,
                     exposureRange: exposureRange,
-                    onAdjust: onAdjust
+                    onAdjust: onAdjust,
                 )
-                HStack{
+                HStack {
                     Spacer()
                     ResetButton(onReset: {
                         exposureBias = 0
@@ -76,10 +76,10 @@ private struct EVSliderRow: View {
                         let newBias = Float(newValue)
                         exposureBias = newBias
                         onAdjust(newBias)
-                    }
+                    },
                 ),
-                in: Double(-exposureRange)...Double(exposureRange),
-                step: 0.1
+                in: Double(-exposureRange) ... Double(exposureRange),
+                step: 0.1,
             )
             .controlSize(.large)
             .tint(Theme.accent)

@@ -1,5 +1,5 @@
-@testable import PromptCam
 import AVFoundation
+@testable import PromptCam
 import XCTest
 
 /// Verifies the interruption-suspension state machine that prevents the
@@ -16,7 +16,6 @@ import XCTest
 /// notifications so the delivery mechanism itself is covered, because
 /// ordering is only guaranteed by how the observer hops to the main queue.
 final class AudioMeterServiceInterruptionTests: XCTestCase {
-
     private var service: AudioMeterService!
 
     override func setUp() {
@@ -100,7 +99,7 @@ final class AudioMeterServiceInterruptionTests: XCTestCase {
 
         XCTAssertTrue(
             service.isInterrupted,
-            "final .began must win — interruption delivery must preserve FIFO order"
+            "final .began must win — interruption delivery must preserve FIFO order",
         )
     }
 
@@ -110,7 +109,7 @@ final class AudioMeterServiceInterruptionTests: XCTestCase {
         NotificationCenter.default.post(
             name: AVAudioSession.interruptionNotification,
             object: nil,
-            userInfo: [AVAudioSessionInterruptionTypeKey: type.rawValue]
+            userInfo: [AVAudioSessionInterruptionTypeKey: type.rawValue],
         )
     }
 

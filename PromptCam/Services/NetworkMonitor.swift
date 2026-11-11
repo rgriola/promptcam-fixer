@@ -34,7 +34,7 @@ final class NetworkMonitor {
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(
         label: "com.promptcam.fixer.network-monitor",
-        qos: .utility
+        qos: .utility,
     )
 
     private init() {

@@ -10,7 +10,9 @@ enum CameraSheetRoute: String, Identifiable, Sendable {
     case settings
     case recordingsLibrary
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum CameraMode: Equatable, Sendable {
@@ -28,24 +30,24 @@ enum CameraLockStatus: Equatable, Sendable {
     var isLocked: Bool {
         switch self {
         case .aeAfLocked, .aeLocked, .afLocked:
-            return true
+            true
         case .auto, .unsupported:
-            return false
+            false
         }
     }
 
     var text: String {
         switch self {
         case .auto:
-            return "AUTO"
+            "AUTO"
         case .aeAfLocked:
-            return "AE/AF LOCK"
+            "AE/AF LOCK"
         case .aeLocked:
-            return "AE LOCK"
+            "AE LOCK"
         case .afLocked:
-            return "AF LOCK"
+            "AF LOCK"
         case .unsupported:
-            return "LOCK UNAVAILABLE"
+            "LOCK UNAVAILABLE"
         }
     }
 
@@ -53,11 +55,11 @@ enum CameraLockStatus: Equatable, Sendable {
     /// `top` is the sensor abbreviation; `bottom` is the state word (or `nil` for single-line).
     var displayParts: (top: String, bottom: String?) {
         switch self {
-        case .auto:          return ("AUTO",  nil)
-        case .aeAfLocked:    return ("AE/AF", "Lock")
-        case .aeLocked:      return ("AE",    "Lock")
-        case .afLocked:      return ("AF",    "Lock")
-        case .unsupported:   return ("LOCK",  "UNAVAIL")
+        case .auto: ("AUTO", nil)
+        case .aeAfLocked: ("AE/AF", "Lock")
+        case .aeLocked: ("AE", "Lock")
+        case .afLocked: ("AF", "Lock")
+        case .unsupported: ("LOCK", "UNAVAIL")
         }
     }
 }
@@ -112,14 +114,14 @@ final class CameraViewModel {
     /// Current recording format (resolution + FPS). Persisted across launches.
     var recordingFormat: RecordingFormat
     /// Device capabilities (mode support, resolution/fps per mode).
-    var deviceCapabilities: DeviceCapabilities = DeviceCapabilities(
+    var deviceCapabilities: DeviceCapabilities = .init(
         supportsCinematicMode: false,
         standardFormats: [RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)],
-        cinematicFormats: []
+        cinematicFormats: [],
     )
     /// Aperture range reported by the active cinematic format (iOS 26+ only).
     /// Nil when cinematic mode is inactive or device/OS does not support it.
-    var cinematicApertureRange: ClosedRange<Float>? = nil
+    var cinematicApertureRange: ClosedRange<Float>?
     /// Current simulated aperture value shown in the aperture slider.
     var cinematicSimulatedAperture: Float = 2.0
 
@@ -152,16 +154,14 @@ final class CameraViewModel {
     /// Persists teleprompter style settings to UserDefaults.
     @ObservationIgnored private let styleStore = TeleprompterStyleStore()
 
-
-
     init(
         cameraService: CameraServiceProtocol = CameraService(),
-        permissionService: PermissionService = PermissionService()
+        permissionService: PermissionService = PermissionService(),
     ) {
         self.cameraService = cameraService
         self.permissionService = permissionService
-        self.recordingFormat = RecordingFormat.loadSaved()
-        self.audioMeter = AudioMeterViewModel(cameraService: cameraService)
+        recordingFormat = RecordingFormat.loadSaved()
+        audioMeter = AudioMeterViewModel(cameraService: cameraService)
         config = styleStore.applyingSaved(to: config)
         bindCallbacks()
         // `self` is fully initialized here, so the audio meter can safely read
@@ -169,7 +169,9 @@ final class CameraViewModel {
         audioMeter.isRecording = { [weak self] in self?.isRecording ?? false }
     }
 
-    var session: AVCaptureSession { cameraService.previewSession }
+    var session: AVCaptureSession {
+        cameraService.previewSession
+    }
 
     func onAppear() {
         Log.viewmodel.info("\(Log.ts(), privacy: .public) CameraViewModel onAppear")
@@ -262,8 +264,6 @@ final class CameraViewModel {
         modalQueue.present(.settings)
     }
 
-
-
     func openFormatPanel() {
         // Gate: Cannot change format while recording
         guard !isRecording else {
@@ -271,11 +271,9 @@ final class CameraViewModel {
                 showFormatLockedWarning = true
             }
             return
-        }// Sheet to change format
+        } // Sheet to change format
         modalQueue.present(.formatPanel)
     }
-
-
 
     func dismissActiveSheet() {
         modalQueue.dismissActive()
@@ -291,8 +289,6 @@ final class CameraViewModel {
         modalQueue.finishDismissal()
     }
 
-
-
     func updateScriptText(_ text: String) {
         Log.viewmodel.debug("updateScriptText len=\(text.count, privacy: .public)")
         config.text = text
@@ -306,7 +302,15 @@ final class CameraViewModel {
         next.text = config.text
         config = next
         styleStore.save(config)
-        Log.viewmodel.debug("updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) color=\(self.config.textColor.rawValue, privacy: .public) bgOpacity=\(self.config.backgroundOpacity, privacy: .public)")
+        Log.viewmodel
+            .debug(
+                """
+                updateTeleprompterStyle fontSize=\(Int(self.config.fontSize), privacy: .public) \
+                speed=\(Int(self.config.speedPointsPerSecond), privacy: .public) \
+                color=\(self.config.textColor.rawValue, privacy: .public) \
+                bgOpacity=\(self.config.backgroundOpacity, privacy: .public)
+                """,
+            )
     }
 
     /// Cycles to the next text alignment option.
@@ -324,7 +328,10 @@ final class CameraViewModel {
     /// resets scrollStartTime so elapsed begins at 0 again).
     func resetTeleprompterPosition() {
         teleprompterResetToken += 1
-        Log.viewmodel.debug("resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public) isScrolling=\(self.isScrolling, privacy: .public)")
+        Log.viewmodel
+            .debug(
+                "resetTeleprompterPosition token=\(self.teleprompterResetToken, privacy: .public) isScrolling=\(self.isScrolling, privacy: .public)",
+            )
     }
 
     func focus(at devicePoint: CGPoint) {
@@ -361,7 +368,13 @@ final class CameraViewModel {
     /// Applies a new recording format to the camera. No-op if recording.
     func updateRecordingFormat(_ format: RecordingFormat) {
         guard !isRecording else { return }
-        Log.viewmodel.info("updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) fps=\(format.frameRate.rawValue, privacy: .public) mode=\(format.mode.rawValue, privacy: .public)")
+        Log.viewmodel
+            .info(
+                """
+                updateRecordingFormat res=\(format.resolution.rawValue, privacy: .public) \
+                fps=\(format.frameRate.rawValue, privacy: .public) mode=\(format.mode.rawValue, privacy: .public)
+                """,
+            )
         cameraService.applyFormat(format)
     }
 
@@ -372,7 +385,7 @@ final class CameraViewModel {
             // When recording stops the video is saved to the photo library.
             // Refresh the latest recording so the direct player is ready immediately.
             if !isRecording {
-                self.recordings.refreshInBackground()
+                recordings.refreshInBackground()
             }
         }
 
@@ -384,45 +397,55 @@ final class CameraViewModel {
 
         cameraService.onSessionRunningStateChanged = { [weak self] isRunning in
             guard let self else { return }
-            self.isCameraReady = isRunning
+            isCameraReady = isRunning
             // Attach audio metering once the session is fully configured
             // and running. Attaching earlier fails because the session
             // hasn't added its audio input yet. `setup()` is idempotent.
             if isRunning {
-                self.audioMeter.setup()
+                audioMeter.setup()
                 // If the meter deferred its own post-interruption restart
                 // (see AudioMeterService.pendingReconnectAfterInterruption),
                 // this is the confirmed signal that it's now safe to do so
                 // without racing this same restart. No-op if nothing pending.
-                self.audioMeter.reconnectIfPending()
+                audioMeter.reconnectIfPending()
             }
         }
 
         cameraService.onFormatApplied = { [weak self] applied in
             guard let self else { return }
-            self.recordingFormat = applied
+            recordingFormat = applied
             applied.save()
-            Log.viewmodel.info("format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)")
+            Log.viewmodel
+                .info(
+                    "format applied res=\(applied.resolution.rawValue, privacy: .public) fps=\(applied.frameRate.rawValue, privacy: .public)",
+                )
         }
 
         cameraService.onDeviceCapabilitiesQueried = { [weak self] capabilities in
             guard let self else { return }
-            self.deviceCapabilities = capabilities
+            deviceCapabilities = capabilities
             Log.viewmodel.info("device capabilities cine=\(capabilities.supportsCinematicMode, privacy: .public)")
-            
+
             // Auto-adjust format if current selection isn't supported.
-            if !capabilities.isSupported(self.recordingFormat) {
-                let adjusted = capabilities.adjusted(self.recordingFormat)
-                self.recordingFormat = adjusted
+            if !capabilities.isSupported(recordingFormat) {
+                let adjusted = capabilities.adjusted(recordingFormat)
+                recordingFormat = adjusted
                 adjusted.save()
-                Log.viewmodel.notice("format auto-adjusted to res=\(adjusted.resolution.rawValue, privacy: .public) fps=\(adjusted.frameRate.rawValue, privacy: .public) mode=\(adjusted.mode.rawValue, privacy: .public)")
+                Log.viewmodel
+                    .notice(
+                        """
+                        format auto-adjusted to res=\(adjusted.resolution.rawValue, privacy: .public) \
+                        fps=\(adjusted.frameRate.rawValue, privacy: .public) \
+                        mode=\(adjusted.mode.rawValue, privacy: .public)
+                        """,
+                    )
             }
         }
 
         cameraService.onCinematicApertureAvailable = { [weak self] minAp, maxAp, defAp in
             guard let self else { return }
             if minAp == 0 {
-                self.cinematicApertureRange = nil
+                cinematicApertureRange = nil
                 Log.viewmodel.info("Cinematic aperture: unavailable")
             } else {
                 // Clamp the lower bound to f/5.6 — the app intentionally avoids
@@ -430,9 +453,15 @@ final class CameraViewModel {
                 // for teleprompter/presenter use. The hardware minimum is preserved
                 // as the floor in case a future device reports a higher minimum.
                 let appMin: Float = max(minAp, 5.6)
-                self.cinematicApertureRange = appMin...maxAp
-                self.cinematicSimulatedAperture = appMin   // default to f/5.6
-                Log.viewmodel.info("Cinematic aperture range f/\(appMin, privacy: .public)–f/\(maxAp, privacy: .public) (hw min f/\(minAp, privacy: .public), default f/\(defAp, privacy: .public))")
+                cinematicApertureRange = appMin ... maxAp
+                cinematicSimulatedAperture = appMin // default to f/5.6
+                Log.viewmodel
+                    .info(
+                        """
+                        Cinematic aperture range f/\(appMin, privacy: .public)–f/\(maxAp, privacy: .public) \
+                        (hw min f/\(minAp, privacy: .public), default f/\(defAp, privacy: .public))
+                        """,
+                    )
             }
         }
 

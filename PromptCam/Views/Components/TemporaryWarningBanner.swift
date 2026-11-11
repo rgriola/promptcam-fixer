@@ -8,14 +8,14 @@ struct TemporaryWarningBanner: View {
     let systemImage: String
     let autoDismissAfter: TimeInterval?
     @Binding var isPresented: Bool
-    
+
     var body: some View {
         VStack {
             if isPresented {
                 HStack(spacing: Theme.space8) {
                     Image(systemName: systemImage)
                         .font(Theme.font22Semibold)
-                    
+
                     Text(message)
                         .font(Theme.font16Medium)
                 }
@@ -25,7 +25,7 @@ struct TemporaryWarningBanner: View {
                 .background(
                     Capsule()
                         .fill(Theme.red.opacity(0.9))
-                        .shadow(color: Theme.black.opacity(0.3), radius: 8, y: 4)
+                        .shadow(color: Theme.black.opacity(0.3), radius: 8, y: 4),
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: isPresented) {
@@ -37,7 +37,7 @@ struct TemporaryWarningBanner: View {
                     }
                 }
             }
-            
+
             Spacer()
         }
         .frame(maxWidth: .infinity)

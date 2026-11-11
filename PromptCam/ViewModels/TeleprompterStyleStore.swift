@@ -6,13 +6,13 @@ import Foundation
 /// Extracted from `CameraViewModel` so the coordinator stays thin.
 struct TeleprompterStyleStore {
     private enum StyleKey {
-        static let fontSize   = "tp.fontSize"
-        static let speed      = "tp.speed"
-        static let textColor  = "tp.textColor"
-        static let bgOpacity  = "tp.bgOpacity"
-        static let alignment  = "tp.alignment"
+        static let fontSize = "tp.fontSize"
+        static let speed = "tp.speed"
+        static let textColor = "tp.textColor"
+        static let bgOpacity = "tp.bgOpacity"
+        static let alignment = "tp.alignment"
         static let scriptText = "tp.scriptText"
-        static let allCaps    = "tp.allCaps"
+        static let allCaps = "tp.allCaps"
     }
 
     private let defaults: UserDefaults
@@ -25,12 +25,12 @@ struct TeleprompterStyleStore {
     /// it differs from the default placeholder, so a fresh install still shows
     /// the onboarding hint text.
     func save(_ config: TeleprompterConfig) {
-        defaults.set(config.fontSize,              forKey: StyleKey.fontSize)
-        defaults.set(config.speedPointsPerSecond,  forKey: StyleKey.speed)
-        defaults.set(config.textColor.rawValue,    forKey: StyleKey.textColor)
-        defaults.set(config.backgroundOpacity,     forKey: StyleKey.bgOpacity)
+        defaults.set(config.fontSize, forKey: StyleKey.fontSize)
+        defaults.set(config.speedPointsPerSecond, forKey: StyleKey.speed)
+        defaults.set(config.textColor.rawValue, forKey: StyleKey.textColor)
+        defaults.set(config.backgroundOpacity, forKey: StyleKey.bgOpacity)
         defaults.set(config.textAlignment.rawValue, forKey: StyleKey.alignment)
-        defaults.set(config.usesAllCaps,           forKey: StyleKey.allCaps)
+        defaults.set(config.usesAllCaps, forKey: StyleKey.allCaps)
         // Only persist the script when it differs from the default placeholder
         // so a fresh install still shows the onboarding hint text.
         if config.text != TeleprompterConfig.default.text {
@@ -45,15 +45,17 @@ struct TeleprompterStyleStore {
         guard defaults.object(forKey: StyleKey.fontSize) != nil else { return config }
 
         var config = config
-        config.fontSize             = defaults.double(forKey: StyleKey.fontSize)
+        config.fontSize = defaults.double(forKey: StyleKey.fontSize)
         config.speedPointsPerSecond = defaults.double(forKey: StyleKey.speed)
-        config.backgroundOpacity    = defaults.double(forKey: StyleKey.bgOpacity)
+        config.backgroundOpacity = defaults.double(forKey: StyleKey.bgOpacity)
         if let raw = defaults.string(forKey: StyleKey.textColor),
-           let color = TeleprompterTextColor(rawValue: raw) {
+           let color = TeleprompterTextColor(rawValue: raw)
+        {
             config.textColor = color
         }
         if let raw = defaults.string(forKey: StyleKey.alignment),
-           let alignment = TeleprompterTextAlignment(rawValue: raw) {
+           let alignment = TeleprompterTextAlignment(rawValue: raw)
+        {
             config.textAlignment = alignment
         }
         // Absent for users who saved styles before this setting existed; `false` matches the default.
@@ -66,7 +68,16 @@ struct TeleprompterStyleStore {
         } else {
             config.text = TeleprompterConfig.default.text
         }
-        Log.viewmodel.debug("loadStylePreferences restored fontSize=\(Int(config.fontSize), privacy: .public) speed=\(Int(config.speedPointsPerSecond), privacy: .public) color=\(config.textColor.rawValue, privacy: .public) bgOpacity=\(config.backgroundOpacity, privacy: .public) scriptLen=\(config.text.count, privacy: .public)")
+        Log.viewmodel
+            .debug(
+                """
+                loadStylePreferences restored fontSize=\(Int(config.fontSize), privacy: .public) \
+                speed=\(Int(config.speedPointsPerSecond), privacy: .public) \
+                color=\(config.textColor.rawValue, privacy: .public) \
+                bgOpacity=\(config.backgroundOpacity, privacy: .public) \
+                scriptLen=\(config.text.count, privacy: .public)
+                """,
+            )
         return config
     }
 }

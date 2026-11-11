@@ -18,6 +18,7 @@ final class DefaultPhotoLibraryObservable: PhotoLibraryObservable, @unchecked Se
     func register(_ observer: PHPhotoLibraryChangeObserver) {
         PHPhotoLibrary.shared().register(observer)
     }
+
     func unregister(_ observer: PHPhotoLibraryChangeObserver) {
         PHPhotoLibrary.shared().unregisterChangeObserver(observer)
     }
@@ -32,7 +33,6 @@ final class DefaultPhotoLibraryObservable: PhotoLibraryObservable, @unchecked Se
 ///   on an arbitrary queue; we hop to the main actor before touching state.
 /// - Debounce coalesces rapid bursts (e.g., iCloud sync) into one refresh.
 final class PhotoLibraryChangeMonitor: NSObject, PHPhotoLibraryChangeObserver, @unchecked Sendable {
-
     /// How long to wait after the last change before firing the callback.
     /// 200 ms is short enough to feel instant and long enough to swallow
     /// bursts from iCloud sync.
@@ -51,7 +51,7 @@ final class PhotoLibraryChangeMonitor: NSObject, PHPhotoLibraryChangeObserver, @
 
     init(
         library: PhotoLibraryObservable = DefaultPhotoLibraryObservable(),
-        debounceInterval: TimeInterval = 0.2
+        debounceInterval: TimeInterval = 0.2,
     ) {
         self.library = library
         self.debounceInterval = debounceInterval
@@ -87,7 +87,7 @@ final class PhotoLibraryChangeMonitor: NSObject, PHPhotoLibraryChangeObserver, @
 
     // MARK: - PHPhotoLibraryChangeObserver
 
-    nonisolated func photoLibraryDidChange(_ changeInstance: PHChange) {
+    nonisolated func photoLibraryDidChange(_: PHChange) {
         // PHChange is not Sendable and the callback is nonisolated — hop to
         // main to safely touch our debounce state and fire the callback.
         Task { @MainActor [weak self] in
@@ -102,10 +102,10 @@ final class PhotoLibraryChangeMonitor: NSObject, PHPhotoLibraryChangeObserver, @
         pendingTask?.cancel()
         pendingTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let ns = UInt64(self.debounceInterval * 1_000_000_000)
+            let ns = UInt64(debounceInterval * 1_000_000_000)
             try? await Task.sleep(nanoseconds: ns)
             guard !Task.isCancelled else { return }
-            self.onChange?()
+            onChange?()
         }
     }
 }

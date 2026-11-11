@@ -12,12 +12,12 @@ struct RecordingTimerPanel: View {
     let duration: TimeInterval
     /// Whether recording is currently active.
     let isRecording: Bool
-    
+
     var body: some View {
         Text(formattedTime)
             .font(
-                .system(.body, design: .monospaced)
-                )
+                .system(.body, design: .monospaced),
+            )
             .fontWeight(.medium)
             .foregroundColor(Theme.primaryText)
             .padding(.horizontal, Theme.space12)
@@ -25,10 +25,11 @@ struct RecordingTimerPanel: View {
             .background {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(
-                        isRecording ? .red : Theme.black.opacity(0.3))
+                        isRecording ? .red : Theme.black.opacity(0.3),
+                    )
             }
     }
-    
+
     /// Formats duration as MM:SS.
     private var formattedTime: String {
         let totalSeconds = Int(duration)

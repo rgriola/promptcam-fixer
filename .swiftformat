@@ -2,3 +2,6 @@
 --linebreaks lf
 --maxwidth 140
 --self remove
+# OSLog messages are autoclosures that can require explicit self.
+--self-required critical,debug,error,fault,info,log,notice,trace,warning
+--exclude build,DerivedData

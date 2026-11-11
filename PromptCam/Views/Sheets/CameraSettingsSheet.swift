@@ -20,11 +20,14 @@ struct CameraSettingsSheet: View {
     let onClose: () -> Void
 
     @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
-        for: .video)
+        for: .video,
+    )
     @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
-        for: .audio)
+        for: .audio,
+    )
     @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(
-        for: .readWrite)
+        for: .readWrite,
+    )
     @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
         .authorizationStatus
     @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
@@ -40,7 +43,6 @@ struct CameraSettingsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-
                 Section("About") {
                     SettingStatusRow(title: "Version", value: appVersion)
                     SettingStatusRow(title: "Model Name", value: deviceInfo)
@@ -49,14 +51,14 @@ struct CameraSettingsSheet: View {
 
                 Section("Support") {
                     /*
-                    Button {
-                        showInstructions = true
-                    } label: {
-                        Label("App Guide", systemImage: "service.dog.fill")
-                            .font(Theme.font16Regular)
-                            .foregroundStyle(Theme.white)
-                    }
-                    */
+                     Button {
+                         showInstructions = true
+                     } label: {
+                         Label("App Guide", systemImage: "service.dog.fill")
+                             .font(Theme.font16Regular)
+                             .foregroundStyle(Theme.white)
+                     }
+                     */
 
                     Button {
                         openSlackChannel()
@@ -64,7 +66,7 @@ struct CameraSettingsSheet: View {
                         HStack {
                             Label(
                                 "Slack #mvp\nMobile Video Production",
-                                systemImage: "bubble.left.and.bubble.right.fill"
+                                systemImage: "bubble.left.and.bubble.right.fill",
                             )
                             .font(Theme.font16Regular)
                             .foregroundStyle(Theme.white)
@@ -78,7 +80,6 @@ struct CameraSettingsSheet: View {
                 .settingsSectionHeaderStyle()
 
                 Section("Permissions") {
-
                     PermissionStatusRow(
                         icon: "camera.fill",
                         iconColor: .blue,
@@ -86,7 +87,7 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: cameraStatus),
                         statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                         permission: .camera,
-                        snapshot: policySnapshot
+                        snapshot: policySnapshot,
                     )
 
                     PermissionStatusRow(
@@ -96,7 +97,7 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: micStatus),
                         statusColor: PermissionStatusDisplay.color(for: micStatus),
                         permission: .microphone,
-                        snapshot: policySnapshot
+                        snapshot: policySnapshot,
                     )
 
                     PermissionStatusRow(
@@ -106,7 +107,7 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: photoStatus),
                         statusColor: PermissionStatusDisplay.color(for: photoStatus),
                         permission: .photoLibrary,
-                        snapshot: policySnapshot
+                        snapshot: policySnapshot,
                     )
 
                     PermissionStatusRow(
@@ -116,7 +117,7 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: locationStatus),
                         statusColor: PermissionStatusDisplay.color(for: locationStatus),
                         permission: .location,
-                        snapshot: policySnapshot
+                        snapshot: policySnapshot,
                     )
 
                     PermissionStatusRow(
@@ -126,12 +127,12 @@ struct CameraSettingsSheet: View {
                         status: PermissionStatusDisplay.label(for: speechStatus),
                         statusColor: PermissionStatusDisplay.color(for: speechStatus),
                         permission: .speechToText,
-                        snapshot: policySnapshot
+                        snapshot: policySnapshot,
                     )
 
                     if let speechRecovery = PermissionRecoveryMapper.optionalSpeechRecoveryMessage(
-                        for: speechStatus)
-                    {
+                        for: speechStatus,
+                    ) {
                         Text(speechRecovery)
                             .font(Theme.font12Regular)
                             .foregroundStyle(Theme.primaryText)
@@ -142,10 +143,9 @@ struct CameraSettingsSheet: View {
                 .foregroundStyle(Theme.white)
 
                 // MARK: - Formats Accordion
+
                 Section {
-
                     DisclosureGroup(isExpanded: $formatsExpanded) {
-
                         // STANDARD sub-heading
                         Text("Standard")
                             .font(Theme.font12Medium)
@@ -183,7 +183,6 @@ struct CameraSettingsSheet: View {
                 }
                 .settingsSectionHeaderStyle()
                 .tint(Theme.white)
-
             }
             .tint(Theme.white)
             .scrollContentBackground(.hidden)
@@ -197,7 +196,9 @@ struct CameraSettingsSheet: View {
             }
             .onAppear { refreshStatuses() }
             .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .active { refreshStatuses() }
+                if newPhase == .active {
+                    refreshStatuses()
+                }
             }
             .sheet(isPresented: $showInstructions) {
                 InstructionsView()
@@ -212,7 +213,7 @@ struct CameraSettingsSheet: View {
     private var appVersion: String {
         let version =
             Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "1.0"
+                ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "\(version) (\(build))"
     }
@@ -229,7 +230,7 @@ struct CameraSettingsSheet: View {
             microphone: micStatus,
             photoLibrary: photoStatus,
             location: locationStatus,
-            speechToText: speechStatus
+            speechToText: speechStatus,
         )
     }
 
@@ -244,7 +245,7 @@ struct CameraSettingsSheet: View {
                 .foregroundStyle(Theme.purple)
                 .frame(width: 20)
             Text(
-                "\(format.resolution.rawValue) \(format.resolution.dimensionLabel) \(format.frameRate.rawValue)p"
+                "\(format.resolution.rawValue) \(format.resolution.dimensionLabel) \(format.frameRate.rawValue)p",
             )
             .font(Theme.font16Regular)
             .foregroundStyle(Theme.white)
@@ -261,11 +262,11 @@ struct CameraSettingsSheet: View {
         let snapshot = policySnapshot
         PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
             status: speechStatus,
-            sourceScreen: "settings"
+            sourceScreen: "settings",
         )
         PermissionAnalyticsService.trackSupportDiagnosticSummary(
             snapshot: snapshot,
-            sourceScreen: "settings"
+            sourceScreen: "settings",
         )
     }
 
@@ -278,9 +279,11 @@ struct CameraSettingsSheet: View {
     /// Tries the native Slack app first; falls back to the web client.
     private func openSlackChannel() {
         let appURL = URL(
-            string: "slack://channel?team=\(Self.slackTeamID)&id=\(Self.slackChannelID)")!
+            string: "slack://channel?team=\(Self.slackTeamID)&id=\(Self.slackChannelID)",
+        )!
         let webURL = URL(
-            string: "https://app.slack.com/client/\(Self.slackTeamID)/\(Self.slackChannelID)")!
+            string: "https://app.slack.com/client/\(Self.slackTeamID)/\(Self.slackChannelID)",
+        )!
 
         if UIApplication.shared.canOpenURL(appURL) {
             UIApplication.shared.open(appURL)

@@ -5,18 +5,18 @@ import Photos
 /// Does NOT store the PHAsset reference — look it up on demand by localIdentifier
 /// so the model can cross actor boundaries cleanly under Swift 6 strict concurrency.
 struct Recording: Identifiable, Hashable, Sendable {
-    let id: String          // PHAsset.localIdentifier
+    let id: String // PHAsset.localIdentifier
     let duration: TimeInterval
     let creationDate: Date
     let pixelWidth: Int
     let pixelHeight: Int
 
     init(asset: PHAsset) {
-        self.id = asset.localIdentifier
-        self.duration = asset.duration
-        self.creationDate = asset.creationDate ?? Date()
-        self.pixelWidth = asset.pixelWidth
-        self.pixelHeight = asset.pixelHeight
+        id = asset.localIdentifier
+        duration = asset.duration
+        creationDate = asset.creationDate ?? Date()
+        pixelWidth = asset.pixelWidth
+        pixelHeight = asset.pixelHeight
     }
 
     var formattedDuration: String {
@@ -28,9 +28,9 @@ struct Recording: Identifiable, Hashable, Sendable {
     /// Fallback initialiser used when PHAsset is unavailable (Transferable path).
     /// Metadata is loaded asynchronously by the caller before calling this init.
     init(fallbackIdentifier: String, duration: TimeInterval = 0, pixelWidth: Int = 0, pixelHeight: Int = 0) {
-        self.id = fallbackIdentifier
+        id = fallbackIdentifier
         self.duration = duration
-        self.creationDate = Date()
+        creationDate = Date()
         self.pixelWidth = pixelWidth
         self.pixelHeight = pixelHeight
     }

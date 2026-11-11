@@ -9,10 +9,10 @@ import SwiftUI
 struct SaveButton: View {
     /// Action to perform when the button is tapped (typically save and dismiss).
     let action: () -> Void
-    
+
     /// Whether the button is disabled (e.g., invalid input).
     var isDisabled: Bool = false
-        
+
     var body: some View {
         Button(action: action) {
             Image(systemName: "checkmark")
@@ -33,22 +33,21 @@ struct SaveButton: View {
 struct SaveToolbarButton: View {
     /// Action to perform when the button is tapped (typically save and dismiss).
     let action: () -> Void
-    
+
     /// Whether the button is disabled (e.g., invalid input).
     var isDisabled: Bool = false
-    
+
     /// Button label text. Defaults to "Save".
     var label: String = "Save"
-        
+
     var body: some View {
-          Button(action: action) {
-               Image(systemName: "checkmark")
-                    .font(Theme.icon16)
-                    .foregroundStyle(Theme.white)
-          }
-          .disabled(isDisabled)
-          .accessibilityLabel(label)
-          .accessibilityHint("Saves changes and dismisses the current view")
-       
+        Button(action: action) {
+            Image(systemName: "checkmark")
+                .font(Theme.icon16)
+                .foregroundStyle(Theme.white)
+        }
+        .disabled(isDisabled)
+        .accessibilityLabel(label)
+        .accessibilityHint("Saves changes and dismisses the current view")
     }
 }

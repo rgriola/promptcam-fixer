@@ -98,7 +98,7 @@ struct PermissionService {
             microphone: microphoneStatus,
             photoLibrary: photoLibraryStatus,
             location: locationStatus,
-            speechToText: speechToTextStatus
+            speechToText: speechToTextStatus,
         )
     }
 
@@ -117,22 +117,22 @@ struct PermissionService {
     func requestCameraAccess() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            return true
+            true
         case .notDetermined:
-            return await AVCaptureDevice.requestAccess(for: .video)
+            await AVCaptureDevice.requestAccess(for: .video)
         default:
-            return false
+            false
         }
     }
 
     func requestMicrophoneAccess() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
-            return true
+            true
         case .notDetermined:
-            return await AVCaptureDevice.requestAccess(for: .audio)
+            await AVCaptureDevice.requestAccess(for: .audio)
         default:
-            return false
+            false
         }
     }
 
@@ -195,21 +195,8 @@ struct PermissionService {
     }
 }
 
-// MARK: - Environment Injection
-
-/// Environment key that vends a shared `PermissionService` to any view that
-/// reads `@Environment(\.permissionService)`. Views should prefer this over
-/// creating their own `PermissionService()` instance so a single source of
-/// truth (and any future mock) can be swapped from the app root.
-private struct PermissionServiceKey: EnvironmentKey {
-    static let defaultValue = PermissionService()
-}
-
 extension EnvironmentValues {
-    var permissionService: PermissionService {
-        get { self[PermissionServiceKey.self] }
-        set { self[PermissionServiceKey.self] = newValue }
-    }
+    @Entry var permissionService: PermissionService = .init()
 }
 
 // MARK: - Location Authorization Requester

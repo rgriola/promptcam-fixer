@@ -8,7 +8,6 @@ import AVFoundation
 // MARK: - Focus, Exposure & Lock Controls
 
 extension CameraService {
-
     // MARK: - Cinematic Mode Guard
 
     /// Returns true when the session is actively capturing in Cinematic Video mode.
@@ -22,10 +21,10 @@ extension CameraService {
     ///   (depth formats are only present on CINE-capable formats on TrueDepth cameras).
     var isCinematicActive: Bool {
         if #available(iOS 26.0, *) {
-            return videoInput?.isCinematicVideoCaptureEnabled == true
+            videoInput?.isCinematicVideoCaptureEnabled == true
         } else {
             // Depth data support is the best pre-iOS-26 proxy for cinematic formats.
-            return videoDevice?.activeFormat.supportedDepthDataFormats.isEmpty == false
+            videoDevice?.activeFormat.supportedDepthDataFormats.isEmpty == false
         }
     }
 
@@ -69,7 +68,7 @@ extension CameraService {
     }
 
     static func lockOutcome(supportsFocusLock: Bool, supportsExposureLock: Bool) -> FocusExposureLockOutcome {
-        if supportsFocusLock && supportsExposureLock {
+        if supportsFocusLock, supportsExposureLock {
             return .afAeLocked
         }
 

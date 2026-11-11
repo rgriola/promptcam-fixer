@@ -19,7 +19,7 @@ struct AudioSourcePickerView: View {
         let session = AVCaptureDevice.DiscoverySession(
             deviceTypes: [.microphone],
             mediaType: .audio,
-            position: .unspecified
+            position: .unspecified,
         )
         return Dictionary(uniqueKeysWithValues: session.devices.map {
             ($0.uniqueID, $0.localizedName)
@@ -31,7 +31,7 @@ struct AudioSourcePickerView: View {
             title: "Audio Sources",
             icon: "mic.badge.plus",
             autoDismissAfter: 12,
-            onDismiss: onDismiss
+            onDismiss: onDismiss,
         ) {
             ScrollView {
                 VStack(spacing: 2) {
@@ -51,7 +51,7 @@ struct AudioSourcePickerView: View {
         // Use the AVCaptureDevice product name when available (e.g. "DJI Mini Mic 3").
         // Fall back to portName (e.g. "Wireless Mic Rx") when no capture device matches.
         let displayName = captureDeviceNames[port.uid] ?? port.portName
-        
+
         // portTypeLabel now has full port context so it can embed the
         // device-specific name (e.g. "USB · Wireless Mic Rx") when needed.
         let subtitle = portTypeLabel(port)
@@ -97,9 +97,9 @@ struct AudioSourcePickerView: View {
             }
             .contentShape(
                 RoundedRectangle(
-                    cornerRadius: Theme.radiusLg, style: .continuous
-                    )
-                )
+                    cornerRadius: Theme.radiusLg, style: .continuous,
+                ),
+            )
         }
         .buttonStyle(.plain)
     }
@@ -109,15 +109,15 @@ struct AudioSourcePickerView: View {
     private func iconName(for portType: AVAudioSession.Port) -> String {
         switch portType {
         case .builtInMic:
-            return "iphone"
+            "iphone"
         case .headsetMic:
-            return "headphones"
+            "headphones"
         case .usbAudio:
-            return "cable.connector"
+            "cable.connector"
         case .bluetoothHFP, .bluetoothA2DP:
-            return "wave.3.right"
+            "wave.3.right"
         default:
-            return "mic.fill"
+            "mic.fill"
         }
     }
 

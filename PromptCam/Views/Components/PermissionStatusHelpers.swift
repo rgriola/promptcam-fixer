@@ -12,7 +12,6 @@ import SwiftUI
 /// authorization statuses. Used by both the settings sheet and the onboarding
 /// screen to avoid duplication.
 enum PermissionStatusDisplay {
-
     // MARK: - AVFoundation (Camera / Microphone)
 
     /// Human-readable label for camera or microphone authorization status.
@@ -126,14 +125,14 @@ struct OpenSettingsButton: View {
     var sourceSurface: PermissionAnalyticsSurface = .settings
     /// Live permission snapshot at tap time. Required for accurate
     /// settings-return diff and recovery-success analytics.
-    var snapshot: PermissionPolicySnapshot? = nil
+    var snapshot: PermissionPolicySnapshot?
 
     var body: some View {
         Button {
             PermissionAnalyticsService.trackOpenSettingsTapped(
                 permission: permission,
                 sourceSurface: sourceSurface,
-                snapshot: snapshot
+                snapshot: snapshot,
             )
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)

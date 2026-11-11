@@ -8,29 +8,29 @@ enum TeleprompterTextAlignment: String, CaseIterable, Equatable, Sendable {
     case center
     case left
     case right
-    
+
     var swiftUIAlignment: TextAlignment {
         switch self {
-        case .center: return .center
-        case .left: return .leading
-        case .right: return .trailing
+        case .center: .center
+        case .left: .leading
+        case .right: .trailing
         }
     }
-    
+
     var iconName: String {
         switch self {
-        case .center: return "text.aligncenter"
-        case .left: return "text.alignleft"
-        case .right: return "text.alignright"
+        case .center: "text.aligncenter"
+        case .left: "text.alignleft"
+        case .right: "text.alignright"
         }
     }
-    
+
     /// Returns the next alignment in the cycle: center → left → right → center
     var next: TeleprompterTextAlignment {
         switch self {
-        case .center: return .left
-        case .left: return .right
-        case .right: return .center
+        case .center: .left
+        case .left: .right
+        case .right: .center
         }
     }
 }
@@ -46,15 +46,17 @@ enum TeleprompterTextColor: String, CaseIterable, Equatable, Sendable {
 
     var color: Color {
         switch self {
-        case .white:  return Theme.white
-        case .yellow: return Theme.yellow
-        case .red:    return Theme.red
-        case .blue:   return Theme.blue
-        case .black:  return Theme.black
+        case .white: Theme.white
+        case .yellow: Theme.yellow
+        case .red: Theme.red
+        case .blue: Theme.blue
+        case .black: Theme.black
         }
     }
 
-    var label: String { rawValue.capitalized }
+    var label: String {
+        rawValue.capitalized
+    }
 }
 
 struct TeleprompterConfig: Equatable, Sendable {
@@ -82,7 +84,7 @@ struct TeleprompterConfig: Equatable, Sendable {
         textColor: .white,
         backgroundOpacity: 0.15,
         textAlignment: .center,
-        usesAllCaps: false
+        usesAllCaps: false,
     )
 
     var clamped: TeleprompterConfig {

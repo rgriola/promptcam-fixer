@@ -7,9 +7,9 @@ struct ArchivedScript: Codable, Identifiable {
     let savedAt: Date
 
     init(text: String) {
-        self.id = UUID()
+        id = UUID()
         self.text = text
-        self.savedAt = Date()
+        savedAt = Date()
     }
 
     /// Human-readable relative timestamp ("2 hours ago", "3 days ago").
@@ -22,7 +22,9 @@ struct ArchivedScript: Codable, Identifiable {
     /// First 80 characters of the script, for preview.
     var preview: String {
         let oneLine = text.replacingOccurrences(of: "\n", with: " ")
-        if oneLine.count <= 80 { return oneLine }
+        if oneLine.count <= 80 {
+            return oneLine
+        }
         return String(oneLine.prefix(80)) + "…"
     }
 }
@@ -56,7 +58,9 @@ struct ScriptArchive {
         var scripts = load()
 
         // Skip if identical to the most recent archive
-        if scripts.first?.text == trimmed { return }
+        if scripts.first?.text == trimmed {
+            return
+        }
 
         scripts.insert(ArchivedScript(text: trimmed), at: 0)
 

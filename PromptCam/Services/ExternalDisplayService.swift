@@ -33,7 +33,13 @@ final class ExternalDisplayService {
     // MARK: - Scene delegate lifecycle
 
     func attach(to windowScene: UIWindowScene) {
-        Log.hdmi.info("attach(to:) scene role=\(String(describing: windowScene.session.role), privacy: .public) activation=\(String(describing: windowScene.activationState), privacy: .public)")
+        Log.hdmi
+            .info(
+                """
+                attach(to:) scene role=\(String(describing: windowScene.session.role), privacy: .public) \
+                activation=\(String(describing: windowScene.activationState), privacy: .public)
+                """,
+            )
         guard attachedScene !== windowScene else {
             Log.hdmi.debug("attach(to:) same scene already attached — ignoring")
             return
@@ -47,7 +53,14 @@ final class ExternalDisplayService {
         // is safe here (external scenes ignore the "key" part but honor visibility).
         window.isHidden = false
         externalWindow = window
-        Log.hdmi.info("attach(to:) window installed frame=\(String(describing: window.frame), privacy: .public) hidden=\(window.isHidden, privacy: .public) rootVC=\(String(describing: type(of: window.rootViewController)), privacy: .public)")
+        Log.hdmi
+            .info(
+                """
+                attach(to:) window installed frame=\(String(describing: window.frame), privacy: .public) \
+                hidden=\(window.isHidden, privacy: .public) \
+                rootVC=\(String(describing: type(of: window.rootViewController)), privacy: .public)
+                """,
+            )
     }
 
     func detach(from windowScene: UIWindowScene) {
@@ -89,7 +102,10 @@ final class ExternalDisplayService {
         let scenes = UIApplication.shared.connectedScenes
         Log.hdmi.info("[\(context, privacy: .public)] connectedScenes.count=\(scenes.count, privacy: .public)")
         for scene in scenes {
-            Log.hdmi.info("  scene role=\(String(describing: scene.session.role), privacy: .public) state=\(String(describing: scene.activationState), privacy: .public)")
+            Log.hdmi
+                .info(
+                    "  scene role=\(String(describing: scene.session.role), privacy: .public) state=\(String(describing: scene.activationState), privacy: .public)",
+                )
         }
     }
 }
@@ -116,7 +132,9 @@ final class ExternalDisplayHostViewController: UIViewController {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     deinit {
         // NotificationCenter automatically releases observers when they dealloc
@@ -135,7 +153,7 @@ final class ExternalDisplayHostViewController: UIViewController {
             previewView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             previewView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             previewView.topAnchor.constraint(equalTo: root.topAnchor),
-            previewView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+            previewView.bottomAnchor.constraint(equalTo: root.bottomAnchor),
         ])
         view = root
     }
@@ -152,7 +170,7 @@ final class ExternalDisplayHostViewController: UIViewController {
             view.addSubview(diagnosticLabel)
             NSLayoutConstraint.activate([
                 diagnosticLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                diagnosticLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 40)
+                diagnosticLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 40),
             ])
         }
 
@@ -188,15 +206,15 @@ final class ExternalDisplayHostViewController: UIViewController {
         sessionRunningObserver = NotificationCenter.default.addObserver(
             forName: AVCaptureSession.didStartRunningNotification,
             object: session, // nil accepts any session (used if not known yet)
-            queue: .main
+            queue: .main,
         ) { [weak self] _ in
             // queue:.main guarantees delivery on the main thread; jump onto the
             // main actor explicitly to satisfy Swift 6 isolation without
             // sending non-Sendable AVCaptureSession across a Task boundary.
             MainActor.assumeIsolated {
                 guard let self else { return }
-                guard let s = self.sessionProvider() else { return }
-                self.performBind(session: s, reason: "didStartRunning")
+                guard let captureSession = self.sessionProvider() else { return }
+                self.performBind(session: captureSession, reason: "didStartRunning")
             }
         }
     }
@@ -210,6 +228,15 @@ final class ExternalDisplayHostViewController: UIViewController {
             sessionRunningObserver = nil
         }
         let conn = previewView.previewLayer.connection
-        Log.hdmi.info("performBind[\(reason, privacy: .public)] session=set running=\(session.isRunning, privacy: .public) connection=\(conn != nil ? "set" : "nil", privacy: .public) enabled=\(conn?.isEnabled == true, privacy: .public) active=\(conn?.isActive == true, privacy: .public) viewFrame=\(String(describing: self.view.frame), privacy: .public)")
+        Log.hdmi
+            .info(
+                """
+                performBind[\(reason, privacy: .public)] session=set running=\(session.isRunning, privacy: .public) \
+                connection=\(conn != nil ? "set" : "nil", privacy: .public) \
+                enabled=\(conn?.isEnabled == true, privacy: .public) \
+                active=\(conn?.isActive == true, privacy: .public) \
+                viewFrame=\(String(describing: self.view.frame), privacy: .public)
+                """,
+            )
     }
 }

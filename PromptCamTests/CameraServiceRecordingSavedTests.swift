@@ -2,13 +2,12 @@
 // Verifies CameraService fires onRecordingSavedToLibrary exactly when the
 // injected PhotoLibrarySaver succeeds, and publishes an error otherwise.
 
-import XCTest
 import Photos
 @testable import PromptCam
+import XCTest
 
 @MainActor
 final class CameraServiceRecordingSavedTests: XCTestCase {
-
     // MARK: - Fakes
 
     /// Fake saver: records whether it was called and honors a preset result.
@@ -17,13 +16,15 @@ final class CameraServiceRecordingSavedTests: XCTestCase {
         let outcome: Outcome
         private(set) var savedURL: URL?
 
-        init(outcome: Outcome) { self.outcome = outcome }
+        init(outcome: Outcome) {
+            self.outcome = outcome
+        }
 
         func saveVideo(at url: URL) async throws {
             savedURL = url
             switch outcome {
             case .success: return
-            case .failure(let error): throw error
+            case let .failure(error): throw error
             }
         }
     }

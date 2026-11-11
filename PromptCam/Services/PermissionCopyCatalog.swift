@@ -5,77 +5,74 @@
 import Foundation
 
 enum PermissionCopyKey: CaseIterable {
-     case camera
-     case microphone
-     case photoLibrary
-     case location
-     case speechToText
+    case camera
+    case microphone
+    case photoLibrary
+    case location
+    case speechToText
 }
 
 enum PermissionCopyCatalog {
+    static let onboardingTitle = "Cue Vue"
 
-     static let onboardingTitle = "Cue Vue"
+    static let onboardingRequiredSummary =
+        "Camera, Mic & Photo Library access required."
 
-     static let onboardingRequiredSummary =
-          "Camera, Mic & Photo Library access required."
+    static let onboardingOptionalSummary =
+        "GPS & Speech-to-Text are optional."
 
-     static let onboardingOptionalSummary =
-          "GPS & Speech-to-Text are optional."
+    static let onboardingBlockedRequiredMessage =
+        "A required permission is not active. Tap Settings to enable access."
 
-     static let onboardingBlockedRequiredMessage =
-          "A required permission is not active. Tap Settings to enable access."
+    static func description(for key: PermissionCopyKey) -> String {
+        switch key {
+        case .camera:
+            "Required to capture video."
+        case .microphone:
+            "Required to record audio."
+        case .photoLibrary:
+            "Required to save videos."
+        case .location:
+            "Optional: GPS tag on video."
+        case .speechToText:
+            "Optional: Speech-to-Text for scripting."
+        }
+    }
 
-     static func description(for key: PermissionCopyKey) -> String {
-          switch key {
-          case .camera:
-               return "Required to capture video."
-          case .microphone:
-               return "Required to record audio."
-          case .photoLibrary:
-               return "Required to save videos."
-          case .location:
-               return "Optional: GPS tag on video."
-          case .speechToText:
-               return "Optional: Speech-to-Text for scripting."
-          }
-     }
+    static func requiredPermissionRecoveryTitle(for key: PermissionCopyKey) -> String {
+        switch key {
+        case .camera:
+            "Camera Access Required"
+        case .microphone:
+            "Microphone Access Required"
+        case .photoLibrary:
+            "Photo Library Access Required"
+        case .location:
+            "Location Access"
+        case .speechToText:
+            "Speech to Text Access"
+        }
+    }
 
-     static func requiredPermissionRecoveryTitle(for key: PermissionCopyKey) -> String {
-          switch key {
-               
-          case .camera:
-               return "Camera Access Required"
-          case .microphone:
-               return "Microphone Access Required"
-          case .photoLibrary:
-               return "Photo Library Access Required"
-          case .location:
-               return "Location Access"
-          case .speechToText:
-               return "Speech to Text Access"
-          }
-     }
+    static func requiredPermissionRecoveryMessage(for key: PermissionCopyKey) -> String {
+        switch key {
+        case .camera:
+            "Camera access required. Open Settings, enable Camera, then return to continue."
 
-     static func requiredPermissionRecoveryMessage(for key: PermissionCopyKey) -> String {
-          switch key {
-          case .camera:
-               return
-                    "Camera access required. Open Settings, enable Camera, then return to continue."
-          case .microphone:
-               return
-                    "Microphone access required. Open Settings, enable Microphone, then return to continue."
-          case .photoLibrary:
-               return
-                    "Photo Library access required. Open Settings, enable Photos access, then return to continue."
+        case .microphone:
+            "Microphone access required. Open Settings, enable Microphone, then return to continue."
 
-          case .location:
-               return "GPS Data is optional for tagging videos."
+        case .photoLibrary:
+            "Photo Library access required. Open Settings, enable Photos access, then return to continue."
 
-          case .speechToText:
-               return optionalSpeechRecoveryMessage
-          }
-     }
+        case .location:
+            "GPS Data is optional for tagging videos."
 
-     static let optionalSpeechRecoveryMessage =
-          "Speech to Text is optional. Open Settings to enable."
+        case .speechToText:
+            optionalSpeechRecoveryMessage
+        }
+    }
+
+    static let optionalSpeechRecoveryMessage =
+        "Speech to Text is optional. Open Settings to enable."
 }

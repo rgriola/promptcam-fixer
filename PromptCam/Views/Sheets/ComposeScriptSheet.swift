@@ -9,7 +9,7 @@ import UIKit
 /// Opens with keyboard focused and provides Save/Cancel toolbar actions.
 struct ComposeScriptSheet: View {
     /// Maximum allowed script length (10,000 characters).
-    private static let kMaxScriptLength = 10_000
+    private static let kMaxScriptLength = 10000
 
     // MARK: - Tuning
 
@@ -20,8 +20,8 @@ struct ComposeScriptSheet: View {
         static let focusDelay: Duration = .milliseconds(500)
         /// Delay between dismissing the keyboard and running the callback so
         /// the keyboard animates down before the sheet closes.
-        // Leave extra headroom for iOS dictation teardown so audio session
-        // ownership is released before CameraView restarts capture.
+        /// Leave extra headroom for iOS dictation teardown so audio session
+        /// ownership is released before CameraView restarts capture.
         static let keyboardDismissDelay: Duration = .milliseconds(850)
         /// How long the "Cleaned" confirmation stays visible on the Clean button.
         static let cleanIndicatorDuration: Duration = .milliseconds(1500)
@@ -96,7 +96,7 @@ struct ComposeScriptSheet: View {
         // 1. Normalize line endings.
         var result = text
             .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r",   with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
 
         // 2. Non-breaking spaces → regular space.
         result = result.replacingOccurrences(of: "\u{00A0}", with: " ")
@@ -108,31 +108,33 @@ struct ComposeScriptSheet: View {
         // 4. Per-line cleanup — uses CharacterSet.whitespaces to catch the full
         //    Unicode whitespace set: \t, space, non-breaking space, en-space,
         //    em-space, figure space, and other variants Outlook/Word insert.
-        let wsSet = CharacterSet.whitespaces   // does NOT include newlines
+        let wsSet = CharacterSet.whitespaces // does NOT include newlines
         let bulletPrefixes = ["\u{2022} ", "\u{00B7} ", "\u{25CF} ", "\u{25E6} ",
                               "- ", "* ", "\u{2013} ", "\u{2014} "]
 
-        func stripLeading(_ s: String) -> String {
-            String(s.unicodeScalars.drop(while: { wsSet.contains($0) }))
+        func stripLeading(_ input: String) -> String {
+            String(input.unicodeScalars.drop(while: { wsSet.contains($0) }))
         }
-        func stripTrailing(_ s: String) -> String {
-            var scalars = s.unicodeScalars
-            while let last = scalars.last, wsSet.contains(last) { scalars.removeLast() }
+        func stripTrailing(_ input: String) -> String {
+            var scalars = input.unicodeScalars
+            while let last = scalars.last, wsSet.contains(last) {
+                scalars.removeLast()
+            }
             return String(scalars)
         }
 
         let cleaned: [String] = result
             .components(separatedBy: "\n")
             .map { line in
-                var l = stripLeading(line)
-                l = stripTrailing(l)
+                var cleanedLine = stripLeading(line)
+                cleanedLine = stripTrailing(cleanedLine)
                 // Remove leading bullet / list prefix, then strip again in case
                 // extra whitespace follows the bullet character.
-                for prefix in bulletPrefixes where l.hasPrefix(prefix) {
-                    l = stripLeading(String(l.dropFirst(prefix.count)))
+                for prefix in bulletPrefixes where cleanedLine.hasPrefix(prefix) {
+                    cleanedLine = stripLeading(String(cleanedLine.dropFirst(prefix.count)))
                     break
                 }
-                return l
+                return cleanedLine
             }
 
         // 5. Collapse multiple consecutive blank lines to at most one.
@@ -141,7 +143,9 @@ struct ComposeScriptSheet: View {
         for line in cleaned {
             if line.isEmpty {
                 blankRun += 1
-                if blankRun == 1 { output.append(line) }
+                if blankRun == 1 {
+                    output.append(line)
+                }
             } else {
                 blankRun = 0
                 output.append(line)
@@ -183,7 +187,8 @@ struct ComposeScriptSheet: View {
         if let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }),
-           let window = scene.windows.first(where: \.isKeyWindow) {
+            let window = scene.windows.first(where: \.isKeyWindow)
+        {
             window.endEditing(true)
         }
     }
@@ -202,13 +207,11 @@ struct ComposeScriptSheet: View {
                             .foregroundStyle(draftText.count > Self.kMaxScriptLength ? Theme.red : Theme.primaryText)
                             .monospacedDigit()
 
-                            Spacer()
+                        Spacer()
 
                         Text("Checkmark applies the script.")
                             .font(Theme.font12Regular)
                             .foregroundStyle(Theme.primaryText)
-                        
-                    
                     }
 
                     // Text editor
@@ -217,8 +220,9 @@ struct ComposeScriptSheet: View {
                         .focused($isEditorFocused)
                         .padding(Theme.space4)
                         .background(
-                            Theme.panelBg.opacity(0.2), 
-                            in: RoundedRectangle(cornerRadius: Theme.radiusMd))
+                            Theme.panelBg.opacity(0.2),
+                            in: RoundedRectangle(cornerRadius: Theme.radiusMd),
+                        )
                         .frame(height: editorHeight)
                         .onChange(of: draftText) { _, newValue in
                             if newValue.count > Self.kMaxScriptLength {
@@ -241,7 +245,7 @@ struct ComposeScriptSheet: View {
                         } label: {
                             Label(
                                 didClean ? "Cleaned" : "Clean for Teleprompter",
-                                systemImage: didClean ? "checkmark.circle.fill" : "wand.and.sparkles"
+                                systemImage: didClean ? "checkmark.circle.fill" : "wand.and.sparkles",
                             )
                             .font(Theme.font16Regular)
                             .foregroundStyle(didClean ? Theme.green : Theme.white)
@@ -269,7 +273,6 @@ struct ComposeScriptSheet: View {
                     Spacer()
                 }
                 .padding(Theme.space16)
-
             }
             .ignoresSafeArea(.keyboard)
             .navigationTitle("Script")
@@ -290,9 +293,9 @@ struct ComposeScriptSheet: View {
 
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    CloseToolbarButton { 
-                        dismissAndRun { onCancel() } 
-                        }
+                    CloseToolbarButton {
+                        dismissAndRun { onCancel() }
+                    }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -300,7 +303,7 @@ struct ComposeScriptSheet: View {
                         ArchiveButton(
                             action: {
                                 showArchive = true
-                            }
+                            },
                         )
 
                         SaveToolbarButton(
@@ -310,7 +313,7 @@ struct ComposeScriptSheet: View {
                                 ScriptArchive.save(truncated)
                                 dismissAndRun { onSave(truncated) }
                             },
-                            isDisabled: !hasContent
+                            isDisabled: !hasContent,
                         )
                     }
                 }

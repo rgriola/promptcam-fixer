@@ -59,6 +59,19 @@ xcodebuild test \
   -only-testing:PromptCamTests
 ```
 
+## Continuous integration
+
+The [CI workflow](.github/workflows/ci.yml) runs on pull requests, pushes to
+`main` or `master`, and manual dispatches. It checks SwiftLint and SwiftFormat,
+regenerates the project with XcodeGen, and runs the unit tests serially on an
+iPhone simulator using Xcode 26.3 and iOS 26.2. Tool versions are pinned and
+simulator builds do not require signing credentials.
+
+Failed test runs upload an `.xcresult` bundle when available. Simulator CI does
+not replace UI testing or physical-device checks of camera, audio, and recording.
+
+## Test coverage
+
 Coverage focus areas:
 
 - `DeviceCapabilitiesTests` — `isSupported`, `adjusted` clamping rules, resolution / fps queries

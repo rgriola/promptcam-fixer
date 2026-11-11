@@ -23,7 +23,7 @@ struct CameraFormatPanelSheet: View {
         NavigationStack {
             List {
                 // MARK: - Video Mode Section
-                
+
                 Section {
                     Picker("Mode", selection: Binding(
                         get: { recordingFormat.mode },
@@ -32,11 +32,11 @@ struct CameraFormatPanelSheet: View {
                             let tentative = RecordingFormat(
                                 resolution: recordingFormat.resolution,
                                 frameRate: recordingFormat.frameRate,
-                                mode: newMode
+                                mode: newMode,
                             )
                             let adjusted = deviceCapabilities.adjusted(tentative)
                             onFormatChanged(adjusted)
-                        }
+                        },
                     )) {
                         ForEach(VideoMode.allCases, id: \.self) { mode in
                             Text(mode.displayLabel)
@@ -60,21 +60,21 @@ struct CameraFormatPanelSheet: View {
                             .foregroundStyle(Theme.primaryText)
                     }
                 }
-                
+
                 // MARK: - Resolution Section
-                
+
                 Section {
                     let validResolutions = deviceCapabilities.resolutions(for: recordingFormat.mode)
-                    
+
                     Picker("Resolution", selection: Binding(
                         get: { recordingFormat.resolution },
                         set: { newRes in
                             onFormatChanged(RecordingFormat(
                                 resolution: newRes,
                                 frameRate: recordingFormat.frameRate,
-                                mode: recordingFormat.mode
+                                mode: recordingFormat.mode,
                             ))
-                        }
+                        },
                     )) {
                         ForEach(VideoResolution.allCases, id: \.self) { res in
                             Text(res.rawValue)
@@ -91,20 +91,20 @@ struct CameraFormatPanelSheet: View {
                 }
 
                 // MARK: - Frame Rate Section
-                
+
                 Section {
                     // Only enable fps values valid for the currently selected resolution.
                     let validFrameRates = deviceCapabilities.frameRates(for: recordingFormat.mode, resolution: recordingFormat.resolution)
-                    
+
                     Picker("Frame Rate", selection: Binding(
                         get: { recordingFormat.frameRate },
                         set: { newFPS in
                             onFormatChanged(RecordingFormat(
                                 resolution: recordingFormat.resolution,
                                 frameRate: newFPS,
-                                mode: recordingFormat.mode
+                                mode: recordingFormat.mode,
                             ))
-                        }
+                        },
                     )) {
                         ForEach(VideoFrameRate.allCases, id: \.self) { rate in
                             Text("\(rate.rawValue) FPS")
@@ -127,7 +127,7 @@ struct CameraFormatPanelSheet: View {
                             .foregroundStyle(Theme.primaryText)
                     }
                 }
-                
+
                 if !deviceCapabilities.supportsCinematicMode {
                     Section {
                         Label("Cinematic mode is not supported on this device.", systemImage: "info.circle")
@@ -152,7 +152,7 @@ struct CameraFormatPanelSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                  CloseToolbarButton { onClose() }
+                    CloseToolbarButton { onClose() }
                 }
             }
         }

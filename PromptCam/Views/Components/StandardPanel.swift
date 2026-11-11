@@ -49,7 +49,7 @@ struct StandardPanel<Content: View>: View {
         icon: String,
         autoDismissAfter: TimeInterval? = 12,
         onDismiss: @escaping () -> Void,
-        @ViewBuilder content: @escaping () -> Content
+        @ViewBuilder content: @escaping () -> Content,
     ) {
         self.title = title
         self.icon = icon
@@ -91,13 +91,13 @@ struct StandardPanel<Content: View>: View {
         .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLg))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.radiusLg)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                .strokeBorder(Theme.glassBorder, lineWidth: 1),
         )
         .padding(.horizontal, 24)
         .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
         .modifier(AutoDismissModifier(
             duration: autoDismissAfter,
-            onDismiss: onDismiss
+            onDismiss: onDismiss,
         ))
     }
 }
@@ -156,4 +156,3 @@ struct StandardPanelOverlay<Content: View>: View {
             .transition(.scale(scale: 0.95).combined(with: .opacity))
     }
 }
-

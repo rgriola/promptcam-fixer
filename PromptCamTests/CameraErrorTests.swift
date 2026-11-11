@@ -3,11 +3,10 @@
 //
 // Verifies every CameraError case produces a non-empty localizedDescription.
 
-import XCTest
 @testable import PromptCam
+import XCTest
 
 final class CameraErrorTests: XCTestCase {
-
     // MARK: - Session / Device Errors
 
     func testDeviceUnavailableDescription() {

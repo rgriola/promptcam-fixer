@@ -16,9 +16,9 @@ protocol PhotoLibrarySaver: Sendable {
 struct DefaultPhotoLibrarySaver: PhotoLibrarySaver {
     func saveVideo(at url: URL) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            PHPhotoLibrary.shared().performChanges({
+            PHPhotoLibrary.shared().performChanges {
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
-            }, completionHandler: { success, error in
+            } completionHandler: { success, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else if !success {
@@ -26,7 +26,7 @@ struct DefaultPhotoLibrarySaver: PhotoLibrarySaver {
                 } else {
                     continuation.resume(returning: ())
                 }
-            })
+            }
         }
     }
 }

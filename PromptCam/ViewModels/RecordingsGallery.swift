@@ -61,7 +61,7 @@ final class RecordingsGallery {
         guard let index = recentRecordings.firstIndex(where: { $0.id == recording.id }) else { return }
         let lo = max(0, index - windowSize)
         let hi = min(recentRecordings.count - 1, index + windowSize)
-        let ids = recentRecordings[lo...hi].map(\.id)
+        let ids = recentRecordings[lo ... hi].map(\.id)
         recordingsService.startCaching(ids: ids, targetSize: CGSize(width: 144, height: 144), deliveryMode: .opportunistic)
     }
 
@@ -111,9 +111,8 @@ final class RecordingsGallery {
         // Single main-actor transaction — @Observable coalesces these writes.
         recentRecordings = all
         latestRecording = all.first
-        latestVideoURL = nil    // resolve lazily in the player for the new recording
+        latestVideoURL = nil // resolve lazily in the player for the new recording
 
         return true
     }
 }
-

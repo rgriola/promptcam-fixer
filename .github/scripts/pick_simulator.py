@@ -1,52 +1,66 @@
 #!/usr/bin/env python3
-"""Pick the newest available iPhone simulator from `simctl list devices --json`.
+"""Select an available iPhone simulator for a specific iOS runtime."""
 
-Reads the JSON produced by `xcrun simctl list devices available --json` and
-prints the name of the newest available iPhone device. This avoids hard-coding
-a device name (e.g. "iPhone 17") that may not exist on a given runner image.
-
-Usage: pick_simulator.py <devices.json>
-Prints the selected device name to stdout, or nothing if none is found.
-"""
+import argparse
 import json
 import re
 import sys
-
-
-def version_key(runtime_identifier):
-    """Extract a sortable iOS version tuple from a runtime identifier."""
-    nums = re.findall(r"\d+", runtime_identifier)
-    return tuple(int(n) for n in nums) if nums else (0,)
+import uuid
+from pathlib import Path
 
 
 def device_key(name):
-    """Sort iPhones by their trailing model numbers (e.g. 15 < 16 < 16 Pro)."""
     nums = re.findall(r"\d+", name)
-    return tuple(int(n) for n in nums) if nums else (0,)
+    return tuple(int(n) for n in nums), name
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("", end="")
-        return 0
-    with open(sys.argv[1], encoding="utf-8") as handle:
-        devices = json.load(handle).get("devices", {})
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("devices_json", type=Path)
+    parser.add_argument("--runtime", required=True, help="iOS runtime version, such as 26.2")
+    args = parser.parse_args()
+
+    if not re.fullmatch(r"\d+(?:\.\d+)*", args.runtime):
+        parser.error("--runtime must be an iOS version, such as 26.2")
+
+    try:
+        with args.devices_json.open(encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Unable to read simulator devices: {error}", file=sys.stderr)
+        return 1
+
+    devices = data.get("devices") if isinstance(data, dict) else None
+    if not isinstance(devices, dict):
+        print("Simulator JSON does not contain a devices object", file=sys.stderr)
+        return 1
+
+    runtime = f"com.apple.CoreSimulator.SimRuntime.iOS-{args.runtime.replace('.', '-')}"
+    entries = devices.get(runtime, [])
+    if not isinstance(entries, list):
+        print(f"Invalid simulator list for iOS {args.runtime}", file=sys.stderr)
+        return 1
 
     candidates = []
-    for runtime, entries in devices.items():
-        if "iOS" not in runtime:
+    for device in entries:
+        if not isinstance(device, dict) or device.get("isAvailable") is not True:
             continue
-        for device in entries:
-            name = device.get("name", "")
-            if device.get("isAvailable") and name.startswith("iPhone"):
-                candidates.append((version_key(runtime), device_key(name), name))
+        name, identifier = device.get("name"), device.get("udid")
+        if not isinstance(name, str) or not name.startswith("iPhone") or not isinstance(identifier, str):
+            continue
+        try:
+            uuid.UUID(identifier)
+        except ValueError:
+            continue
+        candidates.append((device_key(name), identifier))
 
     if not candidates:
-        print("", end="")
-        return 0
+        print(f"No available iPhone simulator for iOS {args.runtime}", file=sys.stderr)
+        return 1
 
-    candidates.sort()
-    print(candidates[-1][2], end="")
+    (_, name), identifier = max(candidates)
+    print(f"Selected {name} (iOS {args.runtime}, {identifier})", file=sys.stderr)
+    print(identifier)
     return 0
 
 
