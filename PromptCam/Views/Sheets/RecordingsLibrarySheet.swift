@@ -16,7 +16,7 @@ struct RecordingsLibrarySheet: View {
                 selection: $selectedItems,
                 maxSelectionCount: 1,
                 selectionBehavior: .default,
-                matching: .videos
+                matching: .videos,
             ) {
                 EmptyView()
             }
@@ -46,7 +46,7 @@ struct RecordingsLibrarySheet: View {
                     // parameter keeps the shared onDelete signature consistent
                     // and future-proofs the sheet against later carousel work.
                     Task { await deleteRecording(activeRecording) }
-                }
+                },
             )
         }
         // Step 2 (fast path only): URL resolves after player is open
@@ -71,7 +71,7 @@ struct RecordingsLibrarySheet: View {
         // ── Fast path: PHAsset ──────────────────────────────────────────────
         if let identifier = item.itemIdentifier,
            let asset = PHAsset.fetchAssets(
-               withLocalIdentifiers: [identifier], options: nil
+               withLocalIdentifiers: [identifier], options: nil,
            ).firstObject
         {
             // Present the player immediately; URL loads via onChange(of: selectedRecording)
@@ -84,16 +84,16 @@ struct RecordingsLibrarySheet: View {
             let identifier = item.itemIdentifier ?? UUID().uuidString
             let av = AVURLAsset(url: movie.url)
             // Load metadata using non-deprecated async APIs
-            let cmDuration = (try? await av.load(.duration)) ?? .zero
+            let cmDuration = await (try? av.load(.duration)) ?? .zero
             let durationSecs = CMTimeGetSeconds(cmDuration)
-            let tracks = (try? await av.loadTracks(withMediaType: .video)) ?? []
-            let naturalSize = (try? await tracks.first?.load(.naturalSize)) ?? .zero
+            let tracks = await (try? av.loadTracks(withMediaType: .video)) ?? []
+            let naturalSize = await (try? tracks.first?.load(.naturalSize)) ?? .zero
             videoURL = movie.url
             selectedRecording = Recording(
                 fallbackIdentifier: identifier,
                 duration: durationSecs.isNaN || durationSecs.isInfinite ? 0 : durationSecs,
                 pixelWidth: Int(naturalSize.width),
-                pixelHeight: Int(naturalSize.height)
+                pixelHeight: Int(naturalSize.height),
             )
         }
     }
@@ -104,7 +104,7 @@ struct RecordingsLibrarySheet: View {
         await withCheckedContinuation { continuation in
             var resumed = false
             let options = PHVideoRequestOptions()
-            options.isNetworkAccessAllowed = true   // stream from iCloud if needed
+            options.isNetworkAccessAllowed = true // stream from iCloud if needed
             options.version = .current
             options.deliveryMode = .highQualityFormat
             PHImageManager.default().requestAVAsset(forVideo: phAsset, options: options) { avAsset, _, _ in

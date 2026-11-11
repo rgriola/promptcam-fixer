@@ -14,7 +14,7 @@ struct ScriptArchiveSheet: View {
                     ContentUnavailableView(
                         "No Recent Scripts",
                         systemImage: "clock.arrow.circlepath",
-                        description: Text("Saved scripts appear here for 7 days.")
+                        description: Text("Saved scripts appear here for 7 days."),
                     )
                     .foregroundStyle(Theme.white)
                 } else {

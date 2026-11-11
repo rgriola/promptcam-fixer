@@ -23,13 +23,13 @@ struct CinematicAperturePanel: View {
             title: "Aperture",
             icon: "camera.aperture",
             autoDismissAfter: 12,
-            onDismiss: onDismiss
+            onDismiss: onDismiss,
         ) {
             VStack(alignment: .leading, spacing: Theme.space16) {
                 ApertureSliderRow(
                     aperture: $aperture,
                     apertureRange: apertureRange,
-                    onAdjust: onAdjust
+                    onAdjust: onAdjust,
                 )
                 HStack {
                     Spacer()
@@ -77,10 +77,10 @@ private struct ApertureSliderRow: View {
                         let newAp = Float(newValue)
                         aperture = newAp
                         onAdjust(newAp)
-                    }
+                    },
                 ),
-                in: Double(apertureRange.lowerBound)...Double(apertureRange.upperBound),
-                step: 0.1
+                in: Double(apertureRange.lowerBound) ... Double(apertureRange.upperBound),
+                step: 0.1,
             )
             .controlSize(.large)
             .tint(Theme.accent)
@@ -114,7 +114,8 @@ private struct ApertureSliderRow: View {
 
                 Text(
                     String(
-                        format: "f/%.1f", (apertureRange.lowerBound + apertureRange.upperBound) / 2)
+                        format: "f/%.1f", (apertureRange.lowerBound + apertureRange.upperBound) / 2,
+                    ),
                 )
                 .font(Theme.font12Regular)
                 .foregroundStyle(Theme.primaryText)

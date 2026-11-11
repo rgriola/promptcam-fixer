@@ -6,79 +6,82 @@
 import AVFoundation
 import CoreLocation
 import Photos
+@testable import PromptCam
 import Speech
 import XCTest
 
-@testable import PromptCam
-
 final class RequiredAccessGateStateTests: XCTestCase {
+    func testCanContinueWhenAllRequiredPermissionsGranted() {
+        let state = RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: .authorized,
+                microphone: .authorized,
+                photoLibrary: .authorized,
+                location: .denied,
+                speechToText: .denied,
+            ),
+        )
 
-     func testCanContinueWhenAllRequiredPermissionsGranted() {
-          let state = RequiredAccessGateState(
-               snapshot: PermissionPolicySnapshot(
-                    camera: .authorized,
-                    microphone: .authorized,
-                    photoLibrary: .authorized,
-                    location: .denied,
-                    speechToText: .denied
-               ))
+        XCTAssertTrue(state.canContinue)
+    }
 
-          XCTAssertTrue(state.canContinue)
-     }
+    func testCannotContinueWhenPhotoLibraryDenied() {
+        let state = RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: .authorized,
+                microphone: .authorized,
+                photoLibrary: .denied,
+                location: .authorizedWhenInUse,
+                speechToText: .authorized,
+            ),
+        )
 
-     func testCannotContinueWhenPhotoLibraryDenied() {
-          let state = RequiredAccessGateState(
-               snapshot: PermissionPolicySnapshot(
-                    camera: .authorized,
-                    microphone: .authorized,
-                    photoLibrary: .denied,
-                    location: .authorizedWhenInUse,
-                    speechToText: .authorized
-               ))
+        XCTAssertFalse(state.canContinue)
+        XCTAssertTrue(state.hasBlockedRequiredPermission)
+    }
 
-          XCTAssertFalse(state.canContinue)
-          XCTAssertTrue(state.hasBlockedRequiredPermission)
-     }
+    func testHasBlockedRequiredPermissionWhenCameraRestricted() {
+        let state = RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: .restricted,
+                microphone: .authorized,
+                photoLibrary: .authorized,
+                location: .authorizedWhenInUse,
+                speechToText: .authorized,
+            ),
+        )
 
-     func testHasBlockedRequiredPermissionWhenCameraRestricted() {
-          let state = RequiredAccessGateState(
-               snapshot: PermissionPolicySnapshot(
-                    camera: .restricted,
-                    microphone: .authorized,
-                    photoLibrary: .authorized,
-                    location: .authorizedWhenInUse,
-                    speechToText: .authorized
-               ))
+        XCTAssertTrue(state.hasBlockedRequiredPermission)
+    }
 
-          XCTAssertTrue(state.hasBlockedRequiredPermission)
-     }
+    func testHasUndeterminedPermissionWhenOptionalSpeechNotDetermined() {
+        let state = RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: .authorized,
+                microphone: .authorized,
+                photoLibrary: .authorized,
+                location: .authorizedWhenInUse,
+                speechToText: .notDetermined,
+            ),
+        )
 
-     func testHasUndeterminedPermissionWhenOptionalSpeechNotDetermined() {
-          let state = RequiredAccessGateState(
-               snapshot: PermissionPolicySnapshot(
-                    camera: .authorized,
-                    microphone: .authorized,
-                    photoLibrary: .authorized,
-                    location: .authorizedWhenInUse,
-                    speechToText: .notDetermined
-               ))
+        XCTAssertTrue(state.canContinue)
+        XCTAssertTrue(state.hasUndeterminedPermission)
+    }
 
-          XCTAssertTrue(state.canContinue)
-          XCTAssertTrue(state.hasUndeterminedPermission)
-     }
+    func testNoBlockedAndNoUndeterminedWhenEverythingDecidedAndGranted() {
+        let state = RequiredAccessGateState(
+            snapshot: PermissionPolicySnapshot(
+                camera: .authorized,
+                microphone: .authorized,
+                photoLibrary: .limited,
+                location: .authorizedAlways,
+                speechToText: .authorized,
+            ),
+        )
 
-     func testNoBlockedAndNoUndeterminedWhenEverythingDecidedAndGranted() {
-          let state = RequiredAccessGateState(
-               snapshot: PermissionPolicySnapshot(
-                    camera: .authorized,
-                    microphone: .authorized,
-                    photoLibrary: .limited,
-                    location: .authorizedAlways,
-                    speechToText: .authorized
-               ))
-
-          XCTAssertTrue(state.canContinue)
-          XCTAssertFalse(state.hasBlockedRequiredPermission)
-          XCTAssertFalse(state.hasUndeterminedPermission)
-     }
+        XCTAssertTrue(state.canContinue)
+        XCTAssertFalse(state.hasBlockedRequiredPermission)
+        XCTAssertFalse(state.hasUndeterminedPermission)
+    }
 }

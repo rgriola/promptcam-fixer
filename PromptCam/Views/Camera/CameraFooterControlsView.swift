@@ -11,7 +11,7 @@ import SwiftUI
 /// Contains photo library thumbnail, compose, teleprompter adjust, settings, and guide buttons.
 struct CameraFooterControlsView: View {
     /// Device safe-area bottom inset for home-indicator spacing.
-   // let safeBottomInset: CGFloat
+    /// let safeBottomInset: CGFloat
     /// Action to open PhotosPicker.
     let onTapPhotoLibrary: () -> Void
     /// Action to open compose sheet.
@@ -26,7 +26,7 @@ struct CameraFooterControlsView: View {
     /// button as a `.task(id:)` key so the thumbnail reloads whenever the
     /// latest recording changes (new save, delete, iCloud sync). Nil when
     /// the library is empty — the button shows a placeholder in that case.
-    var latestRecordingID: String? = nil
+    var latestRecordingID: String?
 
     /// Footer control row for media import and utility actions.
     var body: some View {
@@ -38,7 +38,7 @@ struct CameraFooterControlsView: View {
             LibraryThumbnailButton(
                 size: CameraLayout.Chrome.footerIconSize,
                 refreshTrigger: latestRecordingID,
-                action: onTapPhotoLibrary
+                action: onTapPhotoLibrary,
             )
             .accessibilityLabel("Open photo library")
             .accessibilityHint("Shows your most recently recorded video")
@@ -46,26 +46,27 @@ struct CameraFooterControlsView: View {
             Spacer()
 
             footerIconButton(
-                systemName: "sparkle.text.clipboard", 
-                label: "Script", 
-                action: onTapScriptAssist)
-                    .accessibilityLabel("Insert generated script")
+                systemName: "sparkle.text.clipboard",
+                label: "Script",
+                action: onTapScriptAssist,
+            )
+            .accessibilityLabel("Insert generated script")
 
             Spacer()
 
             footerIconButton(
                 systemName: "text.viewfinder",
-                label: "Prompter", action: onTapAdjust
-                )
-                .accessibilityLabel("Teleprompter adjustments")
+                label: "Prompter", action: onTapAdjust,
+            )
+            .accessibilityLabel("Teleprompter adjustments")
 
             Spacer()
 
             footerIconButton(
                 systemName: "gear",
-                label: "Settings", action: onTapSettings
-                )
-                .accessibilityLabel("Open camera settings")
+                label: "Settings", action: onTapSettings,
+            )
+            .accessibilityLabel("Open camera settings")
 
             Spacer()
         }
@@ -84,8 +85,9 @@ struct CameraFooterControlsView: View {
                     .font(Theme.icon24)
                     .foregroundStyle(Theme.white)
                     .frame(
-                        width: CameraLayout.Chrome.footerIconSize, 
-                        height: CameraLayout.Chrome.footerIconSize)
+                        width: CameraLayout.Chrome.footerIconSize,
+                        height: CameraLayout.Chrome.footerIconSize,
+                    )
                 Text(label)
                     .font(Theme.font10Regular)
                     .foregroundStyle(Theme.primaryText)
@@ -109,7 +111,7 @@ struct LibraryThumbnailButton: View {
     /// Identifier used as the `.task(id:)` key. Change this whenever the
     /// underlying "latest recording" changes (delete, new save, iCloud sync)
     /// so the thumbnail re-fetches. Nil when the library is empty.
-    var refreshTrigger: String? = nil
+    var refreshTrigger: String?
     /// Action fired when the button is tapped.
     let action: () -> Void
 
@@ -128,7 +130,7 @@ struct LibraryThumbnailButton: View {
                         .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5)
+                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5),
                         )
                 } else {
                     // Placeholder circle while loading or when library is empty/denied.
@@ -138,11 +140,11 @@ struct LibraryThumbnailButton: View {
                         .overlay(
                             Image(systemName: "photo.on.rectangle")
                                 .font(Theme.icon24)
-                                .foregroundStyle(Theme.white)
+                                .foregroundStyle(Theme.white),
                         )
                         .overlay(
                             Circle()
-                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5)
+                                .stroke(Theme.white.opacity(0.4), lineWidth: 1.5),
                         )
                 }
 
@@ -162,7 +164,7 @@ struct LibraryThumbnailButton: View {
             // Target size: 2× pt size for Retina crispness without wasting memory.
             let px = size * 2
             thumbnail = await service.latestVideoThumbnail(
-                targetSize: CGSize(width: px, height: px)
+                targetSize: CGSize(width: px, height: px),
             )
         }
     }

@@ -26,8 +26,8 @@ final class RecordingTimer {
         timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                guard let self, let start = self.startDate else { return }
-                self.duration = Date().timeIntervalSince(start)
+                guard let self, let start = startDate else { return }
+                duration = Date().timeIntervalSince(start)
             }
         Log.viewmodel.debug("Recording timer started")
     }

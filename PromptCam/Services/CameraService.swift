@@ -57,7 +57,8 @@ struct DeviceCapabilities: Equatable, Sendable {
         var seen = Set<VideoFrameRate>()
         var result: [VideoFrameRate] = []
         for pair in pairs
-        where pair.resolution == resolution && seen.insert(pair.frameRate).inserted {
+            where pair.resolution == resolution && seen.insert(pair.frameRate).inserted
+        {
             result.append(pair.frameRate)
         }
         return result
@@ -76,7 +77,7 @@ struct DeviceCapabilities: Equatable, Sendable {
         var adjusted = format
 
         // Fall back to standard if cinematic is not supported.
-        if format.mode == .cinematic && !supportsCinematicMode {
+        if format.mode == .cinematic, !supportsCinematicMode {
             adjusted.mode = .standard
         }
 
@@ -119,7 +120,9 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
     /// Read-only accessor for the preview layer. Do not call session
     /// mutation methods (startRunning, beginConfiguration, etc.) directly.
-    var previewSession: AVCaptureSession { session }
+    var previewSession: AVCaptureSession {
+        session
+    }
 
     let sessionQueue = DispatchQueue(label: "com.rgriola.promptcam.session")
     let movieFileOutput = AVCaptureMovieFileOutput()
@@ -186,6 +189,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     let photoSaver: PhotoLibrarySaver
 
     // MARK: - Interruption / Runtime-Error Recovery State
+
     // All three properties below are `sessionQueue`-only. Readers/writers
     // outside `sessionQueue` must hop to it via `sessionQueue.async { ... }`.
 
@@ -223,7 +227,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
     init(
         photoSaver: PhotoLibrarySaver = DefaultPhotoLibrarySaver(),
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
     ) {
         self.photoSaver = photoSaver
         self.notificationCenter = notificationCenter
@@ -244,8 +248,12 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         let session = self.session
         sessionQueue.async {
             session.stopRunning()
-            for input in session.inputs { session.removeInput(input) }
-            for output in session.outputs { session.removeOutput(output) }
+            for input in session.inputs {
+                session.removeInput(input)
+            }
+            for output in session.outputs {
+                session.removeOutput(output)
+            }
         }
     }
 
@@ -269,16 +277,15 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     /// e.g. iPhone 17 Pro: UltraWide has 1920x1080 CINE → use UltraWide for HD cinematic.
     ///      iPhone 13:      TrueDepth has 1920x1080 CINE → use TrueDepth for HD cinematic.
     private func bestCinematicDevice(for resolution: VideoResolution) -> AVCaptureDevice? {
-        let targetPixels: Int64
-        switch resolution {
-        case .hd1080p: targetPixels = 1920 * 1080  // 2,073,600
-        case .uhd4K: targetPixels = 3840 * 2160  // 8,294,400
+        let targetPixels: Int64 = switch resolution {
+        case .hd1080p: 1920 * 1080 // 2,073,600
+        case .uhd4K: 3840 * 2160 // 8,294,400
         }
 
         let discoverySession = AVCaptureDevice.DiscoverySession(
             deviceTypes: Self.allVideoDeviceTypes(),
             mediaType: .video,
-            position: .front
+            position: .front,
         )
 
         var bestDevice: AVCaptureDevice? = nil
@@ -286,11 +293,10 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
         for device in discoverySession.devices {
             for fmt in device.formats {
-                let isCine: Bool
-                if #available(iOS 26.0, *) {
-                    isCine = fmt.minSimulatedAperture != 0
+                let isCine: Bool = if #available(iOS 26.0, *) {
+                    fmt.minSimulatedAperture != 0
                 } else {
-                    isCine = !fmt.supportedDepthDataFormats.isEmpty
+                    !fmt.supportedDepthDataFormats.isEmpty
                 }
                 guard isCine else { continue }
                 let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
@@ -302,7 +308,11 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             }
         }
         Log.camera.info(
-            "bestCinematicDevice(\(resolution.rawValue, privacy: .public)) → \(bestDevice?.localizedName ?? "none", privacy: .public) (distance \(bestDistance, privacy: .public)px)"
+            """
+            bestCinematicDevice(\(resolution.rawValue, privacy: .public)) \
+            → \(bestDevice?.localizedName ?? "none", privacy: .public) \
+            (distance \(bestDistance, privacy: .public)px)
+            """,
         )
         return bestDevice
     }
@@ -314,9 +324,9 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     {
         switch mode {
         case .standard:
-            return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         case .cinematic:
-            return bestCinematicDevice(for: resolution)
+            bestCinematicDevice(for: resolution)
                 ?? AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front)
                 ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
         }
@@ -354,7 +364,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
             if let activeInput = AVAudioSession.sharedInstance().currentRoute.inputs.first {
                 Log.camera.debug(
-                    "CameraService: active audio route = \(activeInput.portName) (uid=\(activeInput.uid))"
+                    "CameraService: active audio route = \(activeInput.portName) (uid=\(activeInput.uid))",
                 )
             }
 
@@ -368,7 +378,8 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // and without this the session would record silent forever.
             if let current = audioDevice, current.uniqueID == newDevice.uniqueID, audioInput != nil {
                 Log.camera.debug(
-                    "CameraService: audio device unchanged (\(newDevice.localizedName))")
+                    "CameraService: audio device unchanged (\(newDevice.localizedName))",
+                )
                 return
             }
 
@@ -390,13 +401,15 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                     audioInput = newInput
                     audioDevice = newDevice
                     Log.camera.debug(
-                        "CameraService: swapped audio input to \(newDevice.localizedName)")
+                        "CameraService: swapped audio input to \(newDevice.localizedName)",
+                    )
                 } else {
                     Log.camera.error("CameraService: cannot add new audio input")
                 }
             } catch {
                 Log.camera.error(
-                    "CameraService: audio input creation failed – \(error.localizedDescription)")
+                    "CameraService: audio input creation failed – \(error.localizedDescription)",
+                )
             }
         }
     }
@@ -461,7 +474,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                     didAddMovieOutput = true
                 }
 
-                guard didAddVideoInput && didAddMovieOutput else {
+                guard didAddVideoInput, didAddMovieOutput else {
                     self.publishError(.inputConfigurationFailed)
                     return
                 }
@@ -470,14 +483,13 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 // For standard mode, the session preset handles resolution.
                 if format.mode == .cinematic {
                     if let cinematicFormat = self.findCinematicFormat(
-                        for: videoDevice, resolution: format.resolution, frameRate: format.frameRate
+                        for: videoDevice, resolution: format.resolution, frameRate: format.frameRate,
                     ) {
                         do {
                             try videoDevice.lockForConfiguration()
                             videoDevice.activeFormat = cinematicFormat
                             videoDevice.unlockForConfiguration()
-                            if #available(iOS 26.0, *), videoInput.isCinematicVideoCaptureSupported
-                            {
+                            if #available(iOS 26.0, *), videoInput.isCinematicVideoCaptureSupported {
                                 self.enableCinematicCapture(on: videoInput)
                             }
                         } catch {
@@ -525,21 +537,23 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         sessionQueue.async {
             guard self.isSessionConfigured else {
                 Log.camera.info(
-                    "\(Log.ts(), privacy: .public) startSession skipped (not configured)")
+                    "\(Log.ts(), privacy: .public) startSession skipped (not configured)",
+                )
                 self.publishSessionRunningState(false)
                 return
             }
 
             guard !self.session.isRunning else {
                 Log.camera.info(
-                    "\(Log.ts(), privacy: .public) startSession no-op (already running)")
+                    "\(Log.ts(), privacy: .public) startSession no-op (already running)",
+                )
                 self.publishSessionRunningState(true)
                 return
             }
             Log.camera.info("\(Log.ts(), privacy: .public) startSession begin")
             self.session.startRunning()
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) startSession end isRunning=\(self.session.isRunning, privacy: .public)"
+                "\(Log.ts(), privacy: .public) startSession end isRunning=\(self.session.isRunning, privacy: .public)",
             )
             self.publishSessionRunningState(true)
         }
@@ -551,7 +565,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             Log.camera.info("\(Log.ts(), privacy: .public) stopSession begin")
             self.session.stopRunning()
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) stopSession end isRunning=\(self.session.isRunning, privacy: .public)"
+                "\(Log.ts(), privacy: .public) stopSession end isRunning=\(self.session.isRunning, privacy: .public)",
             )
             self.publishSessionRunningState(false)
         }
@@ -580,7 +594,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
     func publishLockOutcome(
         _ outcome: FocusExposureLockOutcome,
-        completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)?
+        completion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)?,
     ) {
         guard let completion else { return }
         Task { @MainActor in
@@ -619,19 +633,19 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             self,
             selector: #selector(sessionWasInterrupted(_:)),
             name: AVCaptureSession.wasInterruptedNotification,
-            object: session
+            object: session,
         )
         notificationCenter.addObserver(
             self,
             selector: #selector(sessionInterruptionEnded(_:)),
             name: AVCaptureSession.interruptionEndedNotification,
-            object: session
+            object: session,
         )
         notificationCenter.addObserver(
             self,
             selector: #selector(sessionRuntimeError(_:)),
             name: AVCaptureSession.runtimeErrorNotification,
-            object: session
+            object: session,
         )
     }
 
@@ -660,13 +674,13 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
         switch reason {
         case .audioDeviceInUseByAnotherClient,
-            .videoDeviceInUseByAnotherClient:
+             .videoDeviceInUseByAnotherClient:
             // Another client (dictation, Siri, phone, another app) took the
             // hardware. Mark for restart when interruption ends.
             wasInterrupted = true
             interruptionNeedsRunningSessionBounce = true
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) AVCaptureSession interrupted: reason=\(reason?.debugName ?? "unknown", privacy: .public)"
+                "\(Log.ts(), privacy: .public) AVCaptureSession interrupted: reason=\(reason?.debugName ?? "unknown", privacy: .public)",
             )
 
         case .videoDeviceNotAvailableInBackground:
@@ -676,7 +690,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // onAppear will handle that path.
             interruptionNeedsRunningSessionBounce = false
             Log.camera.info(
-                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableInBackground (ignoring — scene phase owns restart)"
+                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableInBackground (ignoring — scene phase owns restart)",
             )
 
         case .videoDeviceNotAvailableWithMultipleForegroundApps:
@@ -684,7 +698,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // do not auto-restart, iOS controls this lifecycle.
             interruptionNeedsRunningSessionBounce = false
             Log.camera.info(
-                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableWithMultipleForegroundApps (ignoring — user multitasking)"
+                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableWithMultipleForegroundApps (ignoring — user multitasking)",
             )
 
         case .videoDeviceNotAvailableDueToSystemPressure:
@@ -693,10 +707,13 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             wasInterrupted = true
             interruptionNeedsRunningSessionBounce = false
             Log.camera.error(
-                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableDueToSystemPressure")
+                "AVCaptureSession interrupted: reason=videoDeviceNotAvailableDueToSystemPressure",
+            )
             publishError(
                 .sessionRuntimeError(
-                    "System pressure paused the camera. Try again when the device cools down."))
+                    "System pressure paused the camera. Try again when the device cools down.",
+                ),
+            )
 
         case .none, .some:
             // Unknown or future reason. Set defensively so
@@ -705,7 +722,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             wasInterrupted = true
             interruptionNeedsRunningSessionBounce = false
             Log.camera.info(
-                "AVCaptureSession interrupted: reason=unknown(\(reasonRaw ?? -1, privacy: .public))"
+                "AVCaptureSession interrupted: reason=unknown(\(reasonRaw ?? -1, privacy: .public))",
             )
         }
     }
@@ -722,7 +739,7 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
     ///      "view visible" and "app in foreground".
     ///   4. If already running when interruption ends, optionally performs
     ///      a controlled stop/start bounce for competing-client interruptions.
-    @objc private func sessionInterruptionEnded(_ notification: Notification) {
+    @objc private func sessionInterruptionEnded(_: Notification) {
         sessionQueue.async { [weak self] in
             self?.handleInterruptionEnded()
         }
@@ -734,13 +751,13 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         guard wasInterrupted else { return }
         guard isSessionConfigured else {
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (not configured)"
+                "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (not configured)",
             )
             return
         }
         guard isForegroundActive else {
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (view not foreground-active)"
+                "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — skipping restart (view not foreground-active)",
             )
             return
         }
@@ -749,23 +766,25 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
                 // Recover from the edge case where AVCaptureSession reports
                 // running after interruption, but preview frames are stale.
                 Log.camera.info(
-                    "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, forcing restart bounce"
+                    "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, forcing restart bounce",
                 )
                 session.stopRunning()
                 publishSessionRunningState(false)
                 session.startRunning()
                 if session.isRunning {
                     Log.camera.info(
-                        "\(Log.ts(), privacy: .public) AVCaptureSession restart bounce succeeded")
+                        "\(Log.ts(), privacy: .public) AVCaptureSession restart bounce succeeded",
+                    )
                     publishSessionRunningState(true)
                 } else {
                     Log.camera.error(
-                        "\(Log.ts(), privacy: .public) AVCaptureSession restart bounce failed")
+                        "\(Log.ts(), privacy: .public) AVCaptureSession restart bounce failed",
+                    )
                 }
             } else {
                 // Rare: session recovered on its own before we could act.
                 Log.camera.info(
-                    "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, clearing flag"
+                    "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — already running, clearing flag",
                 )
             }
             interruptionNeedsRunningSessionBounce = false
@@ -774,7 +793,8 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         }
 
         Log.camera.info(
-            "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — restarting")
+            "\(Log.ts(), privacy: .public) AVCaptureSession interruption ended — restarting",
+        )
         let signpostID = Log.cameraSignposter.makeSignpostID()
         let state = Log.cameraSignposter.beginInterval("CaptureSessionRestart", id: signpostID)
         session.startRunning()
@@ -783,12 +803,12 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         wasInterrupted = false
         if session.isRunning {
             Log.camera.info(
-                "\(Log.ts(), privacy: .public) AVCaptureSession startRunning succeeded (post-interruption)"
+                "\(Log.ts(), privacy: .public) AVCaptureSession startRunning succeeded (post-interruption)",
             )
             publishSessionRunningState(true)
         } else {
             Log.camera.error(
-                "\(Log.ts(), privacy: .public) AVCaptureSession startRunning failed (post-interruption)"
+                "\(Log.ts(), privacy: .public) AVCaptureSession startRunning failed (post-interruption)",
             )
         }
     }
@@ -824,12 +844,14 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
             // occasionally a runtime error lands here too. Treat as an
             // interruption event.
             Log.camera.notice(
-                "AVCaptureSession runtime error: sessionWasInterrupted (treating as interruption)")
+                "AVCaptureSession runtime error: sessionWasInterrupted (treating as interruption)",
+            )
             wasInterrupted = true
 
         default:
             Log.camera.error(
-                "AVCaptureSession runtime error: \(localized, privacy: .public) (no auto-recovery)")
+                "AVCaptureSession runtime error: \(localized, privacy: .public) (no auto-recovery)",
+            )
             publishError(.sessionRuntimeError(localized))
         }
     }
@@ -848,8 +870,12 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
         // so `configureSession`'s `session.inputs.isEmpty` guard passes.
         isSessionConfigured = false
         session.beginConfiguration()
-        for input in session.inputs { session.removeInput(input) }
-        for output in session.outputs { session.removeOutput(output) }
+        for input in session.inputs {
+            session.removeInput(input)
+        }
+        for output in session.outputs {
+            session.removeOutput(output)
+        }
         session.commitConfiguration()
 
         // Reconfigure + restart. Both hop back onto `sessionQueue` via
@@ -862,10 +888,10 @@ final class CameraService: NSObject, CameraServiceProtocol, @unchecked Sendable 
 
 // MARK: - AVCaptureSession.InterruptionReason Debug Names
 
-extension AVCaptureSession.InterruptionReason {
+private extension AVCaptureSession.InterruptionReason {
     /// Compact stable name used in log statements. `debugDescription` on
     /// the raw type is not guaranteed to be stable across iOS versions.
-    fileprivate var debugName: String {
+    var debugName: String {
         switch self {
         case .videoDeviceNotAvailableInBackground: return "videoDeviceNotAvailableInBackground"
         case .audioDeviceInUseByAnotherClient: return "audioDeviceInUseByAnotherClient"

@@ -10,7 +10,6 @@ import Photos
 // MARK: - Recording
 
 extension CameraService {
-
     func startRecording() {
         sessionQueue.async {
             guard !self.movieFileOutput.isRecording else { return }
@@ -48,7 +47,7 @@ extension CameraService {
     func saveRecordingToPhotoLibrary(_ outputFileURL: URL) {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
-            self.publishError(.photoLibraryPermissionDenied)
+            publishError(.photoLibraryPermissionDenied)
             try? FileManager.default.removeItem(at: outputFileURL)
             return
         }
@@ -59,7 +58,7 @@ extension CameraService {
     /// dispatches success/failure callbacks. Split from the permission-guarded
     /// entry point so unit tests can bypass PhotoKit authorization.
     func performSave(_ outputFileURL: URL) {
-        let saver = self.photoSaver
+        let saver = photoSaver
         Task { [weak self] in
             do {
                 try await saver.saveVideo(at: outputFileURL)
@@ -77,29 +76,30 @@ extension CameraService {
 // MARK: - AVCaptureFileOutputRecordingDelegate
 
 extension CameraService: AVCaptureFileOutputRecordingDelegate {
-    // AVFoundation calls these on an arbitrary thread — do not assume main actor.
+    /// AVFoundation calls these on an arbitrary thread — do not assume main actor.
     func fileOutput(
-        _ output: AVCaptureFileOutput,
-        didStartRecordingTo fileURL: URL,
-        from connections: [AVCaptureConnection]
+        _: AVCaptureFileOutput,
+        didStartRecordingTo _: URL,
+        from connections: [AVCaptureConnection],
     ) {
         let audioConnections = connections.filter { connection in
             connection.inputPorts.contains { $0.mediaType == .audio }
         }
         Log.audio.notice(
-            "\(Log.ts(), privacy: .public) [record] STARTED connections=\(connections.count, privacy: .public) audioConnections=\(audioConnections.count, privacy: .public)"
+            "\(Log.ts(), privacy: .public) [record] STARTED connections=\(connections.count, privacy: .public) audioConnections=\(audioConnections.count, privacy: .public)",
         )
         if audioConnections.isEmpty {
-            Log.audio.error("\(Log.ts(), privacy: .public) [record] no audio connection on the file output — this file cannot contain audio")
+            Log.audio
+                .error("\(Log.ts(), privacy: .public) [record] no audio connection on the file output — this file cannot contain audio")
         }
         publishRecordingState(true)
     }
 
     func fileOutput(
-        _ output: AVCaptureFileOutput,
+        _: AVCaptureFileOutput,
         didFinishRecordingTo outputFileURL: URL,
-        from connections: [AVCaptureConnection],
-        error: Error?
+        from _: [AVCaptureConnection],
+        error: Error?,
     ) {
         publishRecordingState(false)
         analyzeRecordedAudio(url: outputFileURL)
@@ -120,7 +120,6 @@ extension CameraService: AVCaptureFileOutputRecordingDelegate {
 // MARK: - Audio Diagnostics
 
 extension CameraService {
-
     /// Logs what the capture session is bound to alongside what `AVAudioSession`
     /// is actually routing.
     ///
@@ -139,32 +138,41 @@ extension CameraService {
         let boundUID = audioDevice?.uniqueID ?? "none"
         let boundName = audioDevice?.localizedName ?? "none"
 
-        let connectionState: String
-        if let connection = movieFileOutput.connection(with: .audio) {
-            connectionState = "enabled=\(connection.isEnabled)/active=\(connection.isActive)"
+        let connectionState = if let connection = movieFileOutput.connection(with: .audio) {
+            "enabled=\(connection.isEnabled)/active=\(connection.isActive)"
         } else {
-            connectionState = "ABSENT"
+            "ABSENT"
         }
 
         let followsRoute = routeInput.map { $0.portName == boundName } ?? false
 
         Log.audio.notice(
-            "\(Log.ts(), privacy: .public) [\(context, privacy: .public)] route='\(routeName, privacy: .public)' type=\(routeType, privacy: .public) uid=\(routeUID, privacy: .public) preferred='\(preferredName, privacy: .public)' | captureDevice='\(boundName, privacy: .public)' proxyUID=\(boundUID, privacy: .public) attached=\(self.audioInput != nil, privacy: .public) conn=\(connectionState, privacy: .public) | FOLLOWS_ROUTE=\(followsRoute ? "YES" : "NO", privacy: .public)"
+            """
+            \(Log.ts(), privacy: .public) [\(context, privacy: .public)] route='\(routeName, privacy: .public)' \
+            type=\(routeType, privacy: .public) uid=\(routeUID, privacy: .public) \
+            preferred='\(preferredName, privacy: .public)' | captureDevice='\(boundName, privacy: .public)' \
+            proxyUID=\(boundUID, privacy: .public) attached=\(self.audioInput != nil, privacy: .public) \
+            conn=\(connectionState, privacy: .public) | FOLLOWS_ROUTE=\(followsRoute ? "YES" : "NO", privacy: .public)
+            """,
         )
 
         guard !followsRoute else { return }
 
         Log.audio.error(
-            "\(Log.ts(), privacy: .public) [\(context, privacy: .public)] capture device '\(boundName, privacy: .public)' did not follow route '\(routeName, privacy: .public)' — recording may capture the wrong mic"
+            """
+            \(Log.ts(), privacy: .public) [\(context, privacy: .public)] \
+            capture device '\(boundName, privacy: .public)' did not follow route '\(routeName, privacy: .public)' \
+            — recording may capture the wrong mic
+            """,
         )
         let candidates = AVCaptureDevice.DiscoverySession(
             deviceTypes: [.microphone],
             mediaType: .audio,
-            position: .unspecified
+            position: .unspecified,
         ).devices
         for device in candidates {
             Log.audio.error(
-                "\(Log.ts(), privacy: .public) [\(context, privacy: .public)] candidate '\(device.localizedName, privacy: .public)' uniqueID=\(device.uniqueID, privacy: .public)"
+                "\(Log.ts(), privacy: .public) [\(context, privacy: .public)] candidate '\(device.localizedName, privacy: .public)' uniqueID=\(device.uniqueID, privacy: .public)",
             )
         }
     }
@@ -188,15 +196,25 @@ extension CameraService {
                 let peakDb = peak > 0 ? 20 * log10(peak) : -Float.infinity
 
                 Log.audio.notice(
-                    "\(Log.ts(), privacy: .public) [file] \(url.lastPathComponent, privacy: .public) audioTrack duration=\(duration, format: .fixed(precision: 2), privacy: .public)s bitrate=\(Int(dataRate), privacy: .public)bps peak=\(peakDb, format: .fixed(precision: 1), privacy: .public) dBFS"
+                    """
+                    \(Log.ts(), privacy: .public) [file] \(url.lastPathComponent, privacy: .public) \
+                    audioTrack duration=\(duration, format: .fixed(precision: 2), privacy: .public)s \
+                    bitrate=\(Int(dataRate), privacy: .public)bps \
+                    peak=\(peakDb, format: .fixed(precision: 1), privacy: .public) dBFS
+                    """,
                 )
                 if peakDb < -60 {
                     Log.audio.error(
-                        "\(Log.ts(), privacy: .public) [file] RECORDED AUDIO IS SILENT (peak \(peakDb, format: .fixed(precision: 1), privacy: .public) dBFS) — compare against the [meter] levels logged during this take"
+                        """
+                        \(Log.ts(), privacy: .public) [file] RECORDED AUDIO IS SILENT \
+                        (peak \(peakDb, format: .fixed(precision: 1), privacy: .public) dBFS) \
+                        — compare against the [meter] levels logged during this take
+                        """,
                     )
                 }
             } catch {
-                Log.audio.error("\(Log.ts(), privacy: .public) [file] audio analysis failed – \(error.localizedDescription, privacy: .public)")
+                Log.audio
+                    .error("\(Log.ts(), privacy: .public) [file] audio analysis failed – \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -210,8 +228,8 @@ extension CameraService {
                 AVLinearPCMBitDepthKey: 32,
                 AVLinearPCMIsFloatKey: true,
                 AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false
-            ]
+                AVLinearPCMIsNonInterleaved: false,
+            ],
         )
         guard reader.canAdd(output) else { return 0 }
         reader.add(output)
@@ -228,7 +246,7 @@ extension CameraService {
                 atOffset: 0,
                 lengthAtOffsetOut: nil,
                 totalLengthOut: &length,
-                dataPointerOut: &pointer
+                dataPointerOut: &pointer,
             ) == kCMBlockBufferNoErr, let pointer else { continue }
 
             let count = length / MemoryLayout<Float>.size

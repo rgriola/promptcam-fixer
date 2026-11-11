@@ -19,12 +19,12 @@ struct TeleprompterUtilityStackView: View {
             AlignmentToggleButton(
                 alignment: textAlignment,
                 isEnabled: !isRecording,
-                action: onAlignmentTap
+                action: onAlignmentTap,
             )
 
             TeleprompterCenterResetButton(
                 isDisabled: isRecording,
-                action: onResetTap
+                action: onResetTap,
             )
         }
     }
@@ -53,20 +53,20 @@ struct TeleprompterUtilityButton: View {
             }
             .frame(
                 width: CameraLayout.Teleprompter.utilityButtonWidth,
-                height: CameraLayout.Teleprompter.utilityButtonHeight
+                height: CameraLayout.Teleprompter.utilityButtonHeight,
             )
             .background(
                 RoundedRectangle(
                     cornerRadius: CameraLayout.Teleprompter.utilityButtonCornerRadius,
-                    style: .continuous
+                    style: .continuous,
                 )
-                .fill(Theme.black.opacity(0.35))
+                .fill(Theme.black.opacity(0.35)),
             )
             .contentShape(
                 RoundedRectangle(
                     cornerRadius: CameraLayout.Teleprompter.utilityButtonCornerRadius,
-                    style: .continuous
-                )
+                    style: .continuous,
+                ),
             )
         }
         .disabled(!isEnabled)
@@ -86,7 +86,7 @@ struct TeleprompterCenterResetButton: View {
             icon: "arrow.up.and.down.text.horizontal",
             title: "Reset",
             isEnabled: !isDisabled,
-            action: action
+            action: action,
         )
         .accessibilityLabel("Reset script position")
         .accessibilityHint("Centers script to the teleprompter center.")
@@ -106,7 +106,7 @@ struct AlignmentToggleButton: View {
             icon: alignment.iconName,
             title: "Align",
             isEnabled: isEnabled,
-            action: action
+            action: action,
         )
         .accessibilityLabel("Text alignment: \(alignment.rawValue)")
         .accessibilityHint("Cycles between center, left, and right alignment")
@@ -122,8 +122,7 @@ struct AlignmentToggleButton: View {
             textAlignment: .center,
             isRecording: false,
             onAlignmentTap: {},
-            onResetTap: {}
+            onResetTap: {},
         )
     }
 }
-

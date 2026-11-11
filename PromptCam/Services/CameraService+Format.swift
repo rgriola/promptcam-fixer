@@ -8,7 +8,6 @@ import AVFoundation
 // MARK: - Format Management & Cinematic
 
 extension CameraService {
-
     // MARK: - Format Management
 
     /// Applies a new recording format to the live session.
@@ -33,8 +32,9 @@ extension CameraService {
             // Swap the physical camera if the mode or resolution changed.
             // Routes to whichever front device has the best CINE format for the resolution.
             let targetDevice = self.preferredDevice(for: format.mode, resolution: format.resolution)
-            if let targetDevice = targetDevice,
-               self.videoDevice?.uniqueID != targetDevice.uniqueID {
+            if let targetDevice,
+               self.videoDevice?.uniqueID != targetDevice.uniqueID
+            {
                 // Remove current video input.
                 if let oldInput = self.videoInput {
                     self.session.removeInput(oldInput)
@@ -48,7 +48,10 @@ extension CameraService {
                         self.session.addInput(newInput)
                         self.videoDevice = targetDevice
                         self.videoInput = newInput
-                        Log.camera.info("Swapped to \(targetDevice.localizedName, privacy: .public) for \(format.mode.rawValue, privacy: .public) mode")
+                        Log.camera
+                            .info(
+                                "Swapped to \(targetDevice.localizedName, privacy: .public) for \(format.mode.rawValue, privacy: .public) mode",
+                            )
                     } else {
                         // Rollback: restore previous input to avoid black screen.
                         if let previousInput, self.session.canAddInput(previousInput) {
@@ -74,14 +77,15 @@ extension CameraService {
             // Set cinematic format on TrueDepth device, or use session preset for standard.
             if appliedMode == .cinematic, let device = self.videoDevice {
                 if let cinematicFormat = self.findCinematicFormat(
-                    for: device, resolution: format.resolution, frameRate: format.frameRate
+                    for: device, resolution: format.resolution, frameRate: format.frameRate,
                 ) {
                     do {
                         try device.lockForConfiguration()
                         device.activeFormat = cinematicFormat
                         device.unlockForConfiguration()
                         if #available(iOS 26.0, *), let input = self.videoInput,
-                           input.isCinematicVideoCaptureSupported {
+                           input.isCinematicVideoCaptureSupported
+                        {
                             self.enableCinematicCapture(on: input)
                         }
                     } catch {
@@ -146,22 +150,25 @@ extension CameraService {
         let frontDiscovery = AVCaptureDevice.DiscoverySession(
             deviceTypes: Self.allVideoDeviceTypes(),
             mediaType: .video,
-            position: .front
+            position: .front,
         )
 
         // HD/4K pixel threshold (midpoint between 1080p and 4K).
         let hdThreshold: Int64 = 5_184_000
 
         // MARK: Cinematic format discovery
+
         // For each CINE-capable format, record the (resolution, fps) pairs it supports.
         var cinematicPairSet = Set<RecordingFormat>()
         var supportsCinematic = false
 
         for device in frontDiscovery.devices {
             for fmt in device.formats {
-                let isCine: Bool
-                if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
-                else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
+                let isCine: Bool = if #available(iOS 26.0, *) {
+                    fmt.minSimulatedAperture != 0
+                } else {
+                    !fmt.supportedDepthDataFormats.isEmpty
+                }
                 guard isCine else { continue }
 
                 supportsCinematic = true
@@ -171,10 +178,11 @@ extension CameraService {
 
                 for range in fmt.videoSupportedFrameRateRanges {
                     for rate in VideoFrameRate.allCases {
-                        if Double(rate.rawValue) >= range.minFrameRate &&
-                           Double(rate.rawValue) <= range.maxFrameRate {
+                        if Double(rate.rawValue) >= range.minFrameRate,
+                           Double(rate.rawValue) <= range.maxFrameRate
+                        {
                             cinematicPairSet.insert(
-                                RecordingFormat(resolution: resolution, frameRate: rate, mode: .cinematic)
+                                RecordingFormat(resolution: resolution, frameRate: rate, mode: .cinematic),
                             )
                         }
                     }
@@ -183,26 +191,29 @@ extension CameraService {
         }
 
         // Fallback: if CINE-capable but no pairs matched the threshold, assume HD 24/30p.
-        if supportsCinematic && cinematicPairSet.isEmpty {
+        if supportsCinematic, cinematicPairSet.isEmpty {
             cinematicPairSet.insert(RecordingFormat(resolution: .hd1080p, frameRate: .fps24, mode: .cinematic))
             cinematicPairSet.insert(RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .cinematic))
         }
 
         let cinematicFormats = cinematicPairSet.sorted {
-            if $0.resolution.rawValue != $1.resolution.rawValue { return $0.resolution.rawValue < $1.resolution.rawValue }
+            if $0.resolution.rawValue != $1.resolution.rawValue {
+                return $0.resolution.rawValue < $1.resolution.rawValue
+            }
             return $0.frameRate.rawValue < $1.frameRate.rawValue
         }
 
         Log.camera.info("CINE pairs: \(cinematicFormats.map { "\($0.resolution.rawValue) \($0.frameRate.rawValue)p" }, privacy: .public)")
 
         // MARK: Standard format discovery
+
         // For each format on the wide-angle camera, record (resolution, fps) pairs.
         guard let device = wideAngle else {
             Log.camera.warning("No wide-angle device — returning minimal capabilities")
             return DeviceCapabilities(
                 supportsCinematicMode: supportsCinematic,
                 standardFormats: [RecordingFormat(resolution: .hd1080p, frameRate: .fps30, mode: .standard)],
-                cinematicFormats: cinematicFormats
+                cinematicFormats: cinematicFormats,
             )
         }
 
@@ -225,10 +236,11 @@ extension CameraService {
 
             for range in fmt.videoSupportedFrameRateRanges {
                 for rate in VideoFrameRate.allCases {
-                    if Double(rate.rawValue) >= range.minFrameRate &&
-                       Double(rate.rawValue) <= range.maxFrameRate {
+                    if Double(rate.rawValue) >= range.minFrameRate,
+                       Double(rate.rawValue) <= range.maxFrameRate
+                    {
                         standardPairSet.insert(
-                            RecordingFormat(resolution: resolution, frameRate: rate, mode: .standard)
+                            RecordingFormat(resolution: resolution, frameRate: rate, mode: .standard),
                         )
                     }
                 }
@@ -241,7 +253,9 @@ extension CameraService {
         }
 
         let standardFormats = standardPairSet.sorted {
-            if $0.resolution.rawValue != $1.resolution.rawValue { return $0.resolution.rawValue < $1.resolution.rawValue }
+            if $0.resolution.rawValue != $1.resolution.rawValue {
+                return $0.resolution.rawValue < $1.resolution.rawValue
+            }
             return $0.frameRate.rawValue < $1.frameRate.rawValue
         }
 
@@ -250,7 +264,7 @@ extension CameraService {
         return DeviceCapabilities(
             supportsCinematicMode: supportsCinematic,
             standardFormats: standardFormats,
-            cinematicFormats: cinematicFormats
+            cinematicFormats: cinematicFormats,
         )
     }
 
@@ -264,13 +278,12 @@ extension CameraService {
     func findCinematicFormat(
         for device: AVCaptureDevice,
         resolution: VideoResolution,
-        frameRate: VideoFrameRate
+        frameRate: VideoFrameRate,
     ) -> AVCaptureDevice.Format? {
         let desiredFPS = Double(frameRate.rawValue)
-        let targetPixels: Int64
-        switch resolution {
-        case .hd1080p: targetPixels = 1920 * 1080   // 2,073,600
-        case .uhd4K:   targetPixels = 3840 * 2160   // 8,294,400
+        let targetPixels: Int64 = switch resolution {
+        case .hd1080p: 1920 * 1080 // 2,073,600
+        case .uhd4K: 3840 * 2160 // 8,294,400
         }
         // Midpoint between HD and 4K target pixel counts.
         let hdThreshold: Int64 = 5_184_000
@@ -278,16 +291,21 @@ extension CameraService {
         // Collect all CINE formats on this device.
         var cineFormats: [(format: AVCaptureDevice.Format, pixels: Int64)] = []
         for fmt in device.formats {
-            let isCine: Bool
-            if #available(iOS 26.0, *) { isCine = fmt.minSimulatedAperture != 0 }
-            else { isCine = !fmt.supportedDepthDataFormats.isEmpty }
+            let isCine: Bool = if #available(iOS 26.0, *) {
+                fmt.minSimulatedAperture != 0
+            } else {
+                !fmt.supportedDepthDataFormats.isEmpty
+            }
             guard isCine else { continue }
             let dim = CMVideoFormatDescriptionGetDimensions(fmt.formatDescription)
             let pixels = Int64(dim.width) * Int64(dim.height)
             let fpsStr = fmt.videoSupportedFrameRateRanges
                 .map { String(format: "%.0f-%.0ffps", $0.minFrameRate, $0.maxFrameRate) }
                 .joined(separator: "/")
-            Log.camera.info("  CINE candidate: \(dim.width, privacy: .public)x\(dim.height, privacy: .public) \(fpsStr, privacy: .public) on \(device.localizedName, privacy: .public)")
+            Log.camera
+                .info(
+                    "  CINE candidate: \(dim.width, privacy: .public)x\(dim.height, privacy: .public) \(fpsStr, privacy: .public) on \(device.localizedName, privacy: .public)",
+                )
             cineFormats.append((fmt, pixels))
         }
 
@@ -318,92 +336,126 @@ extension CameraService {
             }
         }) {
             let dim = CMVideoFormatDescriptionGetDimensions(match.format.formatDescription)
-            Log.camera.info("CINE match (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public) @ \(desiredFPS, privacy: .public)fps")
+            Log.camera
+                .info(
+                    "CINE match (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public) @ \(desiredFPS, privacy: .public)fps",
+                )
             return match.format
         }
 
         // fps fallback: best-dimension format with max fps closest to desired.
-        if let fallback = sorted.min(by: { a, b in
-            let aMax = a.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
-            let bMax = b.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
-            return abs(aMax - desiredFPS) < abs(bMax - desiredFPS)
+        if let fallback = sorted.min(by: { firstCandidate, secondCandidate in
+            let firstMaxFrameRate = firstCandidate.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
+            let secondMaxFrameRate = secondCandidate.format.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
+            return abs(firstMaxFrameRate - desiredFPS) < abs(secondMaxFrameRate - desiredFPS)
         }) {
             let dim = CMVideoFormatDescriptionGetDimensions(fallback.format.formatDescription)
-            Log.camera.notice("CINE fps fallback (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public)")
+            Log.camera
+                .notice(
+                    "CINE fps fallback (\(resolution.rawValue, privacy: .public)): \(dim.width, privacy: .public)x\(dim.height, privacy: .public)",
+                )
             return fallback.format
         }
 
-        Log.camera.warning("findCinematicFormat: no match for \(resolution.rawValue, privacy: .public) @ \(frameRate.rawValue, privacy: .public)fps on \(device.localizedName, privacy: .public)")
+        Log.camera
+            .warning(
+                """
+                findCinematicFormat: no match for \(resolution.rawValue, privacy: .public) \
+                @ \(frameRate.rawValue, privacy: .public)fps on \(device.localizedName, privacy: .public)
+                """,
+            )
         return nil
     }
-    
+
     // MARK: - Diagnostic Logging
-    
+
     /// Logs all available formats for every camera (front + back) on first session configure.
     /// Output appears in Xcode console and Console.app under subsystem com.rgriola.promptcam.
     func logAllCameraFormats() {
         let deviceTypes = Self.allVideoDeviceTypes()
-        
+
         for position in [AVCaptureDevice.Position.front, .back] {
             let session = AVCaptureDevice.DiscoverySession(
                 deviceTypes: deviceTypes,
                 mediaType: .video,
-                position: position
+                position: position,
             )
             let positionLabel = position == .front ? "FRONT" : "BACK"
             Log.camera.info("=== \(positionLabel, privacy: .public) CAMERAS (\(session.devices.count, privacy: .public) device(s)) ===")
-            
+
             for device in session.devices {
-                Log.camera.info("  Device: \(device.localizedName, privacy: .public) | Type: \(device.deviceType.rawValue, privacy: .public) | Aperture: f/\(device.lensAperture, privacy: .public)")
-                
+                Log.camera
+                    .info(
+                        """
+                          Device: \(device.localizedName, privacy: .public) \
+                        | Type: \(device.deviceType.rawValue, privacy: .public) \
+                        | Aperture: f/\(device.lensAperture, privacy: .public)
+                        """,
+                    )
+
                 var cinematicCount = 0
                 var depthCount = 0
-                
-                for (i, format) in device.formats.enumerated() {
+
+                for (formatIndex, format) in device.formats.enumerated() {
                     let dim = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
                     let fpsRanges = format.videoSupportedFrameRateRanges.map {
                         String(format: "%.0f-%.0ffps", $0.minFrameRate, $0.maxFrameRate)
                     }.joined(separator: ", ")
-                    let depthCount_ = format.supportedDepthDataFormats.count
+                    let supportedDepthFormatCount = format.supportedDepthDataFormats.count
                     let hasPortrait = format.isPortraitEffectsMatteStillImageDeliverySupported
                     let isHDR = format.isVideoHDRSupported
-                    
+
                     var flags: [String] = []
                     if #available(iOS 26.0, *) {
                         // minSimulatedAperture != 0 is the definitive cinematic indicator (iOS 26+).
                         if format.minSimulatedAperture != 0 {
                             let aperStr = String(format: "f/%.1f-%.1f def:%.1f",
-                                format.minSimulatedAperture,
-                                format.maxSimulatedAperture,
-                                format.defaultSimulatedAperture)
+                                                 format.minSimulatedAperture,
+                                                 format.maxSimulatedAperture,
+                                                 format.defaultSimulatedAperture)
                             flags.append("CINE(\(aperStr))")
                             cinematicCount += 1
                         }
                     } else {
                         // Pre-iOS 26: use depth/portrait as proxy.
                         if !format.supportedDepthDataFormats.isEmpty ||
-                           format.isPortraitEffectsMatteStillImageDeliverySupported {
+                            format.isPortraitEffectsMatteStillImageDeliverySupported
+                        {
                             flags.append("CINE-PROXY")
                             cinematicCount += 1
                         }
                     }
-                    if depthCount_ > 0 {
-                        flags.append("DEPTH(\(depthCount_))")
+                    if supportedDepthFormatCount > 0 {
+                        flags.append("DEPTH(\(supportedDepthFormatCount))")
                         depthCount += 1
                     }
-                    if hasPortrait { flags.append("PORTRAIT") }
-                    if isHDR { flags.append("HDR") }
-                    
+                    if hasPortrait {
+                        flags.append("PORTRAIT")
+                    }
+                    if isHDR {
+                        flags.append("HDR")
+                    }
+
                     let flagStr = flags.isEmpty ? "" : " [\(flags.joined(separator: " "))]"
-                    Log.camera.info("    [\(i, privacy: .public)] \(dim.width, privacy: .public)x\(dim.height, privacy: .public) \(fpsRanges, privacy: .public)\(flagStr, privacy: .public)")
+                    Log.camera
+                        .info(
+                            """
+                                [\(formatIndex, privacy: .public)] \
+                            \(dim.width, privacy: .public)x\(dim.height, privacy: .public) \
+                            \(fpsRanges, privacy: .public)\(flagStr, privacy: .public)
+                            """,
+                        )
                 }
-                
-                Log.camera.info("  → \(device.formats.count, privacy: .public) total formats | \(cinematicCount, privacy: .public) cinematic | \(depthCount, privacy: .public) with depth")
+
+                Log.camera
+                    .info(
+                        "  → \(device.formats.count, privacy: .public) total formats | \(cinematicCount, privacy: .public) cinematic | \(depthCount, privacy: .public) with depth",
+                    )
             }
         }
         Log.camera.info("=== END CAMERA FORMAT DUMP ===")
     }
-    
+
     /// Returns all video device types supported on the current iOS version.
     /// Deployment target is iOS 18, so the iOS 13 multi-camera types are always available.
     static func allVideoDeviceTypes() -> [AVCaptureDevice.DeviceType] {
@@ -414,7 +466,7 @@ extension CameraService {
             .builtInTelephotoCamera,
             .builtInDualCamera,
             .builtInDualWideCamera,
-            .builtInTripleCamera
+            .builtInTripleCamera,
         ]
         if #available(iOS 17.0, *) {
             types.append(.builtInLiDARDepthCamera)
@@ -504,7 +556,10 @@ extension CameraService {
             targetRate = VideoFrameRate.allCases
                 .filter { Double($0.rawValue) <= maxSupported }
                 .max { $0.rawValue < $1.rawValue } ?? .fps30
-            Log.camera.notice("FPS \(rate.rawValue, privacy: .public) unsupported by active format, falling back to \(targetRate.rawValue, privacy: .public)")
+            Log.camera
+                .notice(
+                    "FPS \(rate.rawValue, privacy: .public) unsupported by active format, falling back to \(targetRate.rawValue, privacy: .public)",
+                )
         }
 
         do {
@@ -513,7 +568,7 @@ extension CameraService {
             device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: CMTimeScale(targetRate.rawValue))
             device.unlockForConfiguration()
         } catch {
-            self.publishError(.frameRateFailed(error.localizedDescription))
+            publishError(.frameRateFailed(error.localizedDescription))
         }
 
         return targetRate

@@ -52,7 +52,7 @@ final class AudioMeterViewModel {
     var showAudioSilenceWarning: Bool = false
     /// Source-name pill shown briefly beside the VU meter when the route
     /// changes. Cleared after a short delay.
-    var audioSourceHint: String? = nil
+    var audioSourceHint: String?
 
     @ObservationIgnored private var audioMeterService: AudioMeterService?
     @ObservationIgnored private var audioSourceHintTask: Task<Void, Never>?
@@ -70,7 +70,9 @@ final class AudioMeterViewModel {
 
     /// True once metering has been attached. Mirrors the previous
     /// `audioMeterService == nil` gate in the coordinator.
-    var isActive: Bool { audioMeterService != nil }
+    var isActive: Bool {
+        audioMeterService != nil
+    }
 
     /// Attaches audio metering once the capture session is fully configured and
     /// running. Idempotent — safe to call on every running-state change.
@@ -93,33 +95,33 @@ final class AudioMeterViewModel {
 
             // Snapshot old state BEFORE updating — `isExternalMic` is set
             // only in this callback so it's a reliable "previous" value.
-            let wasExternalBefore = self.isExternalMic
-            let previousName = self.activeAudioInputName
+            let wasExternalBefore = isExternalMic
+            let previousName = activeAudioInputName
             let micChanged = name != previousName
 
             // Update state.
-            self.isExternalMic = isExternal
-            self.externalMicName = name
-            self.activeAudioInputName = name
+            isExternalMic = isExternal
+            externalMicName = name
+            activeAudioInputName = name
 
             // When the active mic changes (plug/unplug), surface UI feedback.
             // Skip on initial setup (previousName was nil).
-            guard micChanged && self.audioMeterService != nil else { return }
+            guard micChanged, audioMeterService != nil else { return }
 
             // Detect direction using the boolean flag, which is immune to
             // the onInputsAvailable race condition.
-            let disconnected = wasExternalBefore && !isExternal   // external → built-in
+            let disconnected = wasExternalBefore && !isExternal // external → built-in
 
             // Always show an inline source-name hint beside the VU meter.
-            self.showSourceHint(name)
+            showSourceHint(name)
 
-            if self.isRecording() {
+            if isRecording() {
                 // Mid-recording route change: do NOT swap the capture session
                 // (would corrupt the .mov). Warn the user instead.
                 if disconnected {
-                    self.audioRouteChangedMessage = "External mic disconnected.\nRecording continues on iPhone mic."
+                    audioRouteChangedMessage = "External mic disconnected.\nRecording continues on iPhone mic."
                 } else {
-                    self.audioRouteChangedMessage = "Original audio source changed during recording. \nStop to apply new mic."
+                    audioRouteChangedMessage = "Original audio source changed during recording. \nStop to apply new mic."
                 }
                 withAnimation(Theme.easeInOut3) {
                     self.showAudioRouteChangedWarning = true
@@ -128,12 +130,12 @@ final class AudioMeterViewModel {
                 // Not recording — auto-switch the capture session immediately.
                 // This mirrors what happens when the user taps an input in the
                 // picker; no picker confirmation step needed.
-                self.cameraService.reconfigureAudioInput()
+                cameraService.reconfigureAudioInput()
 
                 if disconnected {
                     // Mic was unplugged: show a brief warning so the user
                     // knows recording would now use the built-in mic.
-                    self.audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
+                    audioRouteChangedMessage = "External mic disconnected. Switched to iPhone mic."
                     withAnimation(Theme.easeInOut3) {
                         self.showAudioRouteChangedWarning = true
                     }
@@ -145,7 +147,7 @@ final class AudioMeterViewModel {
 
         meter.onInputsAvailable = { [weak self] inputs in
             guard let self else { return }
-            self.availableAudioInputs = inputs
+            availableAudioInputs = inputs
             // Note: activeAudioInputName is updated exclusively in
             // onRouteChanged to avoid a race condition where this
             // callback overwrites it before the route callback can
@@ -157,7 +159,7 @@ final class AudioMeterViewModel {
             if isSilent {
                 // Only warn when an external mic is active — a quiet room
                 // with the built-in mic is normal, not a hardware fault.
-                guard self.isExternalMic else { return }
+                guard isExternalMic else { return }
                 withAnimation(Theme.easeInOut3) {
                     self.showAudioSilenceWarning = true
                 }
@@ -176,9 +178,9 @@ final class AudioMeterViewModel {
         meter.startMetering()
         meter.startMonitoringRoute()
 
-        self.isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
-        self.activeAudioInputName = meter.activeInput?.portName
-        self.audioMeterService = meter
+        isGainAvailable = meter.isGainAvailable(for: cameraService.audioDevice)
+        activeAudioInputName = meter.activeInput?.portName
+        audioMeterService = meter
     }
 
     /// Stops metering and route monitoring. Call from the screen's `onDisappear`.

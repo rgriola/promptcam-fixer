@@ -11,7 +11,6 @@ import AVFoundation
 /// `CameraViewModel` depends on this protocol rather than the concrete
 /// `CameraService` class, which allows injecting a mock for tests.
 protocol CameraServiceProtocol: AnyObject, Sendable {
-
     // MARK: - Preview
 
     /// The capture session used by the preview layer.

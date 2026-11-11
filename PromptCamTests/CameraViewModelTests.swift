@@ -4,12 +4,11 @@
 // Unit tests for CameraViewModel using MockCameraService.
 // CameraViewModel is @MainActor and uses @Observable (not ObservableObject).
 
-import XCTest
 @testable import PromptCam
+import XCTest
 
 @MainActor
 final class CameraViewModelTests: XCTestCase {
-
     private var mockService: MockCameraService!
     private var sut: CameraViewModel!
 

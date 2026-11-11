@@ -8,7 +8,6 @@ import AVFoundation
 @testable import PromptCam
 
 final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
-
     // MARK: - Preview Session
 
     let previewSession = AVCaptureSession()
@@ -29,7 +28,7 @@ final class MockCameraService: CameraServiceProtocol, @unchecked Sendable {
     var lastApertureValue: Float?
     var lastExposureDelta: Float?
     var lastExposureValue: Float?
-    var lastLockCompletion: ((@MainActor @Sendable (FocusExposureLockOutcome) -> Void))?
+    var lastLockCompletion: (@MainActor @Sendable (FocusExposureLockOutcome) -> Void)?
 
     // MARK: - Callbacks
 

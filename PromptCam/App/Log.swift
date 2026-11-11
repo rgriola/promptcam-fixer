@@ -1,5 +1,5 @@
-import os
 import Foundation
+import os
 
 /// Centralized OSLog loggers. Prefer `Log.{category}.debug(...)` over `print()`
 /// so traces are stripped from Release builds and filterable in Console.app.

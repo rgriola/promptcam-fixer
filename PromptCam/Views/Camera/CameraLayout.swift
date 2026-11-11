@@ -10,7 +10,6 @@ import SwiftUI
 /// 2. Consumers read grouped tokens (`CameraLayout.Teleprompter.viewportHeight`)
 ///    rather than a flat namespace so tuning one feature can't affect another.
 enum CameraLayout {
-
     // MARK: Preview
 
     enum Preview {
@@ -72,7 +71,7 @@ enum CameraLayout {
     /// - Returns: Preview height (top-pinned) and bottom chrome height.
     static func previewFrame(containerSize: CGSize) -> (
         previewHeight: CGFloat,
-        bottomChromeHeight: CGFloat
+        bottomChromeHeight: CGFloat,
     ) {
         let rawHeight = containerSize.width / Preview.aspect
         let previewHeight = min(rawHeight, containerSize.height)
@@ -89,7 +88,6 @@ enum CameraLayout {
 /// gone. This struct now provides the preview size (used for teleprompter
 /// viewport clamping) and safe-area passthrough.
 struct CameraScreenLayout {
-
     // MARK: Feature Sub-anchors
 
     struct PreviewAnchors {
@@ -113,41 +111,39 @@ struct CameraScreenLayout {
         let frame = CameraLayout.previewFrame(containerSize: containerSize)
         let previewSize = CGSize(
             width: containerSize.width,
-            height: frame.previewHeight
+            height: frame.previewHeight,
         )
 
-        self.preview = PreviewAnchors(
-            size: previewSize
+        preview = PreviewAnchors(
+            size: previewSize,
         )
 
         // Safe area passthrough
-        self.safeArea = SafeAreaAnchors(
+        safeArea = SafeAreaAnchors(
             topInset: safeAreaInsets.top,
-            bottomInset: safeAreaInsets.bottom
+            bottomInset: safeAreaInsets.bottom,
         )
     }
 }
 
 /*
-Notes for future
-There needs to be specific layout markers all Main View elements use:
-This app uses the Front Facing - Selfie Camera only. 
+ Notes for future
+ There needs to be specific layout markers all Main View elements use:
+ This app uses the Front Facing - Selfie Camera only.
 
-Device Screen Width, Devide Screen Height; Uniform defined one time for entire app global values
-CameraPreview Width = Device Screen Width reguardless of Camera Format ie; 4k, HD etc. 
-CameraPreview Height = 9 x 16 ratio (this is not correct Camera shoots HD, UHD and 4k)
- 
-Camera Preview View Alignment:
-Camera is vertical presenting. Camera Preview Top is aligned with Device Screen Top - vetically aligned. 
-CameraPreview Bottom ends based on the 9x16 ratio, 1920 for HD or tranlated for Device Screen Pixels.  
+ Device Screen Width, Devide Screen Height; Uniform defined one time for entire app global values
+ CameraPreview Width = Device Screen Width reguardless of Camera Format ie; 4k, HD etc.
+ CameraPreview Height = 9 x 16 ratio (this is not correct Camera shoots HD, UHD and 4k)
 
-Camera Preview bottom is the start of the Top-Line and Footer buttons.
-Teleprompter Top aligns with Screen Device Top, overlays Camera Preview.
+ Camera Preview View Alignment:
+ Camera is vertical presenting. Camera Preview Top is aligned with Device Screen Top - vetically aligned.
+ CameraPreview Bottom ends based on the 9x16 ratio, 1920 for HD or tranlated for Device Screen Pixels.
 
-Teleprompter Bottom:
-VU Meter, Record Cluster, Utility Controls Frame is between Prompter Bottom and Preview Bottom
-Camera Controls; [VU][Record Cluster][Utility]
+ Camera Preview bottom is the start of the Top-Line and Footer buttons.
+ Teleprompter Top aligns with Screen Device Top, overlays Camera Preview.
 
+ Teleprompter Bottom:
+ VU Meter, Record Cluster, Utility Controls Frame is between Prompter Bottom and Preview Bottom
+ Camera Controls; [VU][Record Cluster][Utility]
 
-*/
-
+ */

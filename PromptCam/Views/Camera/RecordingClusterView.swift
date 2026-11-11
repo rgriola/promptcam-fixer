@@ -23,29 +23,29 @@ struct RecordingClusterView: View {
     let onScrollTap: () -> Void
     /// Native-like stacked record + scroll + timer cluster.
     var body: some View {
-            VStack {
-                ScrollToggleButton(
-                    isScrolling: isScrolling,
-                    isEnabled: true,
-                    action: onScrollTap
-                )
-                
-                RecordingTimerPanel(
-                    duration: recordingDuration,
-                    isRecording: isRecording
-                )
+        VStack {
+            ScrollToggleButton(
+                isScrolling: isScrolling,
+                isEnabled: true,
+                action: onScrollTap,
+            )
 
+            RecordingTimerPanel(
+                duration: recordingDuration,
+                isRecording: isRecording,
+            )
 
-                RecordButton(
-                    isRecording: isRecording,
-                    isEnabled: isRecordEnabled,
-                    action: onRecordTap
-                )
+            RecordButton(
+                isRecording: isRecording,
+                isEnabled: isRecordEnabled,
+                action: onRecordTap,
+            )
         }
     }
 }
 
 // MARK: - Record Button
+
 /// Primary shutter control used for start/stop recording.
 /// Shows a red circle when idle and a white stop-square when recording.
 struct RecordButton: View {
@@ -63,29 +63,29 @@ struct RecordButton: View {
                 Image(systemName: isRecording ? "square.fill" : "circle.fill")
                     .font(Theme.icon34)
                     .foregroundStyle(
-                        isRecording ? Theme.white : Theme.white.opacity(0.7)
-                        )
+                        isRecording ? Theme.white : Theme.white.opacity(0.7),
+                    )
 
                     .padding()
                     .background(
                         Circle()
-                            .fill(Theme.red)
+                            .fill(Theme.red),
                     )
                     .overlay( // the stroke on rec button
-                        Circle().strokeBorder(Theme.white.opacity(0.7), lineWidth: 2)
+                        Circle().strokeBorder(Theme.white.opacity(0.7), lineWidth: 2),
                     )
-
             }
         }
         .disabled(!isEnabled)
         .accessibilityLabel(
-            isRecording ? "Stop recording" : "Start recording"
+            isRecording ? "Stop recording" : "Start recording",
         )
         .accessibilityHint("Toggles video recording")
     }
 }
 
 // MARK: - Prompter Pause/Play Toggle Button
+
 /// Secondary control to pause/play teleprompter movement.
 /// Blue circle with play/pause icon.
 struct ScrollToggleButton: View {
@@ -106,11 +106,13 @@ struct ScrollToggleButton: View {
                     .background(
                         Circle()
                             .fill(
-                                Theme.blue)
+                                Theme.blue,
+                            ),
                     )
                     .overlay(
                         Circle().strokeBorder(
-                            Theme.white.opacity(0.7), lineWidth: 2)
+                            Theme.white.opacity(0.7), lineWidth: 2,
+                        ),
                     )
             }
         }
@@ -121,6 +123,7 @@ struct ScrollToggleButton: View {
 }
 
 // MARK: - Component Previews
+
 #Preview("RecordButton - Idle") {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
@@ -132,7 +135,6 @@ struct ScrollToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         RecordButton(isRecording: true, isEnabled: true) {}
-
     }
 }
 
@@ -140,7 +142,6 @@ struct ScrollToggleButton: View {
     ZStack {
         Theme.cameraBg.ignoresSafeArea()
         ScrollToggleButton(isScrolling: false, isEnabled: true) {}
-
     }
 }
 
@@ -160,7 +161,7 @@ struct ScrollToggleButton: View {
             isRecordEnabled: true,
             recordingDuration: 42,
             onRecordTap: {},
-            onScrollTap: {}
+            onScrollTap: {},
         )
     }
 }

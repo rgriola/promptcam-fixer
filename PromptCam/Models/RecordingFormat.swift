@@ -6,9 +6,11 @@ import Foundation
 enum VideoMode: String, CaseIterable, Codable, Sendable {
     case standard = "Standard"
     case cinematic = "Cinematic"
-    
+
     /// Display label for UI.
-    var displayLabel: String { rawValue }
+    var displayLabel: String {
+        rawValue
+    }
 }
 
 // MARK: - Video Resolution
@@ -20,15 +22,15 @@ enum VideoResolution: String, CaseIterable, Codable, Sendable {
     /// Full pixel dimension label for display, e.g. "1920×1080".
     var dimensionLabel: String {
         switch self {
-        case .hd1080p: return "1920×1080"
-        case .uhd4K:   return "3840×2160"
+        case .hd1080p: "1920×1080"
+        case .uhd4K: "3840×2160"
         }
     }
 
     var sessionPreset: AVCaptureSession.Preset {
         switch self {
-        case .hd1080p: return .hd1920x1080
-        case .uhd4K:   return .hd4K3840x2160
+        case .hd1080p: .hd1920x1080
+        case .uhd4K: .hd4K3840x2160
         }
     }
 }
@@ -40,7 +42,9 @@ enum VideoFrameRate: Int, CaseIterable, Codable, Sendable {
     case fps30 = 30
     case fps60 = 60
 
-    var displayLabel: String { "\(rawValue)" }
+    var displayLabel: String {
+        "\(rawValue)"
+    }
 }
 
 // MARK: - Recording Format
@@ -59,7 +63,8 @@ struct RecordingFormat: Equatable, Hashable, Codable, Sendable {
     /// Loads from UserDefaults, falling back to `.default` if nothing is saved or decoding fails.
     static func loadSaved() -> RecordingFormat {
         guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let format = try? JSONDecoder().decode(RecordingFormat.self, from: data) else {
+              let format = try? JSONDecoder().decode(RecordingFormat.self, from: data)
+        else {
             return .default
         }
         return format

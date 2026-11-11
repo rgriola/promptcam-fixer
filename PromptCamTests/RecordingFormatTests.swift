@@ -5,11 +5,10 @@
 // Tests mutate UserDefaults.standard (which is what production code uses) and
 // restore the prior value in tearDown so the test is hermetic.
 
-import XCTest
 @testable import PromptCam
+import XCTest
 
 final class RecordingFormatTests: XCTestCase {
-
     private let storageKey = "com.promptcam.recordingFormat"
     private var savedValue: Data?
 

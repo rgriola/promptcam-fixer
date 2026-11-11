@@ -1,16 +1,24 @@
+@testable import PromptCam
+
 // PromptCam Unit Tests
 // Updated June 1, 2026 — aligned with current TeleprompterGeometry API
 // (progress-based pipeline was removed in Phase 5)
 // June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textColor/backgroundOpacity to init calls after Phase 2 model expansion
 // July 6, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add textAlignment tests
 import XCTest
-@testable import PromptCam
 
 // MARK: - TeleprompterConfig Tests
 
 final class TeleprompterConfigTests: XCTestCase {
     func testClampedConfigLimitsFontAndSpeed() {
-        let config = TeleprompterConfig(text: "Sample", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        let config = TeleprompterConfig(
+            text: "Sample",
+            speedPointsPerSecond: 300,
+            fontSize: 8,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
 
         let clamped = config.clamped
 
@@ -26,17 +34,38 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testClampedConfigSnapsToEvenFontSize() {
-        let oddConfig = TeleprompterConfig(text: "Test", speedPointsPerSecond: 50, fontSize: 25, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        let oddConfig = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 50,
+            fontSize: 25,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
         XCTAssertEqual(oddConfig.clamped.fontSize, 26) // rounds to nearest even
     }
 
     func testClampedConfigClampsSpeedLowerBound() {
-        let lowSpeed = TeleprompterConfig(text: "Test", speedPointsPerSecond: 1, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        let lowSpeed = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 1,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
         XCTAssertEqual(lowSpeed.clamped.speedPointsPerSecond, 5)
     }
 
     func testClampedConfigClampsFontUpperBound() {
-        let bigFont = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 100, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        let bigFont = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 35,
+            fontSize: 100,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
         XCTAssertEqual(bigFont.clamped.fontSize, 72)
     }
 
@@ -45,10 +74,24 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testClampedConfigClampsBackgroundOpacity() {
-        let overOpaque = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 1.5, textAlignment: .center)
+        let overOpaque = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 35,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: 1.5,
+            textAlignment: .center,
+        )
         XCTAssertEqual(overOpaque.clamped.backgroundOpacity, 0.85, accuracy: 0.001)
 
-        let negative = TeleprompterConfig(text: "Test", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: -0.5, textAlignment: .center)
+        let negative = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 35,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: -0.5,
+            textAlignment: .center,
+        )
         XCTAssertEqual(negative.clamped.backgroundOpacity, 0.0, accuracy: 0.001)
     }
 
@@ -80,7 +123,14 @@ final class TeleprompterConfigTests: XCTestCase {
 
     func testDisplayTextUppercasesWithoutChangingSourceText() {
         let script = "Hello there.\nSecond line, with punctuation!"
-        var config = TeleprompterConfig(text: script, speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        var config = TeleprompterConfig(
+            text: script,
+            speedPointsPerSecond: 35,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
 
         config.usesAllCaps = true
 
@@ -89,7 +139,14 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testDisplayTextIsReversible() {
-        var config = TeleprompterConfig(text: "Mixed Case Script", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        var config = TeleprompterConfig(
+            text: "Mixed Case Script",
+            speedPointsPerSecond: 35,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
 
         config.usesAllCaps = true
         config.usesAllCaps = false
@@ -98,7 +155,14 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testAllCapsChangesMeasurementKey() {
-        var config = TeleprompterConfig(text: "Mixed Case Script", speedPointsPerSecond: 35, fontSize: 30, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        var config = TeleprompterConfig(
+            text: "Mixed Case Script",
+            speedPointsPerSecond: 35,
+            fontSize: 30,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
         let normalKey = TextMeasureKey(text: config.displayText, fontSize: config.fontSize, width: 300)
 
         config.usesAllCaps = true
@@ -108,7 +172,14 @@ final class TeleprompterConfigTests: XCTestCase {
     }
 
     func testClampedPreservesAllCaps() {
-        var config = TeleprompterConfig(text: "Test", speedPointsPerSecond: 300, fontSize: 8, textColor: .white, backgroundOpacity: 0.15, textAlignment: .center)
+        var config = TeleprompterConfig(
+            text: "Test",
+            speedPointsPerSecond: 300,
+            fontSize: 8,
+            textColor: .white,
+            backgroundOpacity: 0.15,
+            textAlignment: .center,
+        )
         config.usesAllCaps = true
 
         XCTAssertTrue(config.clamped.usesAllCaps)
@@ -171,7 +242,7 @@ final class TeleprompterAllCapsPersistenceTests: XCTestCase {
 // MARK: - TeleprompterGeometry Tests
 
 final class TeleprompterGeometryTests: XCTestCase {
-    // Reference geometry: 500pt viewport, 2000pt text, 30pt font, 16pt padding.
+    /// Reference geometry: 500pt viewport, 2000pt text, 30pt font, 16pt padding.
     private func makeGeometry(textHeight: CGFloat = 2000) -> TeleprompterGeometry {
         TeleprompterGeometry(viewportHeight: 500, textHeight: textHeight, fontSize: 30, verticalPadding: 16)
     }

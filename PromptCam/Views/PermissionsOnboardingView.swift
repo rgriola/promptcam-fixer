@@ -14,11 +14,14 @@ struct PermissionsOnboardingView: View {
     let onContinue: () -> Void
 
     @State private var cameraStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
-        for: .video)
+        for: .video,
+    )
     @State private var micStatus: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(
-        for: .audio)
+        for: .audio,
+    )
     @State private var photoStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(
-        for: .readWrite)
+        for: .readWrite,
+    )
     @State private var locationStatus: CLAuthorizationStatus = CLLocationManager()
         .authorizationStatus
     @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus =
@@ -38,27 +41,27 @@ struct PermissionsOnboardingView: View {
                 microphone: micStatus,
                 photoLibrary: photoStatus,
                 location: locationStatus,
-                speechToText: speechStatus
-            ))
+                speechToText: speechStatus,
+            ),
+        )
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // App icon and title
             VStack(spacing: Theme.space12) {
-                //Image(systemName: "video.fill")
+                // Image(systemName: "video.fill")
                 Image("permissions-icon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 280, height: 100)
-                .accessibilityHidden(true)
-         
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 280, height: 100)
+                    .accessibilityHidden(true)
+
                 Text("Permissions")
                     .font(Theme.display28Bold)
                     .foregroundStyle(Theme.white)
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, Theme.space32)
-  
             }
 
             Spacer().frame(height: 40)
@@ -74,7 +77,7 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: cameraStatus),
                     statusColor: PermissionStatusDisplay.color(for: cameraStatus),
                     showSettingsLink: cameraStatus == .denied || cameraStatus == .restricted,
-                    snapshot: gateState.snapshot
+                    snapshot: gateState.snapshot,
                 )
 
                 OnboardingPermissionRow(
@@ -86,7 +89,7 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: micStatus),
                     statusColor: PermissionStatusDisplay.color(for: micStatus),
                     showSettingsLink: micStatus == .denied || micStatus == .restricted,
-                    snapshot: gateState.snapshot
+                    snapshot: gateState.snapshot,
                 )
 
                 OnboardingPermissionRow(
@@ -98,7 +101,7 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: photoStatus),
                     statusColor: PermissionStatusDisplay.color(for: photoStatus),
                     showSettingsLink: photoStatus == .denied || photoStatus == .restricted,
-                    snapshot: gateState.snapshot
+                    snapshot: gateState.snapshot,
                 )
 
                 OnboardingPermissionRow(
@@ -110,7 +113,7 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: locationStatus),
                     statusColor: PermissionStatusDisplay.color(for: locationStatus),
                     showSettingsLink: locationStatus == .denied || locationStatus == .restricted,
-                    snapshot: gateState.snapshot
+                    snapshot: gateState.snapshot,
                 )
 
                 OnboardingPermissionRow(
@@ -122,7 +125,7 @@ struct PermissionsOnboardingView: View {
                     status: PermissionStatusDisplay.label(for: speechStatus),
                     statusColor: PermissionStatusDisplay.color(for: speechStatus),
                     showSettingsLink: speechStatus == .denied || speechStatus == .restricted,
-                    snapshot: gateState.snapshot
+                    snapshot: gateState.snapshot,
                 )
             }
             .padding(.horizontal, Theme.space24)
@@ -142,7 +145,8 @@ struct PermissionsOnboardingView: View {
                 if gateState.hasUndeterminedPermission {
                     Button {
                         PermissionAnalyticsService.trackGrantAccessTapped(
-                            snapshot: gateState.snapshot)
+                            snapshot: gateState.snapshot,
+                        )
                         requestAllPermissions()
                     } label: {
                         HStack(spacing: Theme.space8) {
@@ -170,13 +174,13 @@ struct PermissionsOnboardingView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(
-                            gateState.canContinue ? 
-                            Color.blue : Color.gray.opacity(0.3)
-                            )
+                            gateState.canContinue ?
+                                Color.blue : Color.gray.opacity(0.3),
+                        )
                         .foregroundStyle(
                             gateState.canContinue ?
-                             .white : .gray
-                             )
+                                .white : .gray,
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(!gateState.canContinue)
@@ -241,7 +245,7 @@ struct PermissionsOnboardingView: View {
         speechStatus = SFSpeechRecognizer.authorizationStatus()
         PermissionAnalyticsService.trackSpeechPermissionStatusObserved(
             status: speechStatus,
-            sourceScreen: "onboarding"
+            sourceScreen: "onboarding",
         )
     }
 
@@ -274,7 +278,7 @@ private struct OnboardingPermissionRow: View {
     let status: String
     let statusColor: Color
     let showSettingsLink: Bool
-    var snapshot: PermissionPolicySnapshot? = nil
+    var snapshot: PermissionPolicySnapshot?
 
     var body: some View {
         HStack(spacing: 14) {
@@ -315,7 +319,7 @@ private struct OnboardingPermissionRow: View {
                     OpenSettingsButton(
                         permission: permission,
                         sourceSurface: .gate,
-                        snapshot: snapshot
+                        snapshot: snapshot,
                     )
                 }
             }

@@ -43,7 +43,7 @@ struct CameraControlsRowView: View {
             VideoModeBadgeView(
                 mode: videoMode,
                 apertureText: apertureText,
-                onTapAperture: onTapAperture
+                onTapAperture: onTapAperture,
             )
             .fixedSize()
 
@@ -85,7 +85,7 @@ struct CameraControlsRowView: View {
             CameraLockStatusBadgeView(
                 status: lockStatus,
                 onToggle: onTapLock,
-                isDisabled: videoMode == .cinematic
+                isDisabled: videoMode == .cinematic,
             )
             Spacer()
         }
@@ -96,5 +96,4 @@ struct CameraControlsRowView: View {
         .opacity(isRecording ? 0.3 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isRecording)
     }
-
 }

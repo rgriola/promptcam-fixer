@@ -13,7 +13,9 @@ struct TeleprompterGeometry: Equatable, Sendable {
     let verticalPadding: CGFloat
 
     /// Approximate single-line height for the current font.
-    var lineHeight: CGFloat { fontSize * 1.4 }
+    var lineHeight: CGFloat {
+        fontSize * 1.4
+    }
 
     /// First line of script vertically centered in the viewport.
     var centerOffset: CGFloat {
@@ -21,7 +23,9 @@ struct TeleprompterGeometry: Equatable, Sendable {
     }
 
     /// Convenience alias — the script always starts at center.
-    var startOffset: CGFloat { centerOffset }
+    var startOffset: CGFloat {
+        centerOffset
+    }
 
     /// The offset at which the last line has fully exited past the top edge.
     /// Used as the floor clamp for both auto-scroll and manual drag.

@@ -11,18 +11,17 @@ func measureTeleprompterTextHeight(text: String, fontSize: Double, viewWidth: CG
     // Use .rounded design to match ScrollingTeleprompterText's
     // Theme.fontFamily.rounded(size:weight:) rendering.
     let baseFont = UIFont.systemFont(ofSize: CGFloat(fontSize), weight: .semibold)
-    let uiFont: UIFont
-    if let roundedDescriptor = baseFont.fontDescriptor.withDesign(.rounded) {
-        uiFont = UIFont(descriptor: roundedDescriptor, size: 0)
+    let uiFont: UIFont = if let roundedDescriptor = baseFont.fontDescriptor.withDesign(.rounded) {
+        UIFont(descriptor: roundedDescriptor, size: 0)
     } else {
-        uiFont = baseFont  // Fallback if rounded unavailable
+        baseFont // Fallback if rounded unavailable
     }
     let attributes: [NSAttributedString.Key: Any] = [.font: uiFont]
     let bounding = (text as NSString).boundingRect(
         with: CGSize(width: availableWidth, height: .greatestFiniteMagnitude),
         options: [.usesLineFragmentOrigin, .usesFontLeading],
         attributes: attributes,
-        context: nil
+        context: nil,
     )
     return ceil(bounding.height) + Theme.space16 * 2
 }
@@ -37,8 +36,8 @@ struct TextMeasureKey: Hashable {
     let width: CGFloat
 
     init(text: String, fontSize: Double, width: CGFloat) {
-        self.length = text.count
-        self.hash = text.hashValue
+        length = text.count
+        hash = text.hashValue
         self.fontSize = fontSize
         self.width = width
     }

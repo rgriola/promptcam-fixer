@@ -4,7 +4,6 @@ import UIKit
 
 /// Fetches and manages video recordings stored in the photo library.
 struct RecordingsService: Sendable {
-
     /// Shared caching image manager for grid thumbnails.
     /// `PHCachingImageManager`/`PHImageManager` are annotated
     /// `NS_SWIFT_SENDABLE` in the current SDK, so no `nonisolated(unsafe)`
@@ -19,10 +18,10 @@ struct RecordingsService: Sendable {
     /// 7ms/78% per sample on iPhone 13). PHCachingImageManager is thread-safe.
     private static let cachingQueue = DispatchQueue(
         label: "com.rgriola.promptcam.recordings.caching",
-        qos: .userInitiated
+        qos: .userInitiated,
     )
 
-    nonisolated(unsafe) private static let assetCache = NSCache<NSString, PHAsset>()
+    private nonisolated(unsafe) static let assetCache = NSCache<NSString, PHAsset>()
 
     /// Maximum videos loaded into the carousel. Tune during testing.
     static let carouselFetchLimit = 15
@@ -82,17 +81,18 @@ struct RecordingsService: Sendable {
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
-                options: imgOptions
+                options: imgOptions,
             ) { image, _ in
                 continuation.resume(returning: image)
             }
         }
     }
 
-
     /// Resolves a recording id back to its underlying `PHAsset`.
     private func asset(for id: String) -> PHAsset? {
-        if let cached = Self.assetCache.object(forKey: id as NSString) { return cached }
+        if let cached = Self.assetCache.object(forKey: id as NSString) {
+            return cached
+        }
         if let fetched = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject {
             Self.assetCache.setObject(fetched, forKey: id as NSString)
             return fetched
@@ -130,7 +130,7 @@ struct RecordingsService: Sendable {
     func thumbnail(
         for recording: Recording,
         targetSize: CGSize,
-        deliveryMode: PHImageRequestOptionsDeliveryMode = .fastFormat
+        deliveryMode: PHImageRequestOptionsDeliveryMode = .fastFormat,
     ) async -> UIImage? {
         guard let asset = asset(for: recording.id) else { return nil }
         return await withCheckedContinuation { continuation in
@@ -143,7 +143,7 @@ struct RecordingsService: Sendable {
                 for: asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
-                options: options
+                options: options,
             ) { image, info in
                 guard !resumed else { return }
                 let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
@@ -170,12 +170,12 @@ struct RecordingsService: Sendable {
         Self.cachingQueue.async {
             let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
             var assets: [PHAsset] = []
-            fetch.enumerateObjects { a, _, _ in assets.append(a) }
+            fetch.enumerateObjects { asset, _, _ in assets.append(asset) }
             Self.cachingManager.startCachingImages(
                 for: assets,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
-                options: Self.imageRequestOptions(deliveryMode: deliveryMode)
+                options: Self.imageRequestOptions(deliveryMode: deliveryMode),
             )
         }
     }
@@ -216,7 +216,7 @@ struct RecordingsService: Sendable {
     func resolveURL(
         for recording: Recording,
         progress: (@MainActor @Sendable (Double) -> Void)?,
-        onStart: (@Sendable (PHImageRequestID) -> Void)? = nil
+        onStart: (@Sendable (PHImageRequestID) -> Void)? = nil,
     ) async -> (url: URL?, requestID: PHImageRequestID?) {
         guard let asset = asset(for: recording.id) else { return (nil, nil) }
 
@@ -256,7 +256,7 @@ struct RecordingsService: Sendable {
                     guard lastReported.shouldReport(
                         fraction,
                         minDelta: 0.005,
-                        milestones: [0.25, 0.5, 0.75]
+                        milestones: [0.25, 0.5, 0.75],
                     ) else { return }
                     // PhotoKit fires this on an arbitrary queue. Hop to main.
                     Task { @MainActor in
@@ -289,7 +289,7 @@ struct RecordingsService: Sendable {
     func fetchLatestRecording() async -> Recording? {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return nil }
-        
+
         return await Task.detached(priority: .userInitiated) {
             let options = PHFetchOptions()
             options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
@@ -307,7 +307,7 @@ struct RecordingsService: Sendable {
         guard let asset = asset(for: recording.id) else { return nil }
         let resources = PHAssetResource.assetResources(for: asset)
         guard let resource = resources.first(where: { $0.type == .video })
-                ?? resources.first else { return nil }
+            ?? resources.first else { return nil }
 
         let ext: String = {
             let raw = (resource.originalFilename as NSString).pathExtension
@@ -319,14 +319,16 @@ struct RecordingsService: Sendable {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("CueVue-\(safeId).\(ext)")
 
-        if FileManager.default.fileExists(atPath: url.path) { return url }
+        if FileManager.default.fileExists(atPath: url.path) {
+            return url
+        }
 
         let opts = PHAssetResourceRequestOptions()
         opts.isNetworkAccessAllowed = true
 
         return await withCheckedContinuation { continuation in
             PHAssetResourceManager.default().writeData(
-                for: resource, toFile: url, options: opts
+                for: resource, toFile: url, options: opts,
             ) { error in
                 if let error {
                     Log.recordings.error("export failed: \(error.localizedDescription, privacy: .public)")
@@ -365,7 +367,7 @@ struct RecordingsService: Sendable {
 /// downloads that would otherwise skip past the delta threshold.
 private final class ThrottledDouble: @unchecked Sendable {
     private let lock = NSLock()
-    private var last: Double? = nil
+    private var last: Double?
     private var reportedMilestones: Set<Double> = []
 
     /// - Parameters:
@@ -376,7 +378,7 @@ private final class ThrottledDouble: @unchecked Sendable {
     func shouldReport(
         _ value: Double,
         minDelta: Double,
-        milestones: [Double] = []
+        milestones: [Double] = [],
     ) -> Bool {
         lock.lock()
         defer { lock.unlock() }

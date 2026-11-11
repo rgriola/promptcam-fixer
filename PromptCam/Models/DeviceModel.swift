@@ -2,7 +2,6 @@ import Foundation
 
 /// Maps hardware machine identifiers to marketing model names.
 enum DeviceModel {
-
     /// Returns the marketing name for the current device, e.g. "iPhone 17 Pro".
     static var marketingName: String {
         let identifier = machineIdentifier
@@ -12,16 +11,16 @@ enum DeviceModel {
     /// Reads the hw.machine sysctl to get the device identifier (e.g. "iPhone17,1").
     private static var machineIdentifier: String {
         #if targetEnvironment(simulator)
-        // In simulator, hw.machine returns "arm64". Use the simulated model instead.
-        return ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "Simulator"
+            // In simulator, hw.machine returns "arm64". Use the simulated model instead.
+            return ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? "Simulator"
         #else
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        return withUnsafePointer(to: &systemInfo.machine) {
-            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
-                String(validatingCString: $0) ?? "Unknown"
+            var systemInfo = utsname()
+            uname(&systemInfo)
+            return withUnsafePointer(to: &systemInfo.machine) {
+                $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                    String(validatingCString: $0) ?? "Unknown"
+                }
             }
-        }
         #endif
     }
 
@@ -74,10 +73,10 @@ enum DeviceModel {
         // iPad models (common)
         "iPad13,16": "iPad Air (5th gen)",
         "iPad13,17": "iPad Air (5th gen)",
-        "iPad14,3":  "iPad Pro 11-inch (4th gen)",
-        "iPad14,4":  "iPad Pro 11-inch (4th gen)",
-        "iPad14,5":  "iPad Pro 12.9-inch (6th gen)",
-        "iPad14,6":  "iPad Pro 12.9-inch (6th gen)",
+        "iPad14,3": "iPad Pro 11-inch (4th gen)",
+        "iPad14,4": "iPad Pro 11-inch (4th gen)",
+        "iPad14,5": "iPad Pro 12.9-inch (6th gen)",
+        "iPad14,6": "iPad Pro 12.9-inch (6th gen)",
     ]
     // swiftlint:enable line_length
 }

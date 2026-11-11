@@ -20,26 +20,31 @@ import UIKit
 
 /// Primary camera surface that composes preview, teleprompter, and control chrome.
 struct CameraView: View {
-    // View model that owns camera state, routes, and actions.
+    /// View model that owns camera state, routes, and actions.
     @State var viewModel: CameraViewModel
-    // Maximum absolute EV value used by focus/exposure drag calculations.
+    /// Maximum absolute EV value used by focus/exposure drag calculations.
     private let exposureRange: Float = 5.0
 
-    // Current EV value shown in UI and bound to the EV panel slider.
+    /// Current EV value shown in UI and bound to the EV panel slider.
     @State private var exposureBias: Float = 0
 
     // MARK: - Teleprompter State
+
     /// Script text we last auto-centered for. Re-center whenever the text changes.
     @State private var lastCenteredScriptText: String?
+
     // MARK: - Sheet / Picker State
+
     /// Controls visibility of the teleprompter adjustment panel.
     @State private var showAdjustmentPanel: Bool = false
 
     // MARK: - EV Panel State
+
     /// Controls visibility of the EV adjustment panel.
     @State private var showEVPanel: Bool = false
 
     // MARK: - Aperture Panel State
+
     /// Controls visibility of the cinematic aperture panel.
     @State private var showAperturePanel: Bool = false
 
@@ -51,7 +56,7 @@ struct CameraView: View {
         guard let error = viewModel.cameraError else { return nil }
         return PermissionRecoveryMapper.runtimeRecovery(
             for: error,
-            snapshot: permissionService.policySnapshot
+            snapshot: permissionService.policySnapshot,
         )
     }
 
@@ -62,11 +67,11 @@ struct CameraView: View {
         return GeometryReader { proxy in
             let layout = CameraScreenLayout(
                 containerSize: proxy.size,
-                safeAreaInsets: proxy.safeAreaInsets  // pad for notch
+                safeAreaInsets: proxy.safeAreaInsets, // pad for notch
             )
             let teleprompterHeight = min(
                 CameraLayout.Teleprompter.viewportHeight,
-                layout.preview.size.height
+                layout.preview.size.height,
             )
 
             ZStack(alignment: .top) {
@@ -74,12 +79,13 @@ struct CameraView: View {
                 // VStack owns vertical ordering; no .position() needed.
                 VStack(spacing: 0) {
                     // MARK: - 1: Camera Preview View
+
                     // Top-anchored, ignores top safe area, extends under DI.
                     CameraPreviewView(
                         session: viewModel.session,
                         onTap: { devicePoint, viewPoint in
                             handlePreviewTap(devicePoint: devicePoint, viewPoint: viewPoint)
-                        }
+                        },
                     )
                     .aspectRatio(CameraLayout.Preview.aspect, contentMode: .fit)
                     .frame(maxWidth: .infinity)
@@ -89,14 +95,16 @@ struct CameraView: View {
                             .fill(Color.black)
                             .opacity(viewModel.isCameraReady ? 0 : 1)
                             .animation(.easeInOut(duration: 0.2), value: viewModel.isCameraReady)
-                            .allowsHitTesting(false)
+                            .allowsHitTesting(false),
                     )
                     .clipped()
 
                     // MARK: - 2: Controls Row (padding + background are intrinsic)
+
                     cameraControlsRow()
 
                     // MARK: - 3: Footer
+
                     cameraFooter()
                 }
                 .frame(maxWidth: .infinity)
@@ -110,6 +118,7 @@ struct CameraView: View {
                 // ── Layer 3: Modal Panels & Warning Banners ──
 
                 // MARK: - 8: Prompter Control Panel
+
                 if showAdjustmentPanel {
                     StandardPanelOverlay(onDismiss: {
                         showAdjustmentPanel = false
@@ -118,7 +127,7 @@ struct CameraView: View {
                         TeleprompterAdjustmentPanel(
                             config: Binding(
                                 get: { viewModel.config },
-                                set: { viewModel.updateTeleprompterStyle($0) }
+                                set: { viewModel.updateTeleprompterStyle($0) },
                             ),
                             onReset: {
                                 viewModel.updateTeleprompterStyle(
@@ -126,18 +135,20 @@ struct CameraView: View {
                                         var defaults = TeleprompterConfig.default
                                         defaults.text = viewModel.config.text
                                         return defaults
-                                    }())
+                                    }(),
+                                )
                             },
                             onDismiss: {
                                 withAnimation(.easeOut(duration: 0.25)) {
                                     showAdjustmentPanel = false
                                 }
-                            }
+                            },
                         )
                     }
                 }
 
                 // MARK: - 9: EV adjustment panel
+
                 if showEVPanel {
                     StandardPanelOverlay(onDismiss: {
                         showEVPanel = false
@@ -159,12 +170,13 @@ struct CameraView: View {
                                 withAnimation(.easeOut(duration: 0.25)) {
                                     showEVPanel = false
                                 }
-                            }
+                            },
                         )
                     }
                 }
 
                 // MARK: - 10: Cine Aperture
+
                 // Renders if cinematicApertureRange is non-nil (cinematic + iOS 26+)
                 if showAperturePanel, let apertureRange = viewModel.cinematicApertureRange {
                     StandardPanelOverlay(onDismiss: {
@@ -174,11 +186,12 @@ struct CameraView: View {
                         CinematicAperturePanel(
                             aperture: $viewModel.cinematicSimulatedAperture,
                             apertureRange: apertureRange,
-                            defaultAperture: apertureRange.lowerBound,  // f/5.6 after clamping
+                            defaultAperture: apertureRange.lowerBound, // f/5.6 after clamping
                             onReset: {
                                 viewModel.setSimulatedAperture(apertureRange.lowerBound)
                                 Log.ui.debug(
-                                    "Aperture reset to default (f/\(apertureRange.lowerBound))")
+                                    "Aperture reset to default (f/\(apertureRange.lowerBound))",
+                                )
                             },
                             onAdjust: { value in
                                 viewModel.setSimulatedAperture(value)
@@ -187,39 +200,43 @@ struct CameraView: View {
                                 withAnimation(.easeOut(duration: 0.25)) {
                                     showAperturePanel = false
                                 }
-                            }
+                            },
                         )
                     }
                 }
 
                 // MARK: - 11: Warn Audio Changed
-                //(e.g. mic disconnect during recording)
+
+                // (e.g. mic disconnect during recording)
                 TemporaryWarningBanner(
                     message: viewModel.audioMeter.audioRouteChangedMessage,
                     systemImage: "mic.slash.fill",
                     autoDismissAfter: 4.0,
-                    isPresented: $viewModel.audioMeter.showAudioRouteChangedWarning
+                    isPresented: $viewModel.audioMeter.showAudioRouteChangedWarning,
                 )
 
                 // MARK: - 12: Warn No Audio —
+
                 // Sustained dead audio. Persists until the signal returns.
                 TemporaryWarningBanner(
                     message: "No audio signal. \nCheck microphone connection.",
                     systemImage: "waveform.badge.exclamationmark",
                     autoDismissAfter: nil,
-                    isPresented: $viewModel.audioMeter.showAudioSilenceWarning
+                    isPresented: $viewModel.audioMeter.showAudioSilenceWarning,
                 )
 
                 // MARK: - 13: Warn Stop Recording (top center).
-                // Recording locks format. This warning may never be shown. 
+
+                // Recording locks format. This warning may never be shown.
                 TemporaryWarningBanner(
                     message: "Stop recording to change format.",
                     systemImage: "exclamationmark.triangle.fill",
                     autoDismissAfter: 3.0,
-                    isPresented: $viewModel.showFormatLockedWarning
+                    isPresented: $viewModel.showFormatLockedWarning,
                 )
 
                 // MARK: - 14: Audio Source Picker —
+
                 // Dims 10% givs input options.
                 if viewModel.audioMeter.showAudioSourcePicker {
                     StandardPanelOverlay(onDismiss: {
@@ -237,17 +254,18 @@ struct CameraView: View {
                                 withAnimation(.easeOut(duration: 0.25)) {
                                     viewModel.audioMeter.showAudioSourcePicker = false
                                 }
-                            }
+                            },
                         )
                     }
                 }
-
             }
-            .background(Theme.bgGrad)  // background for main view ZStack
-            .ignoresSafeArea(.keyboard)  // Prevent keyboard from affecting camera layout
+            .background(Theme.bgGrad) // background for main view ZStack
+            .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting camera layout
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
+
         // MARK: - 15: - Alerts & Pickers
+
         .alert(
             runtimeRecoveryMessage?.title ?? "Error",
             isPresented: Binding(
@@ -256,7 +274,8 @@ struct CameraView: View {
                 },
                 set: { _ in
                     viewModel.cameraError = nil
-                })
+                },
+            ),
         ) {
             if runtimeRecoveryMessage?.action == .openSettings {
                 Button("Open Settings") {
@@ -270,7 +289,8 @@ struct CameraView: View {
         } message: {
             Text(
                 runtimeRecoveryMessage?.message ?? viewModel.cameraError?.localizedDescription
-                    ?? "Unknown error")
+                    ?? "Unknown error",
+            )
         }
         .sheet(item: $viewModel.modalQueue.activeSheet) { route in
             sheetContent(for: route)
@@ -316,7 +336,7 @@ struct CameraView: View {
                         await service.thumbnail(
                             for: rec,
                             targetSize: CGSize(width: 144, height: 144),
-                            deliveryMode: .opportunistic
+                            deliveryMode: .opportunistic,
                         )
                     },
                     coverThumbnailLoader: { rec in
@@ -327,9 +347,9 @@ struct CameraView: View {
                         // large enough that the transition doesn't look pixelated
                         // when scaled up, and PhotoKit can serve it from a much
                         // cheaper cached representation.
-                        return await service.thumbnail(
+                        await service.thumbnail(
                             for: rec,
-                            targetSize: CGSize(width: 500, height: 500)
+                            targetSize: CGSize(width: 500, height: 500),
                         )
                     },
                     resolveURL: { rec in
@@ -341,15 +361,16 @@ struct CameraView: View {
                             progress: { fraction in
                                 reporter.report(fraction)
                             },
-                            onStart: onStart
+                            onStart: onStart,
                         )
                         return result.url
                     },
                     onSelectRecording: { selected, _ in
                         // Do NOT overwrite viewModel.recordings.latestRecording here —
-                        // that would make the player reopen on the last-viewed video instead of the most recently recorded one. The RecordingPlayerView tracks its own @State activeRecording for in-session swiping.
+                        // that would make the player reopen on the last-viewed video instead of the most recently recorded one. The
+                        // RecordingPlayerView tracks its own @State activeRecording for in-session swiping.
                         viewModel.recordings.warmCarousel(around: selected)
-                    }
+                    },
                 )
             }
         }
@@ -362,11 +383,12 @@ struct CameraView: View {
                 },
                 onCancel: {
                     viewModel.dismissComposeSheet()
-                }
+                },
             )
         }
 
         // MARK: - 15: - Lifecycle
+
         .onAppear {
             viewModel.onAppear()
         }
@@ -374,7 +396,9 @@ struct CameraView: View {
             viewModel.onDisappear()
             viewModel.unlockFocusExposure()
         }
+
         // MARK: - State Observers
+
         .onChange(of: viewModel.modalQueue.activeSheet) { _, newValue in
             viewModel.handleSheetStateChanged(newValue)
         }
@@ -403,7 +427,7 @@ struct CameraView: View {
         PermissionAnalyticsService.trackOpenSettingsTapped(
             permission: runtimePermissionType,
             sourceSurface: .runtimeAlert,
-            snapshot: permissionService.policySnapshot
+            snapshot: permissionService.policySnapshot,
         )
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
@@ -411,7 +435,9 @@ struct CameraView: View {
 
     private var runtimePermissionType: PermissionAnalyticsPermission {
         let snapshot = permissionService.policySnapshot
-        if snapshot.camera == .denied || snapshot.camera == .restricted { return .camera }
+        if snapshot.camera == .denied || snapshot.camera == .restricted {
+            return .camera
+        }
         if snapshot.microphone == .denied || snapshot.microphone == .restricted {
             return .microphone
         }
@@ -422,11 +448,13 @@ struct CameraView: View {
     }
 
     // MARK: Teleprompter Layer Build
-    // VStack 2: Teleprompter viewport + Controls Band (VU · Record · Utility)
+
+    /// VStack 2: Teleprompter viewport + Controls Band (VU · Record · Utility)
     private func teleprompterLayer(teleprompterHeight: CGFloat) -> some View {
         let vpHeight: CGFloat = teleprompterHeight
         return VStack(spacing: 0) {
             // MARK: - 4: Teleprompter viewport
+
             TeleprompterOverlayView(
                 config: viewModel.config,
                 isScrolling: viewModel.isScrolling,
@@ -434,20 +462,20 @@ struct CameraView: View {
                 onTextHeightChanged: { measuredHeight in
                     let currentText = viewModel.config.text
                     if lastCenteredScriptText != currentText,
-                        measuredHeight > 0
+                       measuredHeight > 0
                     {
                         viewModel.resetTeleprompterPosition()
                         lastCenteredScriptText = currentText
                     }
-                }
+                },
             )
             .frame(height: vpHeight)
             .frame(maxWidth: .infinity)
             .ignoresSafeArea(.keyboard)
 
             // MARK: - 5: Controls Band (VU · Record · Utility)
-            HStack(alignment: .top) {
 
+            HStack(alignment: .top) {
                 VUMeterView(
                     level: viewModel.audioMeter.audioLevel,
                     peak: viewModel.audioMeter.audioPeak,
@@ -455,17 +483,17 @@ struct CameraView: View {
                     isRecording: viewModel.isRecording,
                     level2: viewModel.audioMeter.isStereoInput ? viewModel.audioMeter.audioLevel2 : nil,
                     peak2: viewModel.audioMeter.isStereoInput ? viewModel.audioMeter.audioPeak2 : nil,
-                    sourceNameHint: viewModel.audioMeter.audioSourceHint
+                    sourceNameHint: viewModel.audioMeter.audioSourceHint,
                 )
                 .frame(
                     width: CameraLayout.VUMeter.width,
-                    height: CameraLayout.VUMeter.height
+                    height: CameraLayout.VUMeter.height,
                 )
-                // expands padding inside frame. 
+                // expands padding inside frame.
                 .padding(Theme.space6)
-                // adds a rounded background to the VU meter frame. without it there is no background. 
+                // adds a rounded background to the VU meter frame. without it there is no background.
                 .roundedBackground()
-                // moves frame away from screen edge. 
+                // moves frame away from screen edge.
                 .padding(.leading, Theme.space8)
                 .onTapGesture {
                     viewModel.audioMeter.openAudioSourcePicker()
@@ -483,7 +511,7 @@ struct CameraView: View {
                     },
                     onScrollTap: {
                         viewModel.toggleScrolling()
-                    }
+                    },
                 )
 
                 Spacer()
@@ -496,18 +524,17 @@ struct CameraView: View {
                     },
                     onResetTap: {
                         viewModel.resetTeleprompterPosition()
-                    }
+                    },
                 )
                 .padding(.trailing, Theme.space8)
-
-            
             }
-          //  .padding(.horizontal, Theme.space12)
+            //  .padding(.horizontal, Theme.space12)
         }
     }
 
     // MARK: Top Row Build
-    // Camera Mode, format, EV, lock Controls
+
+    /// Camera Mode, format, EV, lock Controls
     private func cameraControlsRow() -> some View {
         let evValue = min(max(exposureBias, -exposureRange), exposureRange)
         let evText = String(format: "%.1f", evValue)
@@ -515,8 +542,8 @@ struct CameraView: View {
         // Build aperture label when cinematicApertureRange is available.
         let apertureText: String? =
             viewModel.cinematicApertureRange != nil
-            ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
-            : nil
+                ? String(format: "f/%.1f", viewModel.cinematicSimulatedAperture)
+                : nil
 
         return CameraControlsRowView(
             evText: evText,
@@ -551,11 +578,12 @@ struct CameraView: View {
             onTapLock: {
                 toggleLockStatus()
             },
-            isRecording: viewModel.isRecording
+            isRecording: viewModel.isRecording,
         )
     }
 
     // MARK: Footer Build
+
     // Buttons; photo picker, script, prompter controils, settings routes.
     // Returns: Configured footer controls view.
     private func cameraFooter() -> some View {
@@ -585,7 +613,7 @@ struct CameraView: View {
             // iCloud sync). `RecordingsGallery.refresh()` (via `viewModel.recordings`)
             // is already wired to PhotoLibraryChangeMonitor, so this stays in
             // sync automatically without adding another observer here.
-            latestRecordingID: viewModel.recordings.latestRecording?.id
+            latestRecordingID: viewModel.recordings.latestRecording?.id,
         )
     }
 
@@ -593,7 +621,7 @@ struct CameraView: View {
 
     /// Handles single tap to focus at the touched point.
     /// No-op while recording to prevent accidental refocus mid-take.
-    private func handlePreviewTap(devicePoint: CGPoint, viewPoint: CGPoint) {
+    private func handlePreviewTap(devicePoint: CGPoint, viewPoint _: CGPoint) {
         guard !viewModel.isRecording else { return }
         viewModel.focus(at: devicePoint)
         Log.ui.debug("Touch Focus at point")
@@ -641,7 +669,7 @@ struct CameraView: View {
                 },
                 onClose: {
                     viewModel.dismissActiveSheet()
-                }
+                },
             )
         case .composeScript:
             // Routed via .fullScreenCover above — this case should not be reached.

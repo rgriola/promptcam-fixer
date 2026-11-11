@@ -9,10 +9,16 @@ final class ExternalSceneDelegate: UIResponder, UIWindowSceneDelegate {
     nonisolated func scene(
         _ scene: UIScene,
         willConnectTo session: UISceneSession,
-        options connectionOptions: UIScene.ConnectionOptions
+        options _: UIScene.ConnectionOptions,
     ) {
         MainActor.assumeIsolated {
-            Log.hdmi.info("ExternalSceneDelegate.willConnect role=\(String(describing: session.role), privacy: .public) sceneClass=\(String(describing: type(of: scene)), privacy: .public)")
+            Log.hdmi
+                .info(
+                    """
+                    ExternalSceneDelegate.willConnect role=\(String(describing: session.role), privacy: .public) \
+                    sceneClass=\(String(describing: type(of: scene)), privacy: .public)
+                    """,
+                )
             guard let windowScene = scene as? UIWindowScene else {
                 Log.hdmi.error("ExternalSceneDelegate: scene is not UIWindowScene — ignoring")
                 return
@@ -34,7 +40,10 @@ final class ExternalSceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     nonisolated func sceneDidBecomeActive(_ scene: UIScene) {
         MainActor.assumeIsolated {
-            Log.hdmi.info("ExternalSceneDelegate.sceneDidBecomeActive activationState=\(String(describing: scene.activationState), privacy: .public)")
+            Log.hdmi
+                .info(
+                    "ExternalSceneDelegate.sceneDidBecomeActive activationState=\(String(describing: scene.activationState), privacy: .public)",
+                )
         }
     }
 }

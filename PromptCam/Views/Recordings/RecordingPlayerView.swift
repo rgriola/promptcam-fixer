@@ -14,7 +14,6 @@ import QuartzCore
 import SwiftUI
 
 struct RecordingPlayerView: View {
-
     @Environment(\.dismiss) private var dismiss
 
     /// Delete callback. Receives the **currently-active** recording (the one
@@ -30,12 +29,12 @@ struct RecordingPlayerView: View {
     /// Empty by default so the view is backward-compatible with existing callers.
     var recentRecordings: [Recording] = []
     /// Loads a thumbnail for a carousel cell on demand.
-    var thumbnailLoader: ((Recording) async -> UIImage?)? = nil
+    var thumbnailLoader: ((Recording) async -> UIImage?)?
     /// Loads a screen-sized still used for the prev/next drag peek slots.
     /// Falls back to thumbnailLoader when nil (may upscale a small thumbnail).
-    var coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil
+    var coverThumbnailLoader: ((Recording) async -> UIImage?)?
     /// Resolves a Recording to a playable URL — called when the carousel selects a new item.
-    var resolveURL: ((Recording) async -> URL?)? = nil
+    var resolveURL: ((Recording) async -> URL?)?
     /// Same as `resolveURL` but reports iCloud download progress (0.0–1.0)
     /// while the video is being fetched from iCloud. When both are provided,
     /// this one is used; the progress-less variant is kept for callers that
@@ -51,9 +50,9 @@ struct RecordingPlayerView: View {
     /// on dismiss, timeout, or when the user swipes to a different clip —
     /// preventing the orphaned-request leak that used to accumulate on rapid
     /// open/close cycles.
-    var resolveURLWithProgress: ((Recording, PlayerProgressReporter, @escaping @Sendable (PHImageRequestID) -> Void) async -> URL?)? = nil
+    var resolveURLWithProgress: ((Recording, PlayerProgressReporter, @escaping @Sendable (PHImageRequestID) -> Void) async -> URL?)?
     /// Called after a carousel selection so the parent ViewModel can stay in sync.
-    var onSelectRecording: ((Recording, URL?) async -> Void)? = nil
+    var onSelectRecording: ((Recording, URL?) async -> Void)?
 
     // MARK: - Player State
 
@@ -62,7 +61,7 @@ struct RecordingPlayerView: View {
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
-    @State private var duration: Double = 1        // 1 to avoid divide-by-zero
+    @State private var duration: Double = 1 // 1 to avoid divide-by-zero
     @State private var showControls = true
     @State private var showDeleteConfirmation = false
     @State private var hideControlsTask: Task<Void, Never>?
@@ -94,6 +93,7 @@ struct RecordingPlayerView: View {
     @State private var inFlightRequestID: PHImageRequestID?
 
     // MARK: - Full-screen pager state
+
     // Same mechanic as RecordingCarouselView, scaled up:
     //   slot width = screen width, spacing = 0
     //   slot[i] center = i * screenWidth  →  active slot at screenWidth * activeIndex
@@ -133,7 +133,7 @@ struct RecordingPlayerView: View {
         coverThumbnailLoader: ((Recording) async -> UIImage?)? = nil,
         resolveURL: ((Recording) async -> URL?)? = nil,
         resolveURLWithProgress: ((Recording, PlayerProgressReporter, @escaping @Sendable (PHImageRequestID) -> Void) async -> URL?)? = nil,
-        onSelectRecording: ((Recording, URL?) async -> Void)? = nil
+        onSelectRecording: ((Recording, URL?) async -> Void)? = nil,
     ) {
         self.onDelete = onDelete
         self.recentRecordings = recentRecordings
@@ -142,37 +142,36 @@ struct RecordingPlayerView: View {
         self.resolveURL = resolveURL
         self.resolveURLWithProgress = resolveURLWithProgress
         self.onSelectRecording = onSelectRecording
-        self._activeRecording = State(initialValue: recording)
-        self._activeURL = State(initialValue: videoURL)
+        _activeRecording = State(initialValue: recording)
+        _activeURL = State(initialValue: videoURL)
     }
 
     // MARK: - Body
 
     var body: some View {
         ZStack {
-
             // ── Full-screen pager ──────────────────────────────────────────
             // Slot[i] center = i * screenWidth. Active slot is always slot 0.
             // prev slot lives at -screenWidth + dragOffset
             // next slot lives at +screenWidth + dragOffset
             GeometryReader { geo in
-                let w = geo.size.width
+                let viewportWidth = geo.size.width
 
                 ZStack {
                     // Previous slot
                     if let thumb = prevThumbnail {
                         Image(uiImage: thumb)
                             .resizable().scaledToFill()
-                            .frame(width: w, height: geo.size.height).clipped()
-                            .offset(x: -w + dragOffset)
+                            .frame(width: viewportWidth, height: geo.size.height).clipped()
+                            .offset(x: -viewportWidth + dragOffset)
                     }
 
                     // Next slot
                     if let thumb = nextThumbnail {
                         Image(uiImage: thumb)
                             .resizable().scaledToFill()
-                            .frame(width: w, height: geo.size.height).clipped()
-                            .offset(x: w + dragOffset)
+                            .frame(width: viewportWidth, height: geo.size.height).clipped()
+                            .offset(x: viewportWidth + dragOffset)
                     }
 
                     // Active slot — live player or loading view
@@ -201,7 +200,7 @@ struct RecordingPlayerView: View {
                 .gesture(
                     DragGesture(minimumDistance: 10)
                         .onChanged { value in updateDrag(value) }
-                        .onEnded { value in commitDrag(value, width: w) }
+                        .onEnded { value in commitDrag(value, width: viewportWidth) },
                 )
                 .task(id: activeRecording.id) {
                     await loadAdjacentThumbnails()
@@ -212,7 +211,7 @@ struct RecordingPlayerView: View {
             // ── Control Overlay ────────────────────────────────────────────
             if showControls {
                 controlOverlay
-                  .transition(.opacity)
+                    .transition(.opacity)
             }
         }
         // ── Player Lifecycle ───────────────────────────────────────────────
@@ -228,7 +227,9 @@ struct RecordingPlayerView: View {
             guard activeURL == nil else { return }
             let url = await resolveURLWithReporting(activeRecording)
             activeURL = url
-            if url == nil { loadFailed = true }
+            if url == nil {
+                loadFailed = true
+            }
             await onSelectRecording?(activeRecording, url)
         }
         .onChange(of: recentRecordings) { _, newRecordings in
@@ -274,7 +275,7 @@ struct RecordingPlayerView: View {
             duration = 1
             let next = newRecordings.first!
             activeRecording = next
-            activeURL = nil        // triggers re-resolve via .task(id: activeURL)
+            activeURL = nil // triggers re-resolve via .task(id: activeURL)
             loadFailed = false
         }
         .onDisappear {
@@ -284,7 +285,7 @@ struct RecordingPlayerView: View {
         .confirmationDialog(
             "Delete Recording",
             isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
+            titleVisibility: .visible,
         ) {
             Button("Delete", role: .destructive) { onDelete(activeRecording) }
             Button("Cancel", role: .cancel) {}
@@ -349,14 +350,14 @@ struct RecordingPlayerView: View {
                     thumbnailLoader: loader,
                     onSelect: { selected in
                         selectRecording(selected)
-                    }
+                    },
                 )
             }
         }
     }
 
-
     // MARK: - Top Bar: Close / Share / Delete
+
     private var topBar: some View {
         HStack(spacing: Theme.space16) {
             // Close
@@ -364,9 +365,9 @@ struct RecordingPlayerView: View {
                 dismiss()
             } label: {
                 controlIcon(
-                    "xmark.circle.fill", 
-                    tint: Theme.primaryText
-                    )
+                    "xmark.circle.fill",
+                    tint: Theme.primaryText,
+                )
             }
             .accessibilityLabel("Close")
 
@@ -391,17 +392,16 @@ struct RecordingPlayerView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 10) {
-             
             // Play row: elapsed — play/pause — remaining
             HStack {
                 Text(formatTime(currentTime))
                     .font(Theme.mono16Medium)
                     .foregroundStyle(Theme.primaryText)
                     .monospacedDigit()
-                    .frame(minWidth: 44, alignment: .leading)  
+                    .frame(minWidth: 44, alignment: .leading)
 
                 Spacer()
-           
+
                 Text("-\(formatTime(max(0, duration - currentTime)))")
                     .font(Theme.mono16Medium)
                     .foregroundStyle(Theme.primaryText)
@@ -409,28 +409,27 @@ struct RecordingPlayerView: View {
                     .frame(minWidth: 44, alignment: .trailing)
             }
 
-            HStack{
+            HStack {
                 // Play / Pause
                 Button {
                     togglePlayPause()
                 } label: {
                     Image(
-                        systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(Theme.icon44)
-                        .foregroundStyle(Theme.white)
+                        systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill",
+                    )
+                    .font(Theme.icon44)
+                    .foregroundStyle(Theme.white)
                 }
                 .accessibilityLabel(isPlaying ? "Pause" : "Play")
                 // Scrubber
                 scrubber
             }
-
         }
         .padding(.top, Theme.space12)
         .padding(.horizontal, Theme.space16)
-        .padding(.bottom, Theme.space16)// clears the home indicator
+        .padding(.bottom, Theme.space16) // clears the home indicator
         .background(Theme.black.opacity(0.1))
         .frame(maxWidth: .infinity)
-            
     }
 
     private var scrubber: some View {
@@ -439,9 +438,9 @@ struct RecordingPlayerView: View {
                 get: { currentTime },
                 set: { newValue in
                     seek(to: newValue)
-                }
+                },
             ),
-            in: 0...max(duration, 0.001)
+            in: 0 ... max(duration, 0.001),
         )
         .accessibilityLabel("Playback position")
     }
@@ -451,11 +450,11 @@ struct RecordingPlayerView: View {
     private var shareButton: some View {
         ShareLink(
             item: VideoFile(url: activeURL ?? URL(fileURLWithPath: "")),
-            preview: SharePreview(activeRecording.formattedDuration)
+            preview: SharePreview(activeRecording.formattedDuration),
         ) {
             controlIcon(
                 "square.and.arrow.up.circle.fill",
-                tint: Theme.primaryText
+                tint: Theme.primaryText,
             )
         }
         .disabled(activeURL == nil)
@@ -469,22 +468,23 @@ struct RecordingPlayerView: View {
             .symbolRenderingMode(.palette)
             .font(Theme.icon44)
             .foregroundStyle(Theme.black, tint)
-            //.foregroundStyle(Theme.white)      
+        // .foregroundStyle(Theme.white)
     }
 
     // MARK: - Player Lifecycle
+
     // MARK: - Navigation Helpers
 
     private var prevRecording: Recording? {
-        guard let i = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
-              i > 0 else { return nil }
-        return recentRecordings[i - 1]
+        guard let index = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
+              index > 0 else { return nil }
+        return recentRecordings[index - 1]
     }
 
     private var nextRecording: Recording? {
-        guard let i = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
-              i < recentRecordings.count - 1 else { return nil }
-        return recentRecordings[i + 1]
+        guard let index = recentRecordings.firstIndex(where: { $0.id == activeRecording.id }),
+              index < recentRecordings.count - 1 else { return nil }
+        return recentRecordings[index + 1]
     }
 
     /// Loads thumbnails for the slots immediately before and after the active recording.
@@ -510,7 +510,7 @@ struct RecordingPlayerView: View {
             isHorizontalDrag = true
         }
 
-        let atLeftEdge  = dx > 0 && prevRecording == nil
+        let atLeftEdge = dx > 0 && prevRecording == nil
         let atRightEdge = dx < 0 && nextRecording == nil
         dragOffset = (atLeftEdge || atRightEdge)
             ? dx * PagerConstants.rubberBandFactor
@@ -518,18 +518,18 @@ struct RecordingPlayerView: View {
     }
 
     /// On release: commit to prev/next if past threshold, otherwise snap back.
-    private func commitDrag(_ value: DragGesture.Value, width w: CGFloat) {
+    private func commitDrag(_ value: DragGesture.Value, width: CGFloat) {
         defer { isHorizontalDrag = false }
 
         let dx = value.translation.width
         let vx = value.velocity.width
-        let threshold = w / 3
+        let threshold = width / 3
         let minDx = PagerConstants.minCommitDistance
         let vt = PagerConstants.velocityThreshold
 
-        if (dx < -threshold || (vx < -vt && dx < -minDx)), let next = nextRecording {
+        if dx < -threshold || (vx < -vt && dx < -minDx), let next = nextRecording {
             commitNavigation(to: next)
-        } else if (dx > threshold || (vx > vt && dx > minDx)), let prev = prevRecording {
+        } else if dx > threshold || (vx > vt && dx > minDx), let prev = prevRecording {
             commitNavigation(to: prev)
         } else {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { dragOffset = 0 }
@@ -559,8 +559,8 @@ struct RecordingPlayerView: View {
         // Cancel any in-flight resolve from the previous recording so we don't
         // leak PhotoKit requests as the user rapidly swipes through the carousel.
         cancelInFlightResolve()
-        loadFailed = false                                // reset before new attempt
-        activeURL = nil                                   // triggers .task(id: activeRecording.id)
+        loadFailed = false // reset before new attempt
+        activeURL = nil // triggers .task(id: activeRecording.id)
         activeRecording = selected
     }
 
@@ -602,7 +602,7 @@ struct RecordingPlayerView: View {
         // actually work — by the time the await returns, the request is done.
         let onStart: @Sendable (PHImageRequestID) -> Void = { id in
             Task { @MainActor in
-                self.inFlightRequestID = id
+                inFlightRequestID = id
             }
         }
 
@@ -610,7 +610,7 @@ struct RecordingPlayerView: View {
             if let progressLoader = resolveURLWithProgress {
                 let reporter = PlayerProgressReporter { fraction in
                     Task { @MainActor in
-                        self.downloadProgress = fraction
+                        downloadProgress = fraction
                     }
                 }
                 return await progressLoader(recording, reporter, onStart)
@@ -633,7 +633,7 @@ struct RecordingPlayerView: View {
         let timeoutTask = Task {
             try? await Task.sleep(for: .seconds(60))
             guard !Task.isCancelled else { return }
-            await MainActor.run { self.cancelInFlightResolve() }
+            await MainActor.run { cancelInFlightResolve() }
             resolveTask.cancel()
         }
 
@@ -690,9 +690,9 @@ struct RecordingPlayerView: View {
             CATransaction.commit()
         } else {
             // First load — create the player and install the time observer once.
-            let p = AVPlayer(playerItem: item)
-            player = p
-            installTimeObserver(on: p)
+            let newPlayer = AVPlayer(playerItem: item)
+            player = newPlayer
+            installTimeObserver(on: newPlayer)
         }
 
         // Reset per-item UI state.
@@ -702,23 +702,23 @@ struct RecordingPlayerView: View {
         showControls = true
 
         Task {
-            let d = try? await item.asset.load(.duration)
-            if let d, d.isNumeric {
-                await MainActor.run { duration = d.seconds }
+            let itemDuration = try? await item.asset.load(.duration)
+            if let itemDuration, itemDuration.isNumeric {
+                await MainActor.run { duration = itemDuration.seconds }
             }
         }
     }
 
     /// Installs the periodic time observer. Only called once per player
     /// instance since we now reuse the same AVPlayer across items.
-    private func installTimeObserver(on p: AVPlayer) {
+    private func installTimeObserver(on observedPlayer: AVPlayer) {
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        let token = p.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak p] time in
+        let token = observedPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak observedPlayer] time in
             // queue: .main guarantees main-thread execution — assumeIsolated is safe here.
             MainActor.assumeIsolated {
-                guard let p else { return }
+                guard let observedPlayer else { return }
                 currentTime = time.seconds
-                isPlaying = p.rate > 0
+                isPlaying = observedPlayer.rate > 0
                 if time.seconds >= duration - 0.2 {
                     isPlaying = false
                 }
@@ -749,8 +749,8 @@ struct RecordingPlayerView: View {
         statusObservation?.invalidate()
         statusObservation = nil
 
-        if let token = timeObserverToken, let p = player {
-            p.removeTimeObserver(token)
+        if let token = timeObserverToken, let currentPlayer = player {
+            currentPlayer.removeTimeObserver(token)
         }
         timeObserverToken = nil
 
@@ -797,23 +797,26 @@ struct RecordingPlayerView: View {
     }
 
     // MARK: - Controls Auto-Hide
+
     private func scheduleControlsHide() {
         hideControlsTask?.cancel()
         hideControlsTask = Task {
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 2.0)) { 
-                            showControls = false }
+            withAnimation(.easeInOut(duration: 2.0)) {
+                showControls = false
+            }
         }
     }
 
     // MARK: - Time Formatting
+
     private func formatTime(_ seconds: Double) -> String {
         guard seconds.isFinite else { return "0:00" }
         let totalSeconds = Int(seconds)
-        let m = totalSeconds / 60
-        let s = totalSeconds % 60
-        return String(format: "%d:%02d", m, s)
+        let minutes = totalSeconds / 60
+        let secondsComponent = totalSeconds % 60
+        return String(format: "%d:%02d", minutes, secondsComponent)
     }
 }
 
@@ -835,7 +838,7 @@ struct VideoFile: Transferable {
             importing: { _ in
                 // Export-only — importing not supported in this app.
                 throw CocoaError(.fileReadUnknown)
-            }
+            },
         )
     }
 }

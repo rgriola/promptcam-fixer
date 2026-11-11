@@ -16,17 +16,17 @@ struct VideoModeBadgeView: View {
     let mode: VideoMode
     /// Formatted aperture label (e.g. "f/5.6"). Nil when not in cinematic mode
     /// or when the device/OS does not support aperture control (pre-iOS 26).
-    var apertureText: String? = nil
+    var apertureText: String?
     /// Action fired when the user taps the aperture label.
     /// Ignored when `apertureText` is nil.
-    var onTapAperture: (() -> Void)? = nil
+    var onTapAperture: (() -> Void)?
 
     // MARK: - Private helpers
 
     private var modeColor: Color {
         switch mode {
-        case .standard:  return Theme.primaryText
-        case .cinematic: return Theme.accent
+        case .standard: Theme.primaryText
+        case .cinematic: Theme.accent
         }
     }
 

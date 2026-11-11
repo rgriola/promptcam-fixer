@@ -21,11 +21,11 @@ struct CameraLockStatusBadgeView: View {
     private var statusColor: Color {
         switch status {
         case .auto:
-            return Theme.white
+            Theme.white
         case .unsupported:
-            return Theme.red
+            Theme.red
         case .aeAfLocked, .aeLocked, .afLocked:
-            return Theme.yellow
+            Theme.yellow
         }
     }
 
@@ -64,7 +64,7 @@ struct CameraLockStatusBadgeView: View {
         .accessibilityLabel("Focus and exposure lock")
         .accessibilityHint(
             isDisabled
-                ? "Auto Only in Cine Mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock")
+                ? "Auto Only in Cine Mode" : (status.isLocked ? "Tap to unlock" : "Tap to lock"),
         )
         .accessibilityValue(status.text)
     }

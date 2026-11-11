@@ -7,19 +7,28 @@ import SwiftUI
 struct CleanPreviewView: UIViewRepresentable {
     let session: AVCaptureSession?
 
-    func makeUIView(context: Context) -> PreviewView {
+    func makeUIView(context _: Context) -> PreviewView {
         let view = PreviewView()
         view.previewLayer.videoGravity = .resizeAspectFill
         view.previewLayer.session = session
         view.backgroundColor = .black
-        Log.hdmi.info("CleanPreviewView.makeUIView session=\(self.session != nil ? "set" : "nil", privacy: .public) running=\(self.session?.isRunning == true, privacy: .public)")
+        Log.hdmi
+            .info(
+                "CleanPreviewView.makeUIView session=\(self.session != nil ? "set" : "nil", privacy: .public) running=\(self.session?.isRunning == true, privacy: .public)",
+            )
         return view
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {
+    func updateUIView(_ uiView: PreviewView, context _: Context) {
         if uiView.previewLayer.session !== session {
             uiView.previewLayer.session = session
-            Log.hdmi.info("CleanPreviewView.updateUIView rebound session=\(self.session != nil ? "set" : "nil", privacy: .public) running=\(self.session?.isRunning == true, privacy: .public)")
+            Log.hdmi
+                .info(
+                    """
+                    CleanPreviewView.updateUIView rebound session=\(self.session != nil ? "set" : "nil", privacy: .public) \
+                    running=\(self.session?.isRunning == true, privacy: .public)
+                    """,
+                )
         }
     }
 }

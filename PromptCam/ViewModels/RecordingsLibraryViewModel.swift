@@ -57,12 +57,12 @@ final class RecordingsLibraryViewModel {
         Log.recordings.info("Refreshed \(self.recordings.count, privacy: .public) recordings")
     }
 
-    func thumbnail(for r: Recording, size: CGSize) async -> UIImage? {
-        await service.thumbnail(for: r, targetSize: size)
+    func thumbnail(for recording: Recording, size: CGSize) async -> UIImage? {
+        await service.thumbnail(for: recording, targetSize: size)
     }
 
-    func exportForSharing(_ r: Recording) async -> URL? {
-        await service.exportForSharing(r)
+    func exportForSharing(_ recording: Recording) async -> URL? {
+        await service.exportForSharing(recording)
     }
 
     func startCaching(ids: [String], size: CGSize) {

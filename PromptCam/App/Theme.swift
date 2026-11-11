@@ -7,17 +7,17 @@ enum FontFamily {
     case custom(String)
 
     func font(
-            size: CGFloat, 
-            weight: Font.Weight = .regular
-            ) -> Font {
-                        switch self {
-                                case .system:
-                                    return .system(size: size, weight: weight)
-                                
-                                case .custom(let name):
-                                    return .custom(name, size: size)
-                            }
+        size: CGFloat,
+        weight: Font.Weight = .regular,
+    ) -> Font {
+        switch self {
+        case .system:
+            .system(size: size, weight: weight)
+
+        case let .custom(name):
+            .custom(name, size: size)
         }
+    }
 
     func mono(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight, design: .monospaced)
@@ -31,7 +31,7 @@ enum FontFamily {
 enum VUColor {
     // colors the VU Meter
     static let peak = Color(hex: "#00FA47") // top color
-    static let stepFour = Color(hex: "#00CC3A")       
+    static let stepFour = Color(hex: "#00CC3A")
     static let stepThree = Color(hex: "#FAC400")
     static let stepTwo = Color(hex: "#CCA000") // oscar
     static let stepOne = Color(hex: "#F5F5F5")
@@ -41,7 +41,7 @@ enum VUColor {
 enum Theme {
     static let fontFamily: FontFamily = .system
 
-    // Typography (even sizes only)
+    /// Typography (even sizes only)
     static let font08Regular = fontFamily.font(size: 8)
 
     static let font10Regular = fontFamily.font(size: 10)
@@ -85,7 +85,6 @@ enum Theme {
     static let icon38 = fontFamily.font(size: 38)
     static let icon44 = fontFamily.font(size: 44)
 
-
     // Display
     static let display24 = fontFamily.font(size: 24)
     static let display28Bold = fontFamily.font(size: 28, weight: .bold)
@@ -97,13 +96,13 @@ enum Theme {
     static let black = Color(hex: "#111111")
     static let white = Color(hex: "#F5F5F5")
     static let accent = Color(hex: "#FFD700")
-    // FFD700/ Goldish for Oscar 
+    // FFD700/ Goldish for Oscar
 
     static let blue = Color(hex: "#0012CC")
     static let green = Color(hex: "#00CC3A")
     static let red = Color(hex: "#cc0000") // CNN Red
     static let redTwo = Color(hex: "#a80000")
-   
+
     static let yellow = Color(hex: "#FFD60A")
     static let yellowTwo = Color(hex: "#CCA000")
 
@@ -122,7 +121,7 @@ enum Theme {
     static let glassOverlay = Color.white.opacity(0.2)
     static let glassBorder = Color.white.opacity(0.12)
 
-    // Materials - we don't use glass 
+    // Materials - we don't use glass
     // static let glassMaterial: Material = .ultraThinMaterial
 
     // Radii
@@ -131,10 +130,10 @@ enum Theme {
     static let radiusLg: CGFloat = 16
     static let radiusXl: CGFloat = 20
 
-    // Teleprompter
+    /// Teleprompter
     static let teleprompterHPad: CGFloat = 24
 
-    // Animations - Standard spring for panel show/hide transitions 
+    // Animations - Standard spring for panel show/hide transitions
     // (EV, aperture, adjustment).
     static let panelSpring: Animation = .spring(response: 0.35, dampingFraction: 0.8)
     static let easeInOut3: Animation = .easeInOut(duration: 0.3)
@@ -153,26 +152,28 @@ enum Theme {
 
     static let purple = Color(hex: "#8576EE")
 
-    /*static let bgGrad = LinearGradient(
-                            colors: [Theme.black, Theme.purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                            )
-    */
+    /* static let bgGrad = LinearGradient(
+                             colors: [Theme.black, Theme.purple],
+                             startPoint: .topLeading,
+                             endPoint: .bottomTrailing
+                             )
+     */
 
     static let bgGrad = LinearGradient(
-                            colors: [Theme.black, Theme.redTwo],
-                            startPoint: .leading,
-                            endPoint: .bottomTrailing
-                            )
+        colors: [Theme.black, Theme.redTwo],
+        startPoint: .leading,
+        endPoint: .bottomTrailing,
+    )
 }
 
 // MARK: - View Extensions
+
 extension View {
     /// Applies a subtle card background: dark fill with light border.
     func cardBackground(
-        cornerRadius: CGFloat = Theme.radiusMd) -> some View {
-        self.background {
+        cornerRadius: CGFloat = Theme.radiusMd,
+    ) -> some View {
+        background {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(Theme.black.opacity(0.1))
                 .overlay {
@@ -183,20 +184,18 @@ extension View {
     }
 
     func roundedBackground(
-        fill: Color = Theme.black.opacity(0.3)
-        ) -> some View {
-            self.background {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(fill)
-            }
+        fill: Color = Theme.black.opacity(0.3),
+    ) -> some View {
+        background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(fill)
+        }
     }
 
     func settingsSectionHeaderStyle() -> some View {
-        self
-            .listRowBackground(Theme.black.opacity(0.1))
+        listRowBackground(Theme.black.opacity(0.1))
             .foregroundStyle(Theme.white)
     }
-
 }
 
 extension Color {
@@ -204,24 +203,23 @@ extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
-            
+
         Scanner(string: hex).scanHexInt64(&int)
 
-        let a, r, g, b: UInt64
-        
-            switch hex.count {
-                case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-                
-                case 8: (a, r, g, b) = (int >> 24, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-                
-                default: (a, r, g, b) = (255, 0, 0, 0)
-                }
+        let alpha, red, green, blue: UInt64
+
+        switch hex.count {
+        case 6: (alpha, red, green, blue) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+
+        case 8: (alpha, red, green, blue) = (int >> 24, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+
+        default: (alpha, red, green, blue) = (255, 0, 0, 0)
+        }
 
         self.init(.sRGB,
-                    red: Double(r) / 255,
-                    green: Double(g) / 255,
-                    blue: Double(b) / 255,
-                    opacity: Double(a) / 255
-                )
-        }
+                  red: Double(red) / 255,
+                  green: Double(green) / 255,
+                  blue: Double(blue) / 255,
+                  opacity: Double(alpha) / 255)
+    }
 }

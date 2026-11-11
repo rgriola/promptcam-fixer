@@ -10,19 +10,18 @@ import SwiftUI
 /// Setting `showsPlaybackControls = false` removes ALL native chrome —
 /// no AirPlay, no PiP, no Done button — giving us a clean video canvas.
 struct AVPlayerHostingView: UIViewControllerRepresentable {
-
     let player: AVPlayer
 
-    func makeUIViewController(context: Context) -> AVPlayerViewController {
+    func makeUIViewController(context _: Context) -> AVPlayerViewController {
         let vc = AVPlayerViewController()
         vc.player = player
-        vc.showsPlaybackControls = false          // ← removes all native chrome
+        vc.showsPlaybackControls = false // ← removes all native chrome
         vc.allowsPictureInPicturePlayback = false // ← no PiP
         vc.videoGravity = .resizeAspect
         return vc
     }
 
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context _: Context) {
         // Player reference stays stable; no updates needed.
         if uiViewController.player !== player {
             uiViewController.player = player

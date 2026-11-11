@@ -1,8 +1,11 @@
-// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 4: extract ScrollingTeleprompterText, TeleprompterMeasurement, TeleprompterDebugHUD
-// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add edge-fade mask and eyeline triangle indicator
-// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Tap-hold-drag: bake-in auto offset on drag start, rebase scrollStartTime on drag end, add minimumDistance to protect neighboring buttons
-import SwiftUI
 import os
+
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Phase 4: extract ScrollingTeleprompterText, TeleprompterMeasurement,
+// TeleprompterDebugHUD
+// June 4, 2026 - GitHub Copilot (Claude Sonnet 4.6) - Add edge-fade mask and eyeline triangle indicator
+// July 8, 2026 - GitHub Copilot (Claude Opus 4.7) - Tap-hold-drag: bake-in auto offset on drag start, rebase scrollStartTime on drag end,
+// add minimumDistance to protect neighboring buttons
+import SwiftUI
 
 /// Diagnostic HUD overlay. Keep off for normal use; flip true while debugging offset math.
 private let kTeleprompterDebugHUD = false
@@ -11,8 +14,8 @@ private let kTeleprompterDebugHUD = false
 
 @inline(__always)
 private func tp(_ msg: @autoclosure () -> String) {
-    let m = msg()
-    Log.teleprompter.debug("\(m, privacy: .public)")
+    let message = msg()
+    Log.teleprompter.debug("\(message, privacy: .public)")
 }
 
 struct TeleprompterOverlayView: View {
@@ -42,14 +45,14 @@ struct TeleprompterOverlayView: View {
                     TimelineView(.animation(minimumInterval: 1 / 60)) { context in
                         let totalY = computeOffset(
                             elapsed: context.date.timeIntervalSince(scrollStartTime),
-                            viewportHeight: proxy.size.height
+                            viewportHeight: proxy.size.height,
                         )
                         ScrollingTeleprompterText(
                             text: config.displayText,
                             fontSize: config.fontSize,
                             textColor: config.textColor.color,
                             alignment: config.textAlignment.swiftUIAlignment,
-                            offsetY: totalY
+                            offsetY: totalY,
                         )
                     }
                 } else {
@@ -58,7 +61,7 @@ struct TeleprompterOverlayView: View {
                         fontSize: config.fontSize,
                         textColor: config.textColor.color,
                         alignment: config.textAlignment.swiftUIAlignment,
-                        offsetY: staticOffsetY
+                        offsetY: staticOffsetY,
                     )
                 }
             }
@@ -100,7 +103,7 @@ struct TeleprompterOverlayView: View {
                             // Update static snapshot so the paused branch shows correct position.
                             staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
                         }
-                    }
+                    },
             )
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(Theme.overlayScrim.opacity(config.backgroundOpacity))
@@ -139,7 +142,7 @@ struct TeleprompterOverlayView: View {
                             isScrolling: isScrolling,
                             scrollStartTime: scrollStartTime,
                             viewportH: proxy.size.height,
-                            date: context.date
+                            date: context.date,
                         )
                     }
                     .allowsHitTesting(false)
@@ -158,16 +161,25 @@ struct TeleprompterOverlayView: View {
             .onChange(of: proxy.size.height) { _, newValue in
                 tp("viewport size change \(Int(viewportHeight)) -> \(Int(newValue))")
                 viewportHeight = newValue
-                if !isScrolling { resetScrollPosition() }
+                if !isScrolling {
+                    resetScrollPosition()
+                }
             }
             .onChange(of: resetToken) { _, _ in
                 let geo = TeleprompterGeometry(
                     viewportHeight: viewportHeight,
                     textHeight: max(measuredTextHeight, 1),
                     fontSize: CGFloat(config.fontSize),
-                    verticalPadding: Theme.space16
+                    verticalPadding: Theme.space16,
                 )
-                tp("RESET manualOffset \(Int(manualOffset)) -> 0 | startOffset=\(Int(geo.startOffset)) floor=\(Int(geo.scrollStopOffset)) ceil=\(Int(geo.dragCeiling)) vpH=\(Int(viewportHeight)) textH=\(Int(measuredTextHeight)) lineH=\(Int(geo.lineHeight))")
+                tp(
+                    """
+                    RESET manualOffset \(Int(manualOffset)) -> 0 | \
+                    startOffset=\(Int(geo.startOffset)) floor=\(Int(geo.scrollStopOffset)) \
+                    ceil=\(Int(geo.dragCeiling)) vpH=\(Int(viewportHeight)) \
+                    textH=\(Int(measuredTextHeight)) lineH=\(Int(geo.lineHeight))
+                    """,
+                )
                 manualOffset = 0
                 resetScrollPosition()
             }
@@ -182,13 +194,15 @@ struct TeleprompterOverlayView: View {
 
     private func remeasureText(width: CGFloat) {
         guard let total = measureTeleprompterTextHeight(
-            text: config.displayText, fontSize: config.fontSize, viewWidth: width
+            text: config.displayText, fontSize: config.fontSize, viewWidth: width,
         ) else { return }
         if abs(measuredTextHeight - total) > 0.5 {
             tp("MEASURE width=\(Int(width)) textLen=\(config.displayText.count) -> textH=\(Int(total)) (was \(Int(measuredTextHeight)))")
             measuredTextHeight = total
             onTextHeightChanged(total)
-            if !isScrolling { resetScrollPosition() }
+            if !isScrolling {
+                resetScrollPosition()
+            }
         }
     }
 
@@ -201,7 +215,7 @@ struct TeleprompterOverlayView: View {
             viewportHeight: viewportHeight,
             textHeight: max(measuredTextHeight, 1),
             fontSize: CGFloat(config.fontSize),
-            verticalPadding: Theme.space16
+            verticalPadding: Theme.space16,
         )
         let baseOffset = geometry.startOffset
         let autoOffset = (isScrolling && !isUserDragging) ? -elapsed * config.speedPointsPerSecond : 0
@@ -231,18 +245,17 @@ struct TeleprompterOverlayView: View {
             staticOffsetY = computeOffset(elapsed: 0, viewportHeight: viewportHeight)
         }
     }
-
 }
 
 /// Arrow pointing left — indicates the talent's eyeline focus point
 /// at the top-right edge of the teleprompter viewport.
 private struct EyelineTriangle: Shape {
     func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.maxX, y: rect.minY))  // top-right
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // bottom-right
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.midY)) // left point (arrow tip)
-        p.closeSubpath()
-        return p
+        var trianglePath = Path()
+        trianglePath.move(to: CGPoint(x: rect.maxX, y: rect.minY)) // top-right
+        trianglePath.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // bottom-right
+        trianglePath.addLine(to: CGPoint(x: rect.minX, y: rect.midY)) // left point (arrow tip)
+        trianglePath.closeSubpath()
+        return trianglePath
     }
 }

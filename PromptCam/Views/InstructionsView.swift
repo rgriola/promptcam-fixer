@@ -6,7 +6,7 @@ struct InstructionsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentPage = 0
 
-    private let pageCount = 1  // Start with one page, more can be added later
+    private let pageCount = 1 // Start with one page, more can be added later
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -18,7 +18,7 @@ struct InstructionsView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: pageCount > 1 ? .always : .never))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
-        
+
             // Close button
             CloseButton { dismiss() }
         }

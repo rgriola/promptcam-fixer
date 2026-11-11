@@ -2,7 +2,6 @@
 import XCTest
 
 final class AudioMeterServiceTests: XCTestCase {
-
     // MARK: - normalizeDecibels
 
     func testNormalizeDecibels_silence_returnsZero() {

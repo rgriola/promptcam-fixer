@@ -9,16 +9,16 @@ import SwiftUI
 struct CloseButton: View {
     /// Action to perform when the button is tapped (typically dismiss).
     let action: () -> Void
-    
+
     /// Icon color. Defaults to secondary text for subtle appearance.
     var iconColor: Color = Theme.white
-    
+
     /// Icon size. Defaults to 16pt icon size from Theme.
     var iconSize: Font = Theme.icon20
-    
+
     /// Padding around the tappable area.
     var padding: CGFloat = Theme.space16
-    
+
     var body: some View {
         Button(action: action) {
             Image(systemName: "xmark")
@@ -37,10 +37,10 @@ struct CloseButton: View {
 struct CloseToolbarButton: View {
     /// Action to perform when the button is tapped (typically dismiss).
     let action: () -> Void
-    
+
     /// Button label text for accessibility. Defaults to "Close".
     var label: String = "Close"
-    
+
     var body: some View {
         Button(action: action) {
             Image(systemName: "xmark")

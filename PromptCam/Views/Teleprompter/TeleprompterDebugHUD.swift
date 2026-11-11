@@ -17,7 +17,7 @@ struct TeleprompterDebugHUD: View {
             viewportHeight: viewportH,
             textHeight: max(measuredTextHeight, 1),
             fontSize: CGFloat(config.fontSize),
-            verticalPadding: Theme.space16
+            verticalPadding: Theme.space16,
         )
         let elapsed = date.timeIntervalSince(scrollStartTime)
         let autoOff = isScrolling ? -elapsed * config.speedPointsPerSecond : 0
@@ -41,7 +41,7 @@ struct TeleprompterDebugHUD: View {
         .background(Color.black.opacity(0.85))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.red, lineWidth: 1)
+                .stroke(Color.red, lineWidth: 1),
         )
         .cornerRadius(6)
         .padding(8)

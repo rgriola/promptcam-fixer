@@ -5,13 +5,12 @@
 // only touches the parameter through PHPhotoLibraryChangeObserver's signature
 // (it does not dereference change details).
 
-import XCTest
 import Photos
 @testable import PromptCam
+import XCTest
 
 @MainActor
 final class PhotoLibraryChangeMonitorTests: XCTestCase {
-
     // MARK: - Fake library
 
     /// Records register/unregister calls and holds a reference to the
@@ -22,9 +21,17 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
         private var _unregisterCount = 0
         private weak var _observer: PHPhotoLibraryChangeObserver?
 
-        var registerCount: Int { lock.withLock { _registerCount } }
-        var unregisterCount: Int { lock.withLock { _unregisterCount } }
-        var observer: PHPhotoLibraryChangeObserver? { lock.withLock { _observer } }
+        var registerCount: Int {
+            lock.withLock { _registerCount }
+        }
+
+        var unregisterCount: Int {
+            lock.withLock { _unregisterCount }
+        }
+
+        var observer: PHPhotoLibraryChangeObserver? {
+            lock.withLock { _observer }
+        }
 
         func register(_ observer: PHPhotoLibraryChangeObserver) {
             lock.withLock {
@@ -36,7 +43,9 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
         func unregister(_ observer: PHPhotoLibraryChangeObserver) {
             lock.withLock {
                 _unregisterCount += 1
-                if _observer === observer { _observer = nil }
+                if _observer === observer {
+                    _observer = nil
+                }
             }
         }
     }
@@ -61,7 +70,7 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
         let library = FakeLibrary()
         let monitor = PhotoLibraryChangeMonitor(library: library)
 
-        monitor.start { }
+        monitor.start {}
 
         XCTAssertEqual(library.registerCount, 1)
         XCTAssertTrue(library.observer === monitor)
@@ -71,8 +80,8 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
         let library = FakeLibrary()
         let monitor = PhotoLibraryChangeMonitor(library: library)
 
-        monitor.start { }
-        monitor.start { }
+        monitor.start {}
+        monitor.start {}
 
         XCTAssertEqual(library.registerCount, 1, "second start() must be a no-op")
     }
@@ -81,7 +90,7 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
         let library = FakeLibrary()
         let monitor = PhotoLibraryChangeMonitor(library: library)
 
-        monitor.start { }
+        monitor.start {}
         monitor.stop()
 
         XCTAssertEqual(library.unregisterCount, 1)
@@ -129,7 +138,9 @@ final class PhotoLibraryChangeMonitorTests: XCTestCase {
             XCTFail("Observer not registered"); return
         }
         // Fire 5 changes back-to-back within the debounce window.
-        for _ in 0..<5 { fireChange(on: observer) }
+        for _ in 0 ..< 5 {
+            fireChange(on: observer)
+        }
 
         await fulfillment(of: [expectation], timeout: 1.0)
         // Wait a bit longer to prove no additional callbacks fire.

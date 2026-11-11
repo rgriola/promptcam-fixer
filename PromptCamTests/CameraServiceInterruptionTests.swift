@@ -11,12 +11,11 @@
 // `test_deinit_removesObservers_soHandlerDoesNotFireAfterDealloc` using an
 // isolated `NotificationCenter` injected into the service.
 
-import XCTest
 import AVFoundation
 @testable import PromptCam
+import XCTest
 
 final class CameraServiceInterruptionTests: XCTestCase {
-
     // MARK: - Helpers
 
     /// Creates a service bound to an isolated `NotificationCenter` so posts
@@ -51,7 +50,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
         onSessionQueue(service) {
             service.isSessionConfigured = true
             service.handleInterruption(
-                reasonRaw: AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue
+                reasonRaw: AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue,
             )
         }
 
@@ -71,7 +70,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
         onSessionQueue(service) {
             service.isSessionConfigured = true
             service.handleInterruption(
-                reasonRaw: AVCaptureSession.InterruptionReason.videoDeviceNotAvailableInBackground.rawValue
+                reasonRaw: AVCaptureSession.InterruptionReason.videoDeviceNotAvailableInBackground.rawValue,
             )
         }
 
@@ -115,7 +114,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
         onSessionQueue(service) {
             service.isSessionConfigured = true
             service.handleInterruption(
-                reasonRaw: AVCaptureSession.InterruptionReason.videoDeviceNotAvailableWithMultipleForegroundApps.rawValue
+                reasonRaw: AVCaptureSession.InterruptionReason.videoDeviceNotAvailableWithMultipleForegroundApps.rawValue,
             )
         }
 
@@ -175,7 +174,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
         let cachedFormat = RecordingFormat(
             resolution: .hd1080p,
             frameRate: .fps30,
-            mode: .standard
+            mode: .standard,
         )
         onSessionQueue(service) {
             service.isSessionConfigured = true
@@ -206,7 +205,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
         let expectation = expectation(description: "onError fires with sessionRuntimeError")
         await MainActor.run {
             service.onError = { error in
-                if case .sessionRuntimeError(let detail) = error {
+                if case let .sessionRuntimeError(detail) = error {
                     XCTAssertEqual(detail, "boom",
                                    "Detail string from the AVError must be forwarded verbatim.")
                     expectation.fulfill()
@@ -262,7 +261,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
             name: AVCaptureSession.wasInterruptedNotification,
             object: capturedSession,
             userInfo: [AVCaptureSessionInterruptionReasonKey:
-                        AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue]
+                AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue],
         )
         // If we're still alive here, `removeObserver(self)` did its job.
     }
@@ -284,7 +283,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
             name: AVCaptureSession.wasInterruptedNotification,
             object: service.session,
             userInfo: [AVCaptureSessionInterruptionReasonKey:
-                        AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue]
+                AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue],
         )
         drainSessionQueue(service)
 
@@ -310,7 +309,7 @@ final class CameraServiceInterruptionTests: XCTestCase {
             name: AVCaptureSession.wasInterruptedNotification,
             object: otherSession,
             userInfo: [AVCaptureSessionInterruptionReasonKey:
-                        AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue]
+                AVCaptureSession.InterruptionReason.audioDeviceInUseByAnotherClient.rawValue],
         )
         drainSessionQueue(service)
 

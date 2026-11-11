@@ -18,16 +18,17 @@ import SwiftUI
 /// Dragging moves adjacent cells into center; on release the nearest cell
 /// spring-snaps to center and `onSelect` is called for that recording.
 struct RecordingCarouselView: View {
-
     let recordings: [Recording]
     let activeRecordingID: String
     let thumbnailLoader: (Recording) async -> UIImage?
     let onSelect: (Recording) -> Void
 
-    private let cellWidth:  CGFloat = 84
+    private let cellWidth: CGFloat = 84
     private let cellHeight: CGFloat = 84
-    private let spacing:    CGFloat = 10
-    private var slotWidth:  CGFloat { cellWidth + spacing }
+    private let spacing: CGFloat = 10
+    private var slotWidth: CGFloat {
+        cellWidth + spacing
+    }
 
     /// Offset index: baseOffset = -i * slotWidth centers item i.
     @State private var baseOffset: CGFloat = 0
@@ -41,11 +42,12 @@ struct RecordingCarouselView: View {
             // Offset so item 0's left edge starts at (screenWidth-cellWidth)/2,
             // placing item 0's center at screenWidth/2.
             let centerInitial = (geo.size.width - cellWidth) / 2
-            let totalOffset   = centerInitial + baseOffset + dragOffset
+            let totalOffset = centerInitial + baseOffset + dragOffset
 
             HStack(spacing: spacing) {
-                ForEach(Array(recordings.enumerated()), 
-                         id: \.element.id) { index, recording in
+                ForEach(Array(recordings.enumerated()),
+                        id: \.element.id)
+                { _, recording in
                     let isActive = recording.id == activeRecordingID
 
                     CarouselCell(
@@ -54,7 +56,7 @@ struct RecordingCarouselView: View {
                         cellWidth: cellWidth,
                         cellHeight: cellHeight,
                         thumbnailLoader: thumbnailLoader,
-                        networkConnected: networkMonitor.isConnected
+                        networkConnected: networkMonitor.isConnected,
                     )
                     // Force distinct view identity per recording so @State
                     // (thumbnail, loadAttempt, loadFailed) never leaks across
@@ -77,7 +79,7 @@ struct RecordingCarouselView: View {
                         TapGesture().onEnded {
                             guard !isActive else { return }
                             onSelect(recording)
-                        }
+                        },
                     )
                 }
             }
@@ -90,16 +92,14 @@ struct RecordingCarouselView: View {
                         dragOffset = value.translation.width
                     }
                     .onEnded { value in
-                        let velocity    = value.velocity.width
-                        let rawIndex    = -(baseOffset + dragOffset) / slotWidth
-                        var targetIndex: Int
-
-                        if velocity > 300 {
-                            targetIndex = Int(floor(rawIndex))      // flick right → prev
+                        let velocity = value.velocity.width
+                        let rawIndex = -(baseOffset + dragOffset) / slotWidth
+                        var targetIndex = if velocity > 300 {
+                            Int(floor(rawIndex)) // flick right → prev
                         } else if velocity < -300 {
-                            targetIndex = Int(ceil(rawIndex))       // flick left → next
+                            Int(ceil(rawIndex)) // flick left → next
                         } else {
-                            targetIndex = Int(round(rawIndex))
+                            Int(round(rawIndex))
                         }
                         targetIndex = max(0, min(recordings.count - 1, targetIndex))
 
@@ -122,7 +122,7 @@ struct RecordingCarouselView: View {
                         if target.id != activeRecordingID {
                             onSelect(target)
                         }
-                    }
+                    },
             )
             // Scroll active item to center when selection changes from outside.
             .onChange(of: activeRecordingID) { _, _ in
@@ -144,13 +144,13 @@ struct RecordingCarouselView: View {
             }
         }
         .frame(height: cellHeight + Theme.space16)
-        .clipped()  // hide overflow cells that extend beyond the visible strip
+        .clipped() // hide overflow cells that extend beyond the visible strip
         .background(
             LinearGradient(
                 colors: [.clear, .black.opacity(0.75)],
                 startPoint: .top,
-                endPoint: .bottom
-            )
+                endPoint: .bottom,
+            ),
         )
     }
 
@@ -224,7 +224,7 @@ private struct CarouselCell: View {
                         .overlay(
                             Image(systemName: "exclamationmark.icloud")
                                 .font(.system(size: 16))
-                                .foregroundStyle(Color.white.opacity(0.4))
+                                .foregroundStyle(Color.white.opacity(0.4)),
                         )
                 } else {
                     // Placeholder while iCloud thumbnail is loading.
@@ -232,7 +232,7 @@ private struct CarouselCell: View {
                         .overlay(
                             Image(systemName: "icloud.and.arrow.down")
                                 .font(.system(size: 16))
-                                .foregroundStyle(Color.white.opacity(0.35))
+                                .foregroundStyle(Color.white.opacity(0.35)),
                         )
                 }
             }
@@ -242,7 +242,7 @@ private struct CarouselCell: View {
                 RoundedRectangle(cornerRadius: Theme.radiusMd)
                     .strokeBorder(
                         isActive ? Theme.accent : Theme.white.opacity(0.2),
-                        lineWidth: isActive ? 2 : 1
+                        lineWidth: isActive ? 2 : 1,
                     )
             }
             // Cloud badge — shown on cells whose thumbnail needed a retry to
@@ -250,7 +250,7 @@ private struct CarouselCell: View {
             // underlying video will also require a download before playback,
             // so a delay opening the player is expected, not a bug.
             .overlay(alignment: .topTrailing) {
-                if wasFromCloud && thumbnail != nil {
+                if wasFromCloud, thumbnail != nil {
                     Image(systemName: "icloud.fill")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Theme.white)
@@ -276,7 +276,9 @@ private struct CarouselCell: View {
                 // If we needed any retries to get here, flag the cell so the
                 // cloud badge overlay renders. First-attempt success stays
                 // badge-free — the video was already local.
-                if loadAttempt > 0 { wasFromCloud = true }
+                if loadAttempt > 0 {
+                    wasFromCloud = true
+                }
                 return
             }
             // Nil result — decide whether to retry or give up.

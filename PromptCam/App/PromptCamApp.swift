@@ -26,7 +26,7 @@ struct PromptCamApp: App {
 
     init() {
         _hasRequiredPermissions = State(
-            initialValue: !PermissionService().policySnapshot.shouldBlockAppEntry
+            initialValue: !PermissionService().policySnapshot.shouldBlockAppEntry,
         )
 
         // One-time launch snapshot for HDMI debugging. Scene enumeration
@@ -36,7 +36,7 @@ struct PromptCamApp: App {
         let sceneCount = UIApplication.shared.connectedScenes.count
         let sessionCount = UIApplication.shared.openSessions.count
         Log.hdmi.info(
-            "PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)"
+            "PromptCamApp.init connectedScenes=\(sceneCount, privacy: .public) openSessions=\(sessionCount, privacy: .public)",
         )
 
         configureUIAppearance()
@@ -48,7 +48,7 @@ struct PromptCamApp: App {
                 hasCompletedOnboarding: hasCompletedOnboarding,
                 showCamera: showCamera,
                 skipOnboardingForUITest: skipOnboardingForUITest,
-                hasRequiredPermissions: hasRequiredPermissions
+                hasRequiredPermissions: hasRequiredPermissions,
             )
 
             Group {
@@ -87,7 +87,8 @@ struct PromptCamApp: App {
     private func configureUIAppearance() {
         // Set slider thumb appearance globally — runs once on app launch
         let thumbImage = UIImage(
-            systemName: "circle.fill")?
+            systemName: "circle.fill",
+        )?
             .withTintColor(UIColor(Theme.white))
 
         UISlider.appearance()
