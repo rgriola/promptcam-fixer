@@ -45,7 +45,7 @@ final class PermissionStatusDisplayTests: XCTestCase {
           XCTAssertEqual(
                PermissionStatusDisplay.label(for: PHAuthorizationStatus.authorized), "Granted")
           XCTAssertEqual(
-               PermissionStatusDisplay.label(for: PHAuthorizationStatus.limited), "Granted")
+               PermissionStatusDisplay.label(for: PHAuthorizationStatus.limited), "Limited")
           XCTAssertEqual(
                PermissionStatusDisplay.label(for: PHAuthorizationStatus.notDetermined), "Not Set")
           XCTAssertEqual(PermissionStatusDisplay.label(for: PHAuthorizationStatus.denied), "Denied")
@@ -57,7 +57,7 @@ final class PermissionStatusDisplayTests: XCTestCase {
           XCTAssertEqual(
                PermissionStatusDisplay.color(for: PHAuthorizationStatus.authorized), Color.green)
           XCTAssertEqual(
-               PermissionStatusDisplay.color(for: PHAuthorizationStatus.limited), Color.green)
+               PermissionStatusDisplay.color(for: PHAuthorizationStatus.limited), Color.yellow)
           XCTAssertEqual(
                PermissionStatusDisplay.color(for: PHAuthorizationStatus.notDetermined), Color.orange
           )

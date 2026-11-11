@@ -13,16 +13,16 @@ final class CameraViewModelTests: XCTestCase {
     private var mockService: MockCameraService!
     private var sut: CameraViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         mockService = MockCameraService()
         sut = CameraViewModel(cameraService: mockService)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         sut = nil
         mockService = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Recording
